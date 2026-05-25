@@ -1,0 +1,1669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRS ERP Dashboard</title>
+
+<style>
+/* =========================
+   GLOBAL
+========================= */
+body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#eef2f7;
+    display:flex;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar{
+    width:230px;
+    background:#2C7A7B;
+    color:white;
+    height:100vh;
+    position:fixed;
+    left:0;
+    top:0;
+}
+
+.sidebar h2{
+    text-align:center;
+    padding:20px;
+    border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar button{
+    width:100%;
+    padding:14px 20px;
+    border:none;
+    background:none;
+    color:white;
+    text-align:left;
+    cursor:pointer;
+}
+
+.sidebar button:hover{
+    background:#1f5f61;
+}
+
+.sidebar button.active{
+    background:black;
+}
+
+/* =========================
+   MAIN LAYOUT
+========================= */
+.main{
+    margin-left:230px;
+    width:calc(100% - 230px);
+}
+/* =========================
+   MODULES
+========================= */
+.module{
+    display:none;
+}
+
+.module.active{
+    display:block;
+}
+
+/* =========================
+   MODULE LAYOUT
+========================= */
+.container{
+    display:flex;
+    gap:15px;
+    align-items:flex-start;
+    padding:15px;
+}
+
+/* LEFT PANEL */
+.left{
+    width:65%;
+}
+
+/* RIGHT PANEL */
+.right{
+    width:35%;
+    min-width:300px;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   HEADER
+========================= */
+.header{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    font-weight:bold;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   SEARCH INPUT
+========================= */
+.search input{
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
+    background:white;
+    font-family:Segoe UI, Arial, sans-serif;
+    font-size:14px;
+    outline:none;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    transition:0.2s ease;
+}
+
+.search input:focus{
+    border-color:#2C7A7B;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.btn{
+    padding:8px 12px;
+    border:none;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    margin-right:5px;
+}
+
+.primary{ background:#2C7A7B; }
+.success{ background:#16a34a; }
+.danger{ background:#dc2626; }
+
+/* =========================
+   TABLE
+========================= */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+
+th{
+    background:#f1f5f9;
+    padding:12px;
+    text-align:left;
+}
+
+td{
+    padding:12px;
+    border-bottom:1px solid #eee;
+    cursor:pointer;
+}
+
+tr:hover{
+    background:#f1f5f9;
+}
+
+/* =========================
+   PRS TABLE
+========================= */
+#prsTable th,
+#prsTable td{
+    padding:6px 8px;
+    font-size:14px;
+    white-space:nowrap;
+}
+
+#prsTable tr{
+    height:35px;
+}
+
+#prsTable td:first-child,
+#prsTable th:first-child{
+    width:40px;
+    text-align:center;
+}
+
+/* =========================
+   SELECTED ROW
+========================= */
+.selected{
+    background:#dbeafe !important;
+    color:#000;
+}
+
+/* =========================
+   SLIP HEADER
+========================= */
+.slip h2{
+    background:#2C7A7B;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    text-align:center;
+}
+
+/* =========================
+   INFO GRID
+========================= */
+.info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:15px 0;
+}
+
+.info p{
+    background:#f3f4f6;
+    padding:10px;
+    border-radius:6px;
+    font-size:13px;
+}
+
+/* =========================
+   ITEMS TABLE
+========================= */
+.items-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+.items-table th,
+.items-table td{
+    border:1px solid #ddd;
+    padding:8px;
+}
+
+/* =========================
+   SIGNATURE SECTION
+========================= */
+.signature-section{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+}
+
+.sig-box{
+    text-align:center;
+    width:30%;
+}
+
+.signature{
+    margin-top:25px;
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+}
+
+.sig{
+    width:30%;
+    border-top:1px solid #333;
+    padding-top:5px;
+    text-align:center;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+.action-buttons{
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+
+.action-buttons form{
+    margin:0;
+}
+
+/* =========================
+   PRINT SETTINGS
+========================= */
+@media print{
+
+    body *{
+        visibility:hidden;
+    }
+
+    #printArea,
+    #grnPrintArea,
+    #invoicePrintArea,
+    #printArea *,
+    #grnPrintArea *,
+    #invoicePrintArea *{
+        visibility:visible;
+    }
+
+    #printArea,
+    #grnPrintArea,
+    #invoicePrintArea{
+        position:absolute;
+        top:0;
+        left:0;
+        width:100%;
+    }
+
+}
+
+/* =========================
+   QUOTATION REQUEST SLIP
+========================= */
+
+/* SLIP HEADER */
+.slip .header{
+    text-align:center;
+    border-bottom:2px solid #2C7A7B;
+    padding-bottom:10px;
+    margin-bottom:20px;
+    background:none;
+    box-shadow:none;
+}
+
+.slip .header h2{
+    margin:0;
+    color:#2C7A7B;
+    background:none;
+    padding:0;
+}
+
+/* INFO SECTION */
+.info-section{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+/* INFO BOX */
+.box{
+    flex:1;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    background:#fafafa;
+}
+
+.box p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+/* SUPPLIER SECTION */
+.supplier-section{
+    margin-top:10px;
+    margin-bottom:20px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.supplier-section p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+/* FOOTER */
+.footer{
+    margin-top:25px;
+    font-size:14px;
+    line-height:1.7;
+}
+
+/* BUTTON AREA */
+.buttons{
+    margin-top:20px;
+    text-align:center;
+}
+
+/* BUTTON COLORS */
+.print{
+    background:#444;
+}
+
+.whatsapp{
+    background:#25D366;
+}
+
+.email{
+    background:#2C7A7B;
+}
+
+/* =========================
+   PRINT MODE
+========================= */
+@media print{
+
+    .buttons{
+        display:none;
+    }
+
+    .sidebar,
+    .left,
+    .search,
+    .header,
+    .btn{
+        display:none !important;
+    }
+
+    .right{
+        width:100%;
+        box-shadow:none;
+        padding:0;
+    }
+
+    .slip{
+        box-shadow:none;
+        border:none;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>PRS SYSTEM</h2>
+
+<button class="active" onclick="openModule('requisition',this)">Requisition</button>
+<button onclick="openModule('supplier',this)"> QUATIONS</button>
+<button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
+
+<button onclick="openModule('grn',this)">GRN</button>
+<button onclick="openModule('invoice',this)">Invoice</button>
+
+</div>
+
+
+<div class="main">
+
+<!-- ================= REQUISITION MODULE ================= -->
+<div id="requisition" class="module active">
+
+<div class="container">
+
+<!-- LEFT -->
+<div class="left">
+
+<div class="header">Purchase Requisitions </div>
+
+<button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+    add supplier
+    </button>
+<input type="text" id="prsSearch" placeholder="Search PRS..."
+       onkeyup="searchPRS()"
+       style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">  
+         <br><br>
+<div class="action-buttons">
+
+    <form method="POST" action="/procurement/approve" onsubmit="return validateApprove()">
+        <input type="hidden" name="requisition_id" id="selectedPRS">
+        <button type="submit" class="btn success">Approve</button>
+    </form>
+
+    <button class="btn danger">Reject</button>
+
+    <button class="btn primary" onclick="window.print()">Print</button>
+   
+
+</div>
+
+<br><br>
+
+<table id="prsTable">
+<thead>
+<tr>
+    <th>Select</th>
+    <th>PRS No</th>
+    <th>Department</th>
+    <th>HOD Status</th>
+    <th>Date</th>
+    <th>HOD Approval</th>
+</tr>
+</thead>
+
+<tbody>
+{% for req in requisitions %}
+<tr data-id="{{ req.requisition_id }}" onclick="loadSlipFromRow(this)">
+
+    <td><input type="radio" name="select"></td>
+    <td>{{ req.prs_no }}</td>
+    <td>{{ req.department_name }}</td>
+
+    <!-- ✅ CHANGED TO HOD STATUS -->
+    <td>{{ req.hod_status }}</td>
+
+    <td>{{ req.submission_date }}</td>
+    <td>{{ req.hod_approval_date or '-' }}</td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+<!-- RIGHT SLIP -->
+<div class="right">
+
+<div id="printArea" class="slip">
+
+<h2>PURCHASE REQUISITION SLIP</h2>
+
+<div class="info">
+<p><b>PRS No:</b> <span id="prs_no">-</span></p>
+<p><b>Department:</b> <span id="dept">-</span></p>
+<p><b>Submission Date:</b> <span id="submission">-</span></p>
+
+<!-- ✅ CHANGED TO HOD STATUS -->
+<p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+
+<p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+
+<p><b>HOD Approval Date:</b> <span id="hod_approval_date">-</span></p>
+
+<p><b>CEO Approval Date:</b> <span id="ceo_approval_date">-</span></p>
+</div>
+
+<h3>Items</h3>
+
+<table>
+<thead>
+<tr>
+    <th>No</th>
+    <th>Material</th>
+    <th>UOM</th>
+    <th>Qty</th>
+</tr>
+</thead>
+
+<tbody id="items_body"></tbody>
+</table>
+
+<h3>Signatures</h3>
+
+<div class="signature-section">
+
+    <div class="sig-box">
+        <p>Prepared By</p>
+        <div class="sig">
+            <span id="sig_prepared">-</span>
+        </div>
+    </div>
+
+    <div class="sig-box">
+        <p>HOD Approval</p>
+        <div class="sig">
+            <img id="sig_hod" src="" alt="HOD Signature" style="height:60px; display:none;">
+        </div>
+    </div>
+
+    <div class="sig-box">
+        <p>CEO Approval</p>
+        <div class="sig">
+            <span id="sig_ceo">-</span>
+        </div>
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+<!-- SUPPLIER MODULE -->
+<div id="supplier" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header"> Supplier Management</div>
+
+
+
+<!-- SEARCH -->
+<div class="search">
+<button class="btn primary" onclick="window.location.href='/procurement/create_rfq'">
+    Create RFQ
+</button>
+<input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search by name, location, or item...">
+</div>
+
+<!-- ACTION BUTTONS -->
+<div style="margin:10px 0;">
+
+
+<button class="btn primary" onclick="shareQuotation()">Share RQF</button>
+<button class="btn primary" onclick="window.print()">Print</button>
+</div>
+
+<!-- SUPPLIER TABLE -->
+<table id="supplierTable">
+
+<thead>
+<tr>
+<th>Select</th>
+<th>Quotation No</th>
+<th> PRS_NO</th>
+<th>Supplier Name</th>
+<th>STATUS</th>
+<th>DEPARTMENT</th>
+<th>CREATION DATE</th>
+</tr>
+</thead>
+
+<tbody id="supplierBody">
+
+<tr>
+<td><input type="radio" name="supplierSelect"></td>
+<td>ABC Technologies</td>
+<td>Kampala</td>
+<td>Laptops</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <h2>QUOTATION REQUEST SLIP (QRF)</h2>
+
+        <p>
+            <b>Official Procurement Document</b>
+        </p>
+
+    </div>
+
+    <!-- INFO -->
+    <div class="info-section">
+
+        <div class="box">
+
+            <p><b>QRF No:</b> QRF/2026/001</p>
+
+            <p><b>PRS No:</b> PRS-001</p>
+
+            <p><b>Date:</b> 2026-05-23</p>
+
+        </div>
+
+        <div class="box">
+
+            <p><b>Requester:</b> Procurement Office</p>
+
+            <p><b>Department:</b> Finance</p>
+
+            <p><b>Contact:</b> procurement@company.com</p>
+
+        </div>
+
+    </div>
+
+    <!-- SUPPLIER -->
+    <div class="supplier-section">
+
+        <p><b>To:</b> Supplier</p>
+
+        <p><b>Company:</b>
+            <span id="sp_name">Tech World Uganda</span>
+        </p>
+
+        <p><b>Location:</b>
+            <span id="sp_location">Kampala</span>
+        </p>
+
+        <p><b>Item:</b>
+            <span id="sp_item">Computer Equipment</span>
+        </p>
+
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="items-table">
+
+        <thead>
+
+        <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="sharedPRS">
+
+        <tr>
+            <td>Laptop</td>
+            <td>Dell Latitude 5400</td>
+            <td>5</td>
+        </tr>
+
+        <tr>
+            <td>Printer</td>
+            <td>HP LaserJet Pro</td>
+            <td>2</td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+    <!-- FOOTER -->
+    <div class="footer">
+
+        <p>
+            Kindly submit your quotation within
+            <b>3–5 working days</b>.
+        </p>
+
+        <p>
+            Ensure all requested items are available
+            and include delivery details.
+        </p>
+
+        <br>
+
+        <p>
+            Authorized By:
+            ________________________
+        </p>
+
+        <p>
+            Procurement Department
+        </p>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+
+        <button class="btn print"
+                onclick="window.print()">
+            Print / Save PDF
+        </button>
+
+        <button class="btn whatsapp"
+                onclick="shareWhatsApp()">
+            Share WhatsApp
+        </button>
+
+        <button class="btn email"
+                onclick="shareEmail()">
+            Email Supplier
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+<!-- PURCHASE ORDER MODULE -->
+<div id="purchaseOrder" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header">Purchase Order Management</div>
+
+<button class="btn primary"
+        onclick="window.location.href='/procurement/Quotation_entry'">
+    Quotation Entry
+</button>
+<button class="btn primary"
+        onclick="window.location.href='/procurement/compare_suppliers'">
+    compare suppliers
+</button>
+<button class="btn primary"
+        onclick="window.location.href='/procurement/create_po'">
+    create PO
+</button>
+<br>
+<div class="search">
+
+<input id="poSearch" type="text" onkeyup="searchPO()" placeholder="Search PO or Supplier...">
+</div>
+
+<div style="margin:10px 0;">
+<button class="btn primary" onclick="printPO()">Print PO</button>
+
+</div>
+
+<table id="poTable">
+
+<tr>
+<th>Select</th>
+<th>PO No</th>
+<th> PRS_NO</th>
+<th>Supplier Name</th>
+<th>STATUS</th>
+<th>DEPARTMENT</th>
+<th>CREATION DATE</th>
+</tr>
+
+</table>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip" id="poPrintArea">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <h2>PURCHASE ORDER (PO)</h2>
+
+        <p>
+            <b>Official Procurement Document</b>
+        </p>
+
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="info-section">
+
+        <div class="box">
+
+            <p>
+                <b>PO Number:</b>
+                <span id="poNumber">PO/2026/001</span>
+            </p>
+
+            <p>
+                <b>Date:</b>
+                <span id="poDate">2026-05-23</span>
+            </p>
+
+            <p>
+                <b>PRS No:</b>
+                <span id="poPRS">PRS-001</span>
+            </p>
+
+        </div>
+
+        <div class="box">
+
+            <p>
+                <b>Supplier:</b>
+                <span id="poSupplier">
+                    Tech World Uganda
+                </span>
+            </p>
+
+            <p>
+                <b>Location:</b>
+                Kampala
+            </p>
+
+            <p>
+                <b>Contact:</b>
+                supplier@email.com
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- DELIVERY SECTION -->
+    <div class="supplier-section">
+
+        <p>
+            <b>Delivery Address:</b>
+            Main Store - Head Office
+        </p>
+
+        <p>
+            <b>Expected Delivery Date:</b>
+            2026-05-30
+        </p>
+
+    </div>
+
+    <!-- ITEMS -->
+    <h3>Ordered Items</h3>
+
+    <table class="items-table" id="poItems">
+
+        <thead>
+
+        <tr>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Qty</th>
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        <tr>
+            <td>Laptop</td>
+            <td>Dell Latitude 5400</td>
+            <td>5</td>
+        </tr>
+
+        <tr>
+            <td>Printer</td>
+            <td>HP LaserJet Pro</td>
+            <td>2</td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+    <!-- TOTAL -->
+    <div class="info-section" style="margin-top:20px;">
+
+        <div class="box">
+
+            <p>
+                <b>Total Items:</b>
+                <span id="poTotal">7</span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+
+        <p>
+            Kindly supply the listed items
+            within the agreed delivery period.
+        </p>
+
+        <!-- SIGNATURES -->
+        <div class="signature-section">
+
+            <div class="sig-box">
+
+                <p>Prepared By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Approved By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Supplier Confirmation</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+
+        <button class="btn print"
+                onclick="window.print()">
+            Print / Save PDF
+        </button>
+
+        <button class="btn whatsapp"
+                onclick="sharePOWhatsApp()">
+            Share WhatsApp
+        </button>
+
+        <button class="btn email"
+                onclick="sharePOEmail()">
+            Email Supplier
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+<!-- ================= GRN MODULE ================= -->
+<div id="grn" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Goods Received Note (GRN)</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                <button class="btn primary"
+                  onclick="window.location.href='/procurement/create_grn'">
+                 Create GRN
+                </button>
+                <input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN or PRS...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printGRN()">Print GRN</button>
+                
+            </div>
+
+            <!-- TABLE -->
+            <table id="grnTable">
+
+                <thead>
+                    <th>Select</th>
+                    <th>Quotation No</th>
+                    <th> PRS_NO</th>
+                    <th>Supplier Name</th>
+                    <th>STATUS</th>
+                    <th>DEPARTMENT</th>
+                    <th>CREATION DATE</th>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td><input type="radio" name="grnSelect"></td>
+                        <td>GRN-001</td>
+                        <td>PRS-100</td>
+                        <td>ABC Suppliers</td>
+                        <td>Pending</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip" id="grnPrintArea">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <h2>GOODS RECEIVED NOTE (GRN)</h2>
+
+        <p>
+            <b>Official Receiving Document</b>
+        </p>
+
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="info-section">
+
+        <div class="box">
+
+            <p>
+                <b>GRN Number:</b>
+                <span id="grnNumber">GRN/2026/001</span>
+            </p>
+
+            <p>
+                <b>Date:</b>
+                <span id="grnDate">2026-05-23</span>
+            </p>
+
+            <p>
+                <b>PO Number:</b>
+                <span id="grnPO">PO/2026/001</span>
+            </p>
+
+        </div>
+
+        <div class="box">
+
+            <p>
+                <b>Supplier:</b>
+                <span id="grnSupplier">
+                    Tech World Uganda
+                </span>
+            </p>
+
+            <p>
+                <b>Received By:</b>
+                Store Officer
+            </p>
+
+            <p>
+                <b>Delivery Status:</b>
+                Received
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- DELIVERY INFO -->
+    <div class="supplier-section">
+
+        <p>
+            <b>Delivery Location:</b>
+            Main Store - Head Office
+        </p>
+
+        <p>
+            <b>Receiving Date:</b>
+            2026-05-23
+        </p>
+
+    </div>
+
+    <!-- ITEMS -->
+    <h3>Received Items</h3>
+
+    <table class="items-table" id="grnItems">
+
+        <thead>
+
+        <tr>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Balance</th>
+        </tr>
+
+        </thead>
+
+        <tbody>
+
+        <tr>
+            <td>Laptop</td>
+            <td>Dell Latitude 5400</td>
+            <td>5</td>
+            <td>5</td>
+            <td>0</td>
+        </tr>
+
+        <tr>
+            <td>Printer</td>
+            <td>HP LaserJet Pro</td>
+            <td>2</td>
+            <td>2</td>
+            <td>0</td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+    <!-- SUMMARY -->
+    <div class="info-section" style="margin-top:20px;">
+
+        <div class="box">
+
+            <p>
+                <b>Total Items Received:</b>
+                <span id="grnTotal">7</span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+
+        <p>
+            The above items were received
+            in good condition unless stated otherwise.
+        </p>
+
+        <!-- SIGNATURES -->
+        <div class="signature-section">
+
+            <div class="sig-box">
+
+                <p>Received By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Verified By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Supplier Representative</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+
+        <button class="btn print"
+                onclick="window.print()">
+            Print / Save PDF
+        </button>
+
+        <button class="btn whatsapp"
+                onclick="shareGRNWhatsApp()">
+            Share WhatsApp
+        </button>
+
+        <button class="btn email"
+                onclick="shareGRNEmail()">
+            Email Supplier
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+    </div>
+
+</div>
+
+
+
+
+
+
+<!-- ================= INVOICE MODULE ================= -->
+<div id="invoice" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Invoice Management</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                <button class="btn primary"
+                 onclick="window.location.href='/procurement/create_invoice'">
+                     Create Invoice
+                </button>
+                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
+                
+            </div>
+
+            <!-- TABLE -->
+            <table id="invoiceTable">
+
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>PRS No</th>
+                        <th>Invoice No</th>
+                        <th>GRN No</th>
+                        <th>Supplier</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>submission_date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td><input type="radio" name="invoiceSelect"></td>
+                        <td>PRS-001</td>
+                        <td>INV-1001</td>
+                        <td>GRN-001</td>
+                        <td>ABC Suppliers</td>
+                        <td>Procurement</td>
+                        <td>Pending</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip" id="invoicePrintArea">
+
+                <h2>PURCHASE INVOICE</h2>
+
+                <!-- INFO -->
+                <div class="info">
+                    <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
+                    <p><b>GRN No:</b> <span id="i_grn">-</span></p>
+                    <p><b>Supplier:</b> <span id="i_supplier">-</span></p>
+                    <p><b>Amount:</b> <span id="i_amount">-</span></p>
+                    <p><b>Date:</b> <span id="i_date">-</span></p>
+                </div>
+
+                <h3>Items</h3>
+
+                <!-- ITEMS TABLE -->
+                <table class="items-table">
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Laptop</td>
+                            <td>2</td>
+                            <td>500</td>
+                            <td>1000</td>
+                        </tr>
+
+                        <tr>
+                            <td>Printer</td>
+                            <td>1</td>
+                            <td>200</td>
+                            <td>200</td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURES -->
+                <div class="signature">
+                    <div class="sig">Supplier</div>
+                    <div class="sig">Procurement</div>
+                    <div class="sig">Finance</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+<script >
+
+function openModule(id,btn){
+
+document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+
+document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+}
+
+
+let selectedRow = null;
+
+// ================= LOAD SLIP =================
+function loadSlipFromRow(row){
+
+    let id = row.getAttribute("data-id");
+
+    if(!id){
+        alert("Invalid requisition ID");
+        return;
+    }
+
+    // highlight row
+    document.querySelectorAll("#prsTable tr").forEach(r => {
+        r.classList.remove("selected");
+    });
+
+    row.classList.add("selected");
+
+    document.getElementById("selectedPRS").value = id;
+
+    fetch("/procurement/requisition/api/" + id)
+    .then(res => res.json())
+    .then(data => {
+
+        let r = data.requisition;
+        let items = data.items || [];
+
+        // ================= HEADER INFO =================
+        document.getElementById("prs_no").innerText = r.prs_no || "-";
+        document.getElementById("dept").innerText = r.department_name || "-";
+        document.getElementById("submission").innerText = r.submission_date || "-";
+
+        document.getElementById("hod_status").innerText = r.hod_status || "Pending";
+        document.getElementById("ceo_status").innerText = r.ceo_status || "Pending";
+
+        // ================= APPROVAL DATES =================
+        document.getElementById("hod_approval_date").innerText =
+            r.hod_approval_date || "-";
+
+        document.getElementById("ceo_approval_date").innerText =
+            r.ceo_approval_date || "-";
+
+        // ================= ITEMS TABLE =================
+        let tbody = document.getElementById("items_body");
+        tbody.innerHTML = "";
+
+        items.forEach((item, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td>${item.material_name}</td>
+                    <td>${item.uom}</td>
+                    <td>${item.qty_required}</td>
+                </tr>
+            `;
+        });
+
+        // ================= SIGNATURES =================
+
+        document.getElementById("sig_prepared").innerText =
+            r.prepared_by || "Not signed";
+
+        document.getElementById("sig_ceo").innerText =
+            r.ceo_signature || "Pending";
+
+        // ================= HOD SIGNATURE IMAGE =================
+        let sig = document.getElementById("sig_hod");
+
+if (r.hod_signature) {
+
+    // ensure no double /static/
+    let path = r.hod_signature.replace("/static/", "");
+
+    sig.src = "/static/" + path;
+    sig.style.display = "block";
+
+} else {
+    sig.src = "";
+    sig.style.display = "none";
+}
+
+    })
+    .catch(err => {
+        console.error("Error fetching requisition details:", err);
+        alert("Failed to load requisition details");
+    });
+}
+
+function validateApprove(){
+    let id = document.getElementById("selectedPRS").value;
+
+    if(!id){
+        alert("Please select a requisition first");
+        return false;
+    }
+    return true;
+}
+
+
+
+
+function searchPRS() {
+
+    let input = document.getElementById("prsSearch");
+    let filter = input.value.toLowerCase();
+
+    let table = document.getElementById("prsTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) { // skip header row
+
+        let rowText = rows[i].innerText.toLowerCase();
+
+        if (rowText.includes(filter)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
+
+
+
+
+
+// ==============================
+// SEARCH SUPPLIER
+// ==============================
+function searchSupplier(){
+
+let input = document.getElementById("supplierSearch").value.toLowerCase()
+
+let rows = document.querySelectorAll("#supplierTable tbody tr")
+
+rows.forEach(row=>{
+
+let text = row.innerText.toLowerCase()
+
+if(text.includes(input)){
+row.style.display=""
+}
+else{
+row.style.display="none"
+}
+
+})
+
+}
+
+
+
+// ==============================
+// SELECT SUPPLIER
+// ==============================
+function selectSupplier(){
+
+let selected = document.querySelector("input[name='supplierSelect']:checked")
+
+if(!selected){
+alert("Please select a supplier")
+return
+}
+
+let row = selected.closest("tr")
+
+let name = row.cells[1].innerText
+let location = row.cells[2].innerText
+let item = row.cells[3].innerText
+
+document.getElementById("sp_name").innerText = name
+document.getElementById("sp_location").innerText = location
+document.getElementById("sp_item").innerText = item
+
+}
+
+
+
+// ==============================
+// SHARE QUOTATION REQUEST
+// ==============================
+function shareQuotation(){
+
+let supplier = document.getElementById("sp_name").innerText
+
+if(supplier=="-"){
+alert("Select a supplier first")
+return
+}
+
+let table = document.getElementById("sharedPRS")
+
+let row = table.insertRow()
+
+row.innerHTML = `
+<td>PRS-${Math.floor(Math.random()*1000)}</td>
+<td>Quotation Sent</td>
+`
+
+alert("Quotation request sent to "+supplier)
+
+}
+
+
+
+</script>
+
+</body>
+</html>
+

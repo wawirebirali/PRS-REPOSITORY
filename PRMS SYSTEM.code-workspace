@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"name": "PRMS SYSTEM",
+			"path": "."
+		}
+	],
+	"settings": {
+		"sqltools.connections": [
+			{
+				"mysqlOptions": {
+					"authProtocol": "default",
+					"enableSsl": "Disabled"
+				},
+				"ssh": "Disabled",
+				"previewLimit": 50,
+				"server": "localhost",
+				"port": 3306,
+				"driver": "MySQL",
+				"name": "connection",
+				"database": "prs",
+				"username": "root2",
+				"password": "1234"
+			}
+		]
+	}
+}

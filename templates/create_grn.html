@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Goods Received Note (GRN)</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f6fa;
+padding:20px;
+}
+
+.container{
+max-width:1100px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+}
+
+select,input{
+padding:8px;
+width:100%;
+margin-top:5px;
+box-sizing:border-box;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ddd;
+padding:10px;
+text-align:center;
+}
+
+th{
+background:#2c7a7b;
+color:white;
+}
+
+button{
+padding:10px 15px;
+margin-top:15px;
+cursor:pointer;
+background:#2c7a7b;
+color:white;
+border:none;
+border-radius:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Goods Received Note (GRN)</h2>
+
+<form method="POST" action="/procurement/save_grn">
+
+<!-- ========================= -->
+<!-- PO NUMBER -->
+<!-- ========================= -->
+<label>PO Number</label>
+
+<select name="po_id" id="po_id" required>
+
+<option value="">-- Select PO --</option>
+
+{% for po in pos %}
+<option value="{{ po.purchase_order_id }}">
+    {{ po.po_number }}
+</option>
+{% endfor %}
+
+</select>
+
+<!-- ========================= -->
+<!-- SUPPLIER -->
+<!-- ========================= -->
+<label>Supplier</label>
+
+<select name="supplier_id" id="supplier_id" required>
+
+<option value="">-- Select Supplier --</option>
+
+{% for s in suppliers %}
+<option value="{{ s.supplier_id }}">
+    {{ s.supplier_name }}
+</option>
+{% endfor %}
+
+</select>
+
+<!-- ========================= -->
+<!-- GRN NUMBER -->
+<!-- ========================= -->
+<label>GRN Number</label>
+
+<input
+    type="text"
+    name="grn_no"
+    id="grn_no"
+    readonly
+>
+
+<!-- ========================= -->
+<!-- DATE -->
+<!-- ========================= -->
+<label>Creation Date</label>
+
+<input
+    type="date"
+    name="received_date"
+    id="creation_date"
+    readonly
+>
+
+<!-- ========================= -->
+<!-- CREATED BY -->
+<!-- ========================= -->
+<label>Created By</label>
+
+<select name="received_by" id="created_by" required>
+
+<option value="">-- Select User --</option>
+
+{% for u in users %}
+<option value="{{ u.user_id }}">
+    {{ u.username }}
+</option>
+{% endfor %}
+
+</select>
+
+<!-- ========================= -->
+<!-- ITEMS TABLE -->
+<!-- ========================= -->
+<table id="grnTable">
+
+<thead>
+
+<tr>
+<th>Item</th>
+<th>Description</th>
+<th>Ordered Qty</th>
+<th>Received Qty</th>
+<th>Rejected Qty</th>
+<th>Remarks</th>
+</tr>
+
+</thead>
+
+<tbody id="itemsBody">
+
+<!-- ITEMS AUTO LOAD HERE -->
+
+</tbody>
+
+</table>
+
+<button type="submit">
+Save GRN
+</button>
+
+</form>
+
+</div>
+
+<script>
+
+// =========================
+// PAGE INIT
+// =========================
+window.onload = function () {
+
+    generateGRN();
+    setTodayDate();
+
+};
+
+
+// =========================
+// AUTO GRN NUMBER
+// =========================
+function generateGRN() {
+
+    let now = new Date();
+
+    document.getElementById("grn_no").value =
+
+        `GRN-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.floor(1000+Math.random()*9000)}`;
+}
+
+
+// =========================
+// AUTO DATE
+// =========================
+function setTodayDate() {
+
+    document.getElementById("creation_date").value =
+        new Date().toISOString().split('T')[0];
+}
+
+
+// =========================
+// LOAD PO ITEMS
+// =========================
+document.getElementById("po_id")
+.addEventListener("change", function () {
+
+    let po_id = this.value;
+
+    if(!po_id){
+        return;
+    }
+
+    fetch("/procurement/get_po_items/" + po_id)
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        let body =
+            document.getElementById("itemsBody");
+
+        body.innerHTML = "";
+
+        data.forEach(item => {
+
+            let row = `
+
+            <tr>
+
+                <!-- ITEM -->
+                <td>
+
+                    <input
+                        type="text"
+                        name="material_name[]"
+                        value="${item.item_name}"
+                        readonly
+                    >
+
+                </td>
+
+                <!-- DESCRIPTION -->
+                <td>
+
+                    <input
+                        type="text"
+                        name="description[]"
+                        value="${item.description || ''}"
+                        readonly
+                    >
+
+                </td>
+
+                <!-- ORDERED -->
+                <td>
+
+                    <input
+                        type="number"
+                        class="ordered"
+                        name="quantity_ordered[]"
+                        value="${item.quantity}"
+                        readonly
+                    >
+
+                </td>
+
+                <!-- RECEIVED -->
+                <td>
+
+                    <input
+                        type="number"
+                        class="received"
+                        name="quantity_received[]"
+                        onkeyup="calculateRow(this)"
+                        required
+                    >
+
+                </td>
+
+                <!-- REJECTED -->
+                <td>
+
+                    <input
+                        type="number"
+                        class="rejected"
+                        name="quantity_rejected[]"
+                        readonly
+                    >
+
+                </td>
+
+                <!-- REMARKS -->
+                <td>
+
+                    <span class="remark"></span>
+
+                    <input
+                        type="hidden"
+                        class="remarkInput"
+                        name="remarks[]"
+                    >
+
+                </td>
+
+            </tr>
+
+            `;
+
+            body.innerHTML += row;
+
+        });
+
+    });
+
+});
+
+
+// =========================
+// CALCULATE ROW
+// =========================
+function calculateRow(input){
+
+    let row = input.closest("tr");
+
+    let ordered =
+        parseFloat(
+            row.querySelector(".ordered").value
+        ) || 0;
+
+    let received =
+        parseFloat(input.value) || 0;
+
+    let rejectedField =
+        row.querySelector(".rejected");
+
+    let remarkText =
+        row.querySelector(".remark");
+
+    let remarkInput =
+        row.querySelector(".remarkInput");
+
+
+    // =========================
+    // VALIDATION
+    // =========================
+    if(received > ordered){
+
+        alert(
+            "Received quantity cannot exceed ordered quantity"
+        );
+
+        input.value = "";
+
+        rejectedField.value = "";
+
+        remarkText.innerText = "";
+
+        remarkInput.value = "";
+
+        return;
+    }
+
+
+    // =========================
+    // CALCULATE REJECTED
+    // =========================
+    let rejected = ordered - received;
+
+    rejectedField.value = rejected;
+
+
+    // =========================
+    // AUTO REMARKS
+    // =========================
+    if(received == ordered){
+
+        remarkText.innerText = "OK";
+
+        remarkText.style.color = "green";
+
+        remarkInput.value = "OK";
+    }
+
+    else if(received < ordered){
+
+        remarkText.innerText = "PARTIAL";
+
+        remarkText.style.color = "orange";
+
+        remarkInput.value = "PARTIAL";
+    }
+
+}
+
+</script>
+
+</body>
+</html>

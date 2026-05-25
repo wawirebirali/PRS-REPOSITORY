@@ -1,0 +1,146 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f4f6fb;
+    padding: 30px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #1a33cc;
+    margin-bottom: 30px;
+}
+
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.field-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+label {
+    min-width: 150px;
+    font-weight: 600;
+}
+
+input, select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #f9fbff;
+}
+
+.prs-label {
+    color: red;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th {
+    background: #eef2ff;
+    padding: 10px;
+}
+
+td {
+    padding: 5px;
+    border: 1px solid #ccc;
+}
+
+td input {
+    width: 100%;
+    border: none;
+    padding: 8px;
+    outline: none;
+    background: transparent;
+}
+
+.controls {
+    margin: 15px 0;
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.add-btn {
+    background: #28a745;
+    color: #fff;
+}
+
+.remove-btn {
+    background: #dc3545;
+    color: #fff;
+}
+
+.submit-btn {
+    background: #0047ff;
+    color: #fff;
+    float: right;
+}
+
+.footer-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+}
+
+.footer-block {
+    text-align: center;
+    width: 30%;
+}
+
+.signature-box {
+    width: 180px;
+    height: 80px;
+    border: 2px dashed #aaa;
+    margin: 10px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.signature-box img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.role-box {
+    margin-top: 10px;
+    padding: 6px 20px;
+    background: #eef2ff;
+    border-radius: 6px;
+    display: inline-block;
+}

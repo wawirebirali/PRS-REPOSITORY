@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PRS Dashboard</title>
+
+<style>
+body{
+font-family:Arial;
+margin:0;
+background:#f4f6f9;
+}
+
+.container{
+padding:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
+
+th, td{
+padding:12px;
+border:1px solid #ddd;
+text-align:left;
+}
+
+th{
+background:#2C7A7B;
+color:white;
+}
+
+tr:hover{
+background:#f1f1f1;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Purchase Requisitions</h2>
+
+<button onclick="loadData()">Load Requisitions</button>
+
+<br><br>
+
+<table>
+<thead>
+<tr>
+<th>PRS No</th>
+<th>Department</th>
+<th>Status</th>
+<th>Submission</th>
+<th>HOD Approval</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+</table>
+
+</div>
+
+<script>
+
+function loadData(){
+
+fetch("/api/requisitions")
+.then(res => res.json())
+.then(data => {
+
+let table = document.getElementById("tableBody");
+table.innerHTML = "";
+
+if(data.length === 0){
+table.innerHTML = "<tr><td colspan='5'>No requisitions found</td></tr>";
+return;
+}
+
+data.forEach(req => {
+
+table.innerHTML += `
+<tr>
+<td>${req.prs_no}</td>
+<td>${req.department_name}</td>
+<td>${req.status}</td>
+<td>${req.submission_date}</td>
+<td>${req.hod_approval_date}</td>
+</tr>
+`;
+
+});
+
+})
+.catch(err => console.log("Error:", err));
+
+}
+
+</script>
+
+</body>
+</html>

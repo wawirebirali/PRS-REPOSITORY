@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign Up</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='user_login.css') }}">
+
+<style>
+body{
+    margin:0;
+    font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e7f2f1 0%, #f8fbfd 100%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+}
+
+.login-container{
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    padding:42px 38px;
+    border-radius:24px;
+    border:1px solid rgba(37,99,235,0.18);
+    box-shadow:0 24px 68px rgba(15, 23, 42, 0.12);
+}
+
+h2{
+    text-align:center;
+    margin:0 0 10px;
+    font-size:28px;
+    color:#1f4341;
+}
+
+.subtitle{
+    text-align:center;
+    margin-bottom:26px;
+    color:#516a68;
+    font-size:15px;
+    line-height:1.6;
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+label{
+    display:block;
+    margin-bottom:10px;
+    font-weight:600;
+    color:#243231;
+    font-size:14px;
+}
+
+input,
+select{
+    width:100%;
+    padding:14px 16px;
+    border:1px solid #d1d9d8;
+    border-radius:14px;
+    background:#f9fcfc;
+    font-size:15px;
+}
+
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#2C7A7B;
+    box-shadow:0 0 0 4px rgba(44,122,123,0.12);
+    background:#ffffff;
+}
+
+button{
+    width:100%;
+    padding:14px 0;
+    background:#2C7A7B;
+    color:#fff;
+    border:none;
+    border-radius:14px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1f5f61;
+}
+
+.error{
+    color:#d93025;
+    font-size:13px;
+    margin-top:6px;
+}
+
+/* SIGNATURE PAD */
+canvas{
+    width:100%;
+    height:160px;
+    border:1px solid #ccc;
+    border-radius:12px;
+    background:white;
+}
+
+.clear-btn{
+    margin-top:8px;
+    padding:8px 12px;
+    border:none;
+    background:#dc2626;
+    color:white;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+<h2>Create Account</h2>
+<p class="subtitle">Fill in the details to register</p>
+
+<form id="signupForm" method="POST" action="{{ url_for('auth.signup') }}">
+
+<!-- USERNAME -->
+<div class="form-group">
+<label>Username</label>
+<input type="text" name="username" required minlength="3">
+</div>
+
+<!-- EMAIL -->
+<div class="form-group">
+<label>Email</label>
+<input type="email" name="email" required>
+</div>
+
+<!-- PASSWORD -->
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="password" name="password" required minlength="6">
+</div>
+
+<!-- CONFIRM PASSWORD -->
+<div class="form-group">
+<label>Confirm Password</label>
+<input type="password" id="confirm_password" required>
+<div id="passwordError" class="error"></div>
+</div>
+
+<!-- ROLE -->
+<div class="form-group">
+<label>User Role</label>
+<select name="user_role" required>
+<option value="">-- Select Role --</option>
+<option value="employee">Employee</option>
+<option value="hod">HOD</option>
+<option value="procurement">Procurement</option>
+<option value="finance">Finance</option>
+<option value="ceo">CEO</option>
+<option value="admin">Admin</option>
+</select>
+</div>
+
+<!-- DEPARTMENT -->
+<div class="form-group">
+<label>Department</label>
+<select name="department">
+<option value="">-- Select Department --</option>
+<option value="IT">IT</option>
+<option value="Finance">Finance</option>
+<option value="HR">HR</option>
+<option value="Procurement">Procurement</option>
+<option value="Operations">Operations</option>
+<option value="Engineering">Engineering</option>
+</select>
+</div>
+
+<!-- SIGNATURE (DRAWABLE) -->
+<div class="form-group">
+<label>Draw Your Signature</label>
+
+<canvas id="signaturePad"></canvas>
+
+<input type="hidden" name="signature_data" id="signature_data">
+
+<button type="button" class="clear-btn" onclick="clearSignature()">Clear Signature</button>
+</div>
+
+<!-- SUBMIT -->
+<button type="submit">Sign Up</button>
+
+</form>
+
+</div>
+
+<script>
+
+/* PASSWORD MATCH */
+document.getElementById("signupForm").addEventListener("submit", function(e){
+
+let p = document.getElementById("password").value;
+let c = document.getElementById("confirm_password").value;
+
+if(p !== c){
+document.getElementById("passwordError").innerText = "Passwords do not match";
+e.preventDefault();
+}
+
+});
+
+/* SIGNATURE PAD */
+let canvas = document.getElementById("signaturePad");
+let ctx = canvas.getContext("2d");
+
+function resize(){
+canvas.width = canvas.offsetWidth;
+canvas.height = 160;
+}
+resize();
+
+let drawing = false;
+
+canvas.addEventListener("mousedown", e=>{
+drawing = true;
+ctx.beginPath();
+ctx.moveTo(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mousemove", e=>{
+if(!drawing) return;
+ctx.lineWidth = 2;
+ctx.lineCap = "round";
+ctx.strokeStyle = "#000";
+ctx.lineTo(e.offsetX, e.offsetY);
+ctx.stroke();
+});
+
+canvas.addEventListener("mouseup", ()=>{
+drawing = false;
+saveSignature();
+});
+
+canvas.addEventListener("mouseout", ()=>{
+drawing = false;
+});
+
+function saveSignature(){
+document.getElementById("signature_data").value = canvas.toDataURL("image/png");
+}
+
+function clearSignature(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+document.getElementById("signature_data").value = "";
+}
+
+/* TOUCH SUPPORT (MOBILE) */
+canvas.addEventListener("touchstart", function(e){
+let touch = e.touches[0];
+let rect = canvas.getBoundingClientRect();
+drawing = true;
+ctx.beginPath();
+ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+});
+
+canvas.addEventListener("touchmove", function(e){
+if(!drawing) return;
+let touch = e.touches[0];
+let rect = canvas.getBoundingClientRect();
+ctx.lineWidth = 2;
+ctx.lineCap = "round";
+ctx.strokeStyle = "#000";
+ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+ctx.stroke();
+});
+
+canvas.addEventListener("touchend", ()=>{
+drawing = false;
+saveSignature();
+});
+
+</script>
+
+</body>
+</html>

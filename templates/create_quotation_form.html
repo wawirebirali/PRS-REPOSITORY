@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quotation Request Form</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #eef2f7;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            border-radius: 10px;
+        }
+
+        label { font-weight: bold; }
+
+        select, input {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .add-btn { background: green; color: white; }
+        .submit-btn { background: blue; color: white; }
+        .remove-btn { background: red; color: white; }
+
+        h2, h3 { color: #2C3E50; }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Quotation Request Form</h2>
+
+    <!-- REQUESTER -->
+    <label>Requester Name</label>
+    <input type="text" id="requester_name" placeholder="Enter requester name">
+
+    <!-- DATE -->
+    <label>Submission Date</label>
+    <input type="date" id="submission_date">
+
+    <!-- PRS -->
+    <label>PRS Number</label>
+    <select id="prs_no">
+        <option value="">-- Select PRS --</option>
+        {% for prs in requisitions %}
+        <option value="{{ prs.requisition_id }}">
+            {{ prs.prs_no }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- SUPPLIER -->
+    <label>Supplier</label>
+    <select id="supplier">
+        <option value="">-- Select Supplier --</option>
+        {% for supplier in suppliers %}
+        <option value="{{ supplier.supplier_id }}">
+            {{ supplier.supplier_name }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <h3>Items</h3>
+
+    <table id="itemsTable">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="itemsBody"></tbody>
+    </table>
+
+    <button type="button" class="add-btn" onclick="addRow()">
+        Add Item
+    </button>
+
+    <button type="button" class="submit-btn" onclick="submitForm()">
+        Submit
+    </button>
+
+</div>
+
+<script>
+
+/* AUTO DATE */
+document.getElementById("submission_date").value =
+    new Date().toISOString().split('T')[0];
+
+/* ADD ROW */
+function addRow() {
+
+    let tbody = document.getElementById("itemsBody");
+
+    let row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td><input type="text" placeholder="Item name"></td>
+        <td><input type="text" placeholder="Description"></td>
+        <td><input type="number" min="1" placeholder="Qty"></td>
+        <td>
+            <button type="button" class="remove-btn" onclick="removeRow(this)">
+                X
+            </button>
+        </td>
+    `;
+
+    tbody.appendChild(row);
+}
+
+/* REMOVE ROW */
+function removeRow(btn) {
+    btn.closest("tr").remove();
+}
+
+/* SUBMIT FORM */
+function submitForm() {
+
+    // =========================
+    // GET FORM VALUES
+    // =========================
+    let requester = document.getElementById("requester_name").value;
+    let submission_date = document.getElementById("submission_date").value;
+    let prs = document.getElementById("prs_no").value;
+    let supplier = document.getElementById("supplier").value;
+
+    // =========================
+    // COLLECT ITEMS TABLE ROWS
+    // =========================
+    let rows = document.querySelectorAll("#itemsBody tr");
+    let items = [];
+
+    rows.forEach(row => {
+
+        let inputs = row.querySelectorAll("input");
+
+        let item = inputs[0]?.value?.trim();
+        let desc = inputs[1]?.value?.trim();
+        let qty = inputs[2]?.value;
+
+        if (item && qty) {
+            items.push({
+                item: item,
+                description: desc,
+                qty: qty
+            });
+        }
+    });
+
+    // =========================
+    // BASIC VALIDATION
+    // =========================
+    if (!requester || !submission_date || !prs || !supplier) {
+        alert("Please fill all required fields");
+        return;
+    }
+
+    if (items.length === 0) {
+        alert("Please add at least one item");
+        return;
+    }
+
+    // =========================
+    // SEND DATA TO FLASK
+    // =========================
+    fetch("/procurement/save_qrf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            requester_name: requester,
+            submission_date: submission_date,
+            prs_no: prs,
+            supplier: supplier,
+            items: items
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        // =========================
+        // SUCCESS HANDLING
+        // =========================
+        if (data.redirect) {
+            window.location.href = data.redirect;
+        } else {
+            alert(data.message || "QRF saved successfully");
+        }
+    })
+    .catch(error => {
+
+        // =========================
+        // ERROR HANDLING
+        // =========================
+        console.error("Error:", error);
+        alert("Something went wrong while saving QRF");
+    });
+}
+
+</script>
+
+</body>
+</html>

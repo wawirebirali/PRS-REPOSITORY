@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Requisition</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #2C7A7B; color: white; padding: 15px; text-align: center; }
+        .content { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #e6f2f2; color: #2C7A7B; }
+        .print-btn:hover { background: #1f5f61; }
+        .signature-section { margin-top: 30px; }
+        .signatures { display: flex; justify-content: space-around; margin-top: 20px; }
+        .sig-box { text-align: center; }
+        .signature-img { width: 100px; height: 50px; border: 1px solid #ddd; background: white; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Purchase Requisition Slip</h1>
+    </div>
+
+    <div class="content">
+        <h2>Requisition Details</h2>
+        <p><strong>PRS No:</strong> {{ requisition.prs_no }}</p>
+        <p><strong>Department:</strong> {{ requisition.department_name }}</p>
+        <p><strong>Submitted by:</strong> {{ requisition.username }}</p>
+        <p><strong>Submission Date:</strong> {{ requisition.submission_date.strftime('%Y-%m-%d') }}</p>
+        <p><strong>Status:</strong> {{ requisition.status }}</p>
+
+        <h3>Items</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Material Name</th>
+                    <th>UOM</th>
+                    <th>Qty in Stock</th>
+                    <th>Qty Required</th>
+                    <th>Required Date</th>
+                    <th>Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.material_name }}</td>
+                    <td>{{ item.uom }}</td>
+                    <td>{{ item.qty_stock }}</td>
+                    <td>{{ item.qty_required }}</td>
+                    <td>{{ item.required_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ item.remark or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button class="print-btn" onclick="window.print()">Print</button>
+
+        <div class="approval-history">
+            <h3>Approval History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Approver</th>
+                        <th>Action</th>
+                        <th>Date</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for approval in approvals %}
+                    <tr>
+                        <td>{{ approval.role }}</td>
+                        <td>{{ approval.username }}</td>
+                        <td>{{ approval.action or 'Pending' }}</td>
+                        <td>
+                            {% if approval.role == 'HOD' and approval.hod_approval_date %}
+                                {{ approval.hod_approval_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% elif approval.role == 'CEO' and approval.ceo_approval_date %}
+                                {{ approval.ceo_approval_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% elif approval.role == 'Finance' and approval.finance_approval_date %}
+                                {{ approval.finance_approval_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% elif approval.role == 'Procurement' and approval.procurement_approval_date %}
+                                {{ approval.procurement_approval_date.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ approval.remarks or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="signature-section">
+            <h3>Approvals</h3>
+            <div class="signatures">
+                    {% if signatures.get('HOD') %}
+                <div class="sig-box">
+                    <p>HOD Approved</p>
+                    <img src="{{ url_for('static', filename=signatures['HOD']) }}" alt="HOD Signature" class="signature-img">
+                    <p class="sig-date">{{ approval_dates['HOD'].strftime('%Y-%m-%d %H:%M') if approval_dates.get('HOD') else '' }}</p>
+                </div>
+                {% endif %}
+                {% if signatures.get('CEO') %}
+                <div class="sig-box">
+                    <p>CEO Approved</p>
+                    <img src="{{ url_for('static', filename=signatures['CEO']) }}" alt="CEO Signature" class="signature-img">
+                    <p class="sig-date">{{ approval_dates['CEO'].strftime('%Y-%m-%d %H:%M') if approval_dates.get('CEO') else '' }}</p>
+                </div>
+                {% endif %}
+                {% if signatures.get('Finance') %}
+                <div class="sig-box">
+                    <p>Finance Approved</p>
+                    <img src="{{ url_for('static', filename=signatures['Finance']) }}" alt="Finance Signature" class="signature-img">
+                    <p class="sig-date">{{ approval_dates['Finance'].strftime('%Y-%m-%d %H:%M') if approval_dates.get('Finance') else '' }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

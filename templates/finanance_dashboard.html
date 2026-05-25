@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRS ERP Dashboard</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI, Arial;
+background:#eef2f7;
+display:flex;
+}
+
+/* SIDEBAR */
+.sidebar{
+width:230px;
+background:#2C7A7B;
+color:white;
+height:100vh;
+position:fixed;
+left:0;
+top:0;
+}
+
+.sidebar h2{
+text-align:center;
+padding:20px;
+border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar button{
+width:100%;
+padding:14px 20px;
+border:none;
+background:none;
+color:white;
+text-align:left;
+cursor:pointer;
+}
+
+.sidebar button:hover{
+background:#1f5f61;
+}
+
+.sidebar button.active{
+background:#2C7A7B;
+}
+
+/* MAIN */
+.main{
+margin-left:230px;
+width:100%;
+padding:15px;
+}
+
+/* MODULES */
+.module{
+display:none;
+}
+
+.module.active{
+display:flex;
+gap:15px;
+}
+
+/* LEFT */
+.left{
+width:65%;
+}
+
+/* HEADER */
+.header{
+background:white;
+padding:15px;
+border-radius:10px;
+font-weight:bold;
+margin-bottom:15px;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* SEARCH */
+.search input{
+padding:10px;
+width:60%;
+border-radius:6px;
+border:1px solid #ddd;
+}
+
+/* BUTTONS */
+.btn{
+padding:8px 12px;
+border:none;
+color:white;
+border-radius:6px;
+cursor:pointer;
+margin-right:5px;
+}
+
+.primary{background:#2C7A7B;}
+.success{background:#16a34a;}
+.danger{background:#dc2626;}
+
+/* TABLE */
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+border-radius:10px;
+overflow:hidden;
+box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+
+th{
+background:#f1f5f9;
+padding:12px;
+text-align:left;
+}
+
+td{
+padding:12px;
+border-bottom:1px solid #eee;
+cursor:pointer;
+}
+
+tr:hover{
+background:#f9fafb;
+}
+
+.selected{
+background:#dbeafe !important;
+}
+
+/* RIGHT */
+.right{
+width:35%;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* SLIP */
+.slip h2{
+background:#2C7A7B;
+color:white;
+padding:12px;
+border-radius:8px;
+text-align:center;
+}
+
+.info{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin:15px 0;
+}
+
+.info p{
+background:#f3f4f6;
+padding:10px;
+border-radius:6px;
+font-size:13px;
+}
+
+/* ITEMS */
+.items-table{
+width:100%;
+border-collapse:collapse;
+font-size:13px;
+}
+
+.items-table th,
+.items-table td{
+border:1px solid #ddd;
+padding:8px;
+}
+
+/* SIGNATURE */
+.signature{
+margin-top:25px;
+display:flex;
+justify-content:space-between;
+font-size:12px;
+}
+
+.sig{
+width:30%;
+border-top:1px solid #333;
+padding-top:5px;
+text-align:center;
+}
+
+/* PRINT ONLY SLIP */
+@media print{
+
+body *{
+visibility:hidden;
+}
+
+#printArea,
+#printArea *{
+visibility:visible;
+}
+
+#printArea{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+}
+
+}
+
+/* MODULE PLACEHOLDER */
+.placeholder{
+background:white;
+padding:20px;
+border-radius:10px;
+width:100%;
+box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>PRS SYSTEM</h2>
+
+<button class="active" onclick="openModule('requisition',this)">Requisition</button>
+<button onclick="openModule('supplier',this)">Supplier</button>
+<button onclick="openModule('invoice',this)">Invoice</button>
+<button onclick="openModule('payment',this)">Payment</button>
+<button onclick="openModule('grn',this)">GRN</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- REQUISITION -->
+<div id="requisition" class="module active">
+
+<div class="left">
+
+<div class="header">Purchase Requisitions</div>
+
+<div class="search">
+<input type="text" onkeyup="searchPRS()" placeholder="Search PRS...">
+</div>
+
+<div style="margin:10px 0;">
+<button class="btn primary" onclick="printPRS()">Print</button>
+<form id="approveForm" method="POST" action="" style="display:inline;">
+    <button type="submit" class="btn success">Approve</button>
+</form>
+<form id="rejectForm" method="POST" action="" style="display:inline;">
+    <button type="submit" class="btn danger">Reject</button>
+</form>
+</div>
+
+<table id="prsTable">
+
+<tr>
+<th>Select</th>
+<th>PRS No</th>
+<th>Department</th>
+<th>Status</th>
+<th>Submission</th>
+<th>Approval</th>
+</tr>
+{% for req in requisitions %}
+<tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
+<td><input type="radio" name="prs"></td>
+<td>{{ req.prs_no }}</td>
+<td>{{ req.department_name }}</td>
+<td>{{ req.status }}</td>
+<td>{{ req.submission_date.strftime('%Y-%m-%d') if req.submission_date else '-' }}</td>
+<td>-</td>
+</tr>
+{% endfor %}
+</table>
+
+</div>
+
+<!-- RIGHT SLIP -->
+<div class="right">
+
+<div id="printArea" class="slip">
+
+<h2>PURCHASE REQUISITION SLIP</h2>
+
+<div class="info">
+<p><b>PRS No:</b> <span id="d_prs">-</span></p>
+<p><b>Department:</b> <span id="d_dept">-</span></p>
+<p><b>Status:</b> <span id="d_status">-</span></p>
+<p><b>Submission:</b> <span id="d_submit">-</span></p>
+<p><b>Approval:</b> <span id="d_approve">-</span></p>
+</div>
+
+<h3>Items</h3>
+
+<table class="items-table">
+<tr>
+<th>No</th><th>Material</th><th>UOM</th><th>Qty</th>
+</tr>
+<tr><td>1</td><td>Laptop</td><td>pcs</td><td>2</td></tr>
+<tr><td>2</td><td>Printer</td><td>pcs</td><td>1</td></tr>
+</table>
+
+<div class="signature">
+<div class="sig">Prepared</div>
+<div class="sig">HOD</div>
+<div class="sig">CEO</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- OTHER MODULES -->
+<div id="supplier" class="module"><div class="placeholder">Supplier Module</div></div>
+<div id="invoice" class="module"><div class="placeholder">Invoice Module</div></div>
+<div id="payment" class="module"><div class="placeholder">Payment Module</div></div>
+<div id="grn" class="module"><div class="placeholder">GRN Module</div></div>
+
+</div>
+
+<script>
+
+/* MODULE SWITCH */
+function openModule(id,btn){
+
+document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+
+document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+}
+
+/* SELECT ONLY ONE */
+function selectRow(row){
+
+document.querySelectorAll("#prsTable tr").forEach(r=>{
+r.classList.remove("selected");
+let radio=r.querySelector("input");
+if(radio) radio.checked=false;
+});
+
+row.classList.add("selected");
+row.querySelector("input").checked=true;
+
+let c=row.getElementsByTagName("td");
+let id = row.getAttribute("data-id");
+
+document.getElementById("d_prs").innerText=c[1].innerText;
+document.getElementById("d_dept").innerText=c[2].innerText;
+document.getElementById("d_status").innerText=c[3].innerText;
+document.getElementById("d_submit").innerText=c[4].innerText;
+document.getElementById("d_approve").innerText=c[5].innerText;
+
+document.getElementById("approveForm").action = "/finance/approve/" + id;
+document.getElementById("rejectForm").action = "/finance/reject/" + id;
+}
+
+/* PRINT ONLY SLIP */
+function printPRS(){
+window.print();
+}
+
+/* SEARCH */
+function searchPRS(){
+let input=document.querySelector(".search input").value.toUpperCase();
+let rows=document.querySelectorAll("#prsTable tr");
+
+for(let i=1;i<rows.length;i++){
+rows[i].style.display =
+rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+}
+}
+
+</script>
+
+</body>
+</html>

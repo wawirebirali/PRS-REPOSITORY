@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Quotation Comparison</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f2f6fa;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+label{
+    font-weight:bold;
+}
+
+select,input{
+    width:100%;
+    padding:8px;
+    margin-top:5px;
+    margin-bottom:15px;
+    box-sizing:border-box;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#2c7a7b;
+    color:white;
+}
+
+.best{
+    background:#c6f6d5;
+    font-weight:bold;
+}
+
+button{
+    padding:10px 15px;
+    margin-top:15px;
+    cursor:pointer;
+    border:none;
+    border-radius:5px;
+}
+
+.compare-btn{
+    background:#2c7a7b;
+    color:white;
+}
+
+.add-btn{
+    background:#3182ce;
+    color:white;
+    margin-left:10px;
+}
+
+#msg{
+    display:none;
+    padding:10px;
+    margin-bottom:15px;
+    border-radius:5px;
+}
+
+.success{ background:#c6f6d5; }
+.error{ background:#fed7d7; }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Quotation Comparison</h2>
+
+<div id="msg"></div>
+
+<!-- PRS -->
+<label>Select PRS Number</label>
+
+<select id="prsSelect" onchange="loadPRSQuotations()">
+    <option value="">-- Select PRS --</option>
+    {% for r in requisitions %}
+    <option value="{{ r.requisition_id }}">{{ r.prs_no }}</option>
+    {% endfor %}
+</select>
+
+<table id="quoteTable">
+
+<thead>
+<tr>
+    <th>Quotation No</th>
+    <th>Supplier</th>
+    <th>Item</th>
+    <th>Description</th>
+    <th>Total Amount</th>
+    <th>Delivery Days</th>
+    <th>Warranty</th>
+</tr>
+</thead>
+
+<tbody id="quoteBody">
+
+<!-- rows inserted dynamically -->
+
+</tbody>
+
+</table>
+
+<button class="add-btn" onclick="addRow()">
+    + Add Row
+</button>
+
+<button class="compare-btn" onclick="compareQuotes()">
+    Compare Quotations
+</button>
+
+</div>
+
+<script>
+
+let currentPRS = null;
+
+// =========================
+// MESSAGE
+// =========================
+function showMsg(text, type){
+    let msg = document.getElementById("msg");
+    msg.style.display = "block";
+    msg.className = type;
+    msg.innerText = text;
+
+    setTimeout(() => msg.style.display = "none", 3000);
+}
+
+// =========================
+// ADD ROW
+// =========================
+function addRow(){
+
+    let tbody = document.getElementById("quoteBody");
+
+    let row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td>
+            <select class="quotationSelect" onchange="loadQuotation(this)">
+                <option value="">-- Select Quotation --</option>
+            </select>
+        </td>
+
+        <td><input class="supplier" readonly></td>
+        <td><input class="item" readonly></td>
+        <td><input class="description" readonly></td>
+        <td><input class="amount" readonly></td>
+        <td><input class="delivery" readonly></td>
+        <td><input class="warranty" readonly></td>
+    `;
+
+    tbody.appendChild(row);
+
+    // reload PRS quotations if already selected
+    if(currentPRS){
+        loadPRSQuotations();
+    }
+}
+
+// =========================
+// LOAD PRS QUOTATIONS
+// =========================
+function loadPRSQuotations(){
+
+    let prs_id = document.getElementById("prsSelect").value;
+    currentPRS = prs_id;
+
+    if(!prs_id){
+        return;
+    }
+
+    fetch("/procurement/get_prs_quotations/" + prs_id)
+
+    .then(res => res.json())
+    .then(data => {
+
+        let selects = document.querySelectorAll(".quotationSelect");
+
+        if(data.length === 0){
+            showMsg("No quotations found for this PRS", "error");
+            return;
+        }
+
+        selects.forEach(select => {
+
+            select.innerHTML = `<option value="">-- Select Quotation --</option>`;
+
+            data.forEach(q => {
+                select.innerHTML += `
+                    <option value="${q.quotation_id}">
+                        ${q.quotation_no}
+                    </option>
+                `;
+            });
+
+        });
+
+    })
+
+    .catch(err => {
+        console.log(err);
+        showMsg("Failed to load quotations", "error");
+    });
+}
+
+// =========================
+// LOAD QUOTATION DETAILS
+// =========================
+function loadQuotation(select){
+
+    let quotation_id = select.value;
+    if(!quotation_id) return;
+
+    fetch("/procurement/get_quotation/" + quotation_id)
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.error){
+            showMsg("Quotation not found", "error");
+            select.value = "";
+            return;
+        }
+
+        let row = select.closest("tr");
+
+        // BASIC INFO
+        row.querySelector(".supplier").value = data.supplier_name || "";
+        row.querySelector(".amount").value = data.total_amount || "";
+        row.querySelector(".delivery").value = data.delivery_days || "";
+        row.querySelector(".warranty").value = data.warranty || "";
+
+        // 🔥 NOW LOAD ITEMS (SECOND API CALL)
+        fetch("/procurement/get_quotation_items/" + data.prs_id)
+        .then(res => res.json())
+        .then(items => {
+
+            if(items.length > 0){
+
+                // show first item only (or you can loop later)
+                row.querySelector(".item").value = items[0].item_name;
+                row.querySelector(".description").value = items[0].description;
+
+            } else {
+                row.querySelector(".item").value = "No items";
+                row.querySelector(".description").value = "No items";
+            }
+
+        })
+        .catch(err => {
+            console.log(err);
+        });
+
+    })
+    .catch(err => {
+        console.log(err);
+        showMsg("Failed to load quotation", "error");
+    });
+}
+
+// =========================
+// COMPARE
+// =========================
+function compareQuotes(){
+
+    let rows = document.querySelectorAll("#quoteBody tr");
+
+    let bestRow = null;
+    let bestData = null;
+
+    rows.forEach(row => {
+
+        row.classList.remove("best");
+
+        let amount = parseFloat(row.querySelector(".amount").value) || 0;
+        let delivery = parseInt(row.querySelector(".delivery").value) || 0;
+        let warranty = parseInt(row.querySelector(".warranty").value) || 0;
+
+        if(amount <= 0) return;
+
+        let data = {row, amount, delivery, warranty};
+
+        if(!bestData){
+            bestData = data;
+            bestRow = row;
+        }
+        else if(data.amount < bestData.amount){
+            bestData = data;
+            bestRow = row;
+        }
+        else if(data.amount === bestData.amount){
+            if(data.delivery < bestData.delivery){
+                bestData = data;
+                bestRow = row;
+            }
+            else if(data.delivery === bestData.delivery){
+                if(data.warranty > bestData.warranty){
+                    bestData = data;
+                    bestRow = row;
+                }
+            }
+        }
+
+    });
+
+    if(bestRow){
+        bestRow.classList.add("best");
+        showMsg(
+            "Best Supplier: " +
+            bestRow.querySelector(".supplier").value,
+            "success"
+        );
+    }
+    else{
+        showMsg("No valid quotations to compare", "error");
+    }
+}
+
+</script>
+
+</body>
+</html>

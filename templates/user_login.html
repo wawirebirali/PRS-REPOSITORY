@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>User Login</title>
+
+<!-- LINK YOUR CSS FILE HERE -->
+<link rel="stylesheet" href="{{ url_for('static', filename='user_login.css') }}">
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+<h2>{{ page_title or 'User Login' }}</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form id="loginForm" method="POST" action="{{ form_action or url_for('auth.user_login') }}">
+
+<!-- USERNAME OR EMAIL -->
+<div class="form-group">
+<label>Username or Email</label>
+<input type="text" name="username" placeholder="Enter username or email" required>
+</div>
+
+<!-- PASSWORD -->
+<div class="form-group">
+<label>Password</label>
+<input type="password" name="password" required>
+</div>
+
+<!-- LOGIN BUTTON -->
+<button type="submit">Login</button>
+
+</form>
+
+</div>
+
+</body>
+</html>

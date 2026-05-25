@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Supplier</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            background:#eef2f7;
+            padding:30px;
+        }
+
+        .container{
+            max-width:800px;
+            margin:auto;
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h2{
+            color:#2C3E50;
+            margin-bottom:20px;
+        }
+
+        label{
+            font-weight:bold;
+            display:block;
+            margin-top:15px;
+        }
+
+        input{
+            width:100%;
+            padding:10px;
+            margin-top:5px;
+            border:1px solid #ccc;
+            border-radius:5px;
+        }
+
+        .btn{
+            padding:10px 15px;
+            border:none;
+            border-radius:5px;
+            cursor:pointer;
+            margin-top:20px;
+        }
+
+        .primary{
+            background:#2C7A7B;
+            color:white;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Add Supplier</h2>
+
+    <form method="POST">
+
+    <label>Supplier Name</label>
+    <input type="text"
+           name="supplier_name"
+           placeholder="Enter Supplier Name">
+
+    <label>Location</label>
+    <input type="text"
+           name="address"
+           placeholder="Enter Supplier Location">
+
+    <label>Supplied Item</label>
+    <input type="text"
+           name="supplied_item"
+           placeholder="Enter Supplied Item">
+
+    <label>Email</label>
+    <input type="email"
+           name="email"
+           placeholder="Enter Supplier Email">
+
+    <label>Phone Number</label>
+    <input type="text"
+           name="phone"
+           placeholder="Enter Phone Number">
+
+    <button type="submit"
+            class="btn primary">
+        Add Supplier
+    </button>
+
+</form>
+
+</div>
+
+<script>
+
+function addSupplier(){
+
+    let name =
+        document.getElementById("s_name").value;
+
+    let location =
+        document.getElementById("s_location").value;
+
+    let item =
+        document.getElementById("s_item").value;
+
+    let email =
+        document.getElementById("s_email").value;
+
+    let phone =
+        document.getElementById("s_phone").value;
+
+    console.log({
+        supplier_name:name,
+        location:location,
+        supplied_item:item,
+        email:email,
+        phone:phone
+    });
+
+    alert("Supplier Added Successfully");
+
+}
+
+</script>
+
+</body>
+</html>

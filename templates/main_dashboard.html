@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRS Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='maindashboard.css') }}">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+<div class="logo">PRS</div>
+<div class="title">Purchase Requisition System</div>
+</div>
+
+<!-- MAIN CONTAINER -->
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+<h3>System Access</h3>
+
+<a href="{{ url_for('auth.admin_login') }}" class="role-btn">Admin Login</a>
+<a href="{{ url_for('auth.hod_login') }}" class="role-btn">HOD Login</a>
+<a href="{{ url_for('auth.procurement_login') }}" class="role-btn">Procurement</a>
+<a href="{{ url_for('auth.ceo_login') }}" class="role-btn">CEO Login</a>
+<a href="{{ url_for('auth.finance_login') }}" class="role-btn">Finance Login</a>
+
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+<!-- ACTION BAR -->
+<div class="action-bar">
+<h2>Dashboard</h2>
+<a href="{{ url_for('requisition.requisition_form') }}" class="create-btn">+ Create Requisition</a>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+
+<div class="card">
+<h3>Total Requisitions</h3>
+<p id="total">0</p>
+</div>
+
+<div class="card pending">
+<h3>Pending</h3>
+<p id="pending">0</p>
+</div>
+
+<div class="card approved">
+<h3>Approved</h3>
+<p id="approved">0</p>
+</div>
+
+<div class="card rejected">
+<h3>Rejected</h3>
+<p id="rejected">0</p>
+</div>
+
+</div>
+
+<!-- CHARTS -->
+<div class="charts">
+
+<div class="chart-box">
+<h3>Requisition Status</h3>
+<canvas id="statusChart"></canvas>
+</div>
+
+<div class="chart-box">
+<h3>Requisition by Department</h3>
+<canvas id="deptChart"></canvas>
+</div>
+
+</div>
+
+<!-- TABLE -->
+<div class="table-box">
+
+<h3>Recent Requisitions</h3>
+
+<table>
+<thead>
+<tr>
+<th>PRS No</th>
+<th>Department</th>
+<th>Date</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody id="prsTable">
+<!-- JS will load data here -->
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+</div>
+
+<!-- ================= JS ================= -->
+<script>
+
+fetch("/api/dashboard")
+.then(res => res.json())
+.then(data => {
+
+    // STATS
+    document.getElementById("total").innerText = data.stats.total;
+    document.getElementById("pending").innerText = data.stats.pending;
+    document.getElementById("approved").innerText = data.stats.approved;
+    document.getElementById("rejected").innerText = data.stats.rejected;
+
+    // TABLE
+    let table = document.getElementById("prsTable");
+    table.innerHTML = "";
+
+    data.recent.forEach(r => {
+
+        let statusClass = "";
+
+        if(r.status === "Pending") statusClass = "pending";
+        else if(r.status === "Completed") statusClass = "approved";
+        else if(r.status === "Rejected") statusClass = "rejected";
+
+        table.innerHTML += `
+        <tr>
+            <td>${r.prs_no}</td>
+            <td>${r.department_name}</td>
+            <td>${r.submission_date}</td>
+            <td><span class="status ${statusClass}">${r.status}</span></td>
+        </tr>
+        `;
+    });
+
+    // STATUS CHART
+    new Chart(document.getElementById("statusChart"),{
+        type:'doughnut',
+        data:{
+            labels:['Approved','Pending','Rejected'],
+            datasets:[{
+                data:[
+                    data.stats.approved,
+                    data.stats.pending,
+                    data.stats.rejected
+                ],
+                backgroundColor:['green','orange','red']
+            }]
+        }
+    });
+
+    // DEPARTMENT CHART
+    new Chart(document.getElementById("deptChart"),{
+        type:'bar',
+        data:{
+            labels:data.departments.labels,
+            datasets:[{
+                label:'Requisitions',
+                data:data.departments.values,
+                backgroundColor:'#2C7A7B'
+            }]
+        }
+    });
+
+});
+
+</script>
+
+</body>
+</html>

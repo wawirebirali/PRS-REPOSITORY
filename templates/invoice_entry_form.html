@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Invoice Entry</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f2f6fa;
+    padding:20px;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+label{
+    display:block;
+    margin-top:10px;
+}
+
+select,input{
+    padding:8px;
+    width:100%;
+    margin-top:5px;
+    box-sizing:border-box;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#2c7a7b;
+    color:white;
+}
+
+button{
+    padding:10px 15px;
+    margin-top:15px;
+    cursor:pointer;
+    background:#2c7a7b;
+    color:white;
+    border:none;
+    border-radius:5px;
+}
+
+.totalBox{
+    margin-top:20px;
+    font-size:18px;
+    font-weight:bold;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Invoice Entry</h2>
+
+<form method="POST" action="/procurement/save_invoice">
+
+<!-- ========================= -->
+<!-- GRN -->
+<!-- ========================= -->
+<label>GRN Number</label>
+<select name="grn_id" id="grn_id" required>
+    <option value="">-- Select GRN --</option>
+
+    {% for g in grns %}
+    <option value="{{ g.grn_id }}">{{ g.grn_no }}</option>
+    {% endfor %}
+</select>
+
+<!-- ========================= -->
+<!-- SUPPLIER -->
+<!-- ========================= -->
+<label>Supplier</label>
+<select name="supplier_id" required>
+    <option value="">-- Select Supplier --</option>
+
+    {% for s in suppliers %}
+    <option value="{{ s.supplier_id }}">{{ s.supplier_name }}</option>
+    {% endfor %}
+</select>
+
+<!-- ========================= -->
+<!-- CREATED BY -->
+<!-- ========================= -->
+<label>Created By</label>
+<select name="created_by" required>
+    <option value="">-- Select User --</option>
+
+    {% for u in users %}
+    <option value="{{ u.user_id }}">{{ u.username }}</option>
+    {% endfor %}
+</select>
+
+<!-- ========================= -->
+<!-- INVOICE NUMBER -->
+<!-- ========================= -->
+<label>Invoice Number</label>
+<input type="text" name="invoice_no" id="invoice_no" readonly>
+
+<!-- ========================= -->
+<!-- DATE -->
+<!-- ========================= -->
+<label>Invoice Date</label>
+<input type="date" name="invoice_date" id="invoice_date" readonly>
+
+<!-- ========================= -->
+<!-- ITEMS TABLE -->
+<!-- ========================= -->
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Description</th>
+<th>Qty</th>
+<th>Unit Price</th>
+<th>Amount</th>
+</tr>
+</thead>
+
+<tbody id="itemsBody">
+<!-- dynamic rows -->
+</tbody>
+
+</table>
+
+<div class="totalBox">
+Total: <span id="total">0</span>
+</div>
+
+<button type="submit">Save Invoice</button>
+
+</form>
+
+</div>
+
+<script>
+
+// =========================
+// INIT
+// =========================
+window.onload = function () {
+    generateInvoiceNo();
+    setDate();
+};
+
+// =========================
+// AUTO INVOICE NO
+// =========================
+function generateInvoiceNo() {
+
+    let d = new Date();
+
+    document.getElementById("invoice_no").value =
+        `INV-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.floor(1000 + Math.random()*9000)}`;
+}
+
+// =========================
+// AUTO DATE
+// =========================
+function setDate() {
+
+    document.getElementById("invoice_date").value =
+        new Date().toISOString().split("T")[0];
+}
+
+// =========================
+// FETCH GRN ITEMS
+// =========================
+document.getElementById("grn_id")
+.addEventListener("change", function () {
+
+    let grn_id = this.value;
+
+    if (!grn_id) return;
+
+    fetch("/procurement/get_grn_items/" + grn_id)
+    .then(res => res.json())
+    .then(data => {
+
+        let body = document.getElementById("itemsBody");
+        body.innerHTML = "";
+
+        data.forEach(item => {
+
+            body.innerHTML += `
+            <tr>
+
+                <!-- ITEM -->
+                <td>
+                    ${item.material_name}
+                    <input type="hidden" name="item_name[]" value="${item.material_name}">
+                </td>
+
+                <!-- DESCRIPTION -->
+                <td>
+                    ${item.remarks || ''}
+                    <input type="hidden" name="description[]" value="${item.remarks || ''}">
+                </td>
+
+                <!-- QTY -->
+                <td class="qty">
+                    ${item.quantity_received}
+                    <input type="hidden" name="quantity[]" value="${item.quantity_received}">
+                </td>
+
+                <!-- UNIT PRICE -->
+                <td>
+                    <input type="number" name="unit_price[]" class="price" onkeyup="calc(this)" required>
+                </td>
+
+                <!-- AMOUNT -->
+                <td>
+                    <input type="number" name="amount[]" class="amount" readonly>
+                </td>
+
+            </tr>
+            `;
+        });
+    });
+});
+
+// =========================
+// CALC ROW
+// =========================
+function calc(input) {
+
+    let row = input.closest("tr");
+
+    let qty = parseFloat(row.querySelector(".qty").innerText) || 0;
+    let price = parseFloat(input.value) || 0;
+
+    let amountField = row.querySelector(".amount");
+
+    let amount = qty * price;
+
+    amountField.value = amount.toFixed(2);
+
+    calculateTotal();
+}
+
+// =========================
+// TOTAL
+// =========================
+function calculateTotal() {
+
+    let total = 0;
+
+    document.querySelectorAll(".amount").forEach(el => {
+        total += parseFloat(el.value) || 0;
+    });
+
+    document.getElementById("total").innerText = total.toFixed(2);
+}
+
+</script>
+
+</body>
+</html>

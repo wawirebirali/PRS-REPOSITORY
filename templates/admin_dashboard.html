@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Dashboard</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <!-- Main dashboard title -->
+    <h1>Admin Dashboard - PRS System</h1>
+</div>
+
+<div class="container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <!-- Primary dashboard navigation -->
+        <a class="btn" onclick="showSection('home')">Home</a>
+        <a href="javascript:void(0)" class="btn" onclick="showSection('users')">Add User</a>
+        <a class="btn" onclick="showSection('requisitions')">Requisitions</a>
+
+        <!-- Utility links for admin actions -->
+        <a href="/notification" class="role-btn">Notification</a>
+        <a href="{{ url_for('report') }}" class="role-btn">Report</a>
+        <a href="/audit" class="role-btn">Audit</a>
+        <a href="javascript:void(0)" class="role-btn" onclick="showSection('edit-user-password')">Edit User Password</a>
+        <a href="/edit-admin-password" class="role-btn">Edit Admin Password</a>
+
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+        <!-- HOME SECTION: default visible section -->
+        <div id="home" class="section active">
+            <h2>Welcome Admin</h2>
+        </div>
+
+        <!-- USERS SECTION: shows registered users -->
+        <div id="users" class="section">
+            <h2>Users</h2>
+            <p>Below are the registered users and their details.</p>
+
+            <!-- User list table -->
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Date Added</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.department or 'N/A' }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.user_role }}</td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Link to signup page for adding a new user -->
+            <a class="btn" href="{{ url_for('auth.signup') }}">Add New User</a>
+        </div>
+
+        <!-- EDIT USER PASSWORD SECTION: embedded forgot password form -->
+        <div id="edit-user-password" class="section">
+            <h2>Edit User Password</h2>
+            <p>Enter the user email below to send a reset password request.</p>
+
+            <form action="{{ url_for('auth.forgot_password') }}" method="post" class="password-form">
+                <div class="form-group">
+                    <label for="email">User Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter user email" required>
+                </div>
+                <button type="submit" class="btn">Send Reset Link</button>
+            </form>
+
+            <p>If you prefer, you can also use the full forgot password page.</p>
+            <a class="btn" href="{{ url_for('auth.forgot_password') }}">Open Forgot Password Page</a>
+        </div>
+
+        <!-- REQUISITIONS SECTION: shows PRS list -->
+        <div id="requisitions" class="section">
+
+            <h2>Requisitions</h2>
+
+            <!-- Requisition actions -->
+            <div class="action-bar">
+                <button class="action-btn" onclick="viewSelected()">View Requisition</button>
+                <button class="action-btn" onclick="printSelected()">Print</button>
+            </div>
+
+            <!-- PRS table -->
+            <table id="prsTable">
+                <thead>
+                    <tr>
+                        <th>PRS No</th>
+                        <th>Department</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in requisitions %}
+                    <tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
+                        <td>{{ req.prs_no }}</td>
+                        <td>{{ req.department_name }}</td>
+                        <td>{{ req.submission_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ req.status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Load dashboard JavaScript behaviors -->
+<script src="{{ url_for('static', filename='admin_dashboard.js') }}"></script>
+
+</body>
+</html>
