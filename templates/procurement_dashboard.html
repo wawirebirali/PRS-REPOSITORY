@@ -185,6 +185,47 @@ tr:hover{
     height:35px;
 }
 
+/* =========================
+   QUOTATION TABLE
+========================= */
+#quotationTable th,
+#quotationTable td{
+    padding:8px 10px;
+    font-size:14px;
+    white-space:nowrap;
+}
+
+#quotationTable tr{
+    height:32px;
+}
+
+#supplierTable th,
+#supplierTable td{
+    padding:8px 10px;
+    font-size:14px;
+    white-space:nowrap;
+}
+
+#supplierTable tr{
+    height:32px;
+}
+
+#poTable th,
+#poTable td,
+#grnTable th,
+#grnTable td{
+    padding:6px 8px;
+    font-size:13px;
+    line-height:18px;
+}
+
+#poTable tr,
+#grnTable tr{
+    height:28px;
+    min-height:28px;
+}
+}
+
 #prsTable td:first-child,
 #prsTable th:first-child{
     width:40px;
@@ -240,6 +281,30 @@ tr:hover{
 .items-table td{
     border:1px solid #ddd;
     padding:8px;
+}
+
+#invoiceTable th,
+#invoiceTable td{
+    padding:6px 8px;
+    font-size:13px;
+    line-height:16px;
+}
+
+#invoiceTable tr{
+    height:28px;
+    min-height:28px;
+}
+
+#invoicePrintArea .items-table th,
+#invoicePrintArea .items-table td{
+    padding:6px 8px;
+    font-size:13px;
+    line-height:16px;
+}
+
+#invoicePrintArea .items-table tr{
+    height:26px;
+    min-height:26px;
 }
 
 /* =========================
@@ -437,7 +502,8 @@ tr:hover{
 <h2>PRS SYSTEM</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button onclick="openModule('supplier',this)"> QUATIONS</button>
+<button onclick="openModule('supplier',this)">Suppliers</button>
+<button onclick="openModule('quotation',this)">Quotations</button>
 <button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
 
 <button onclick="openModule('grn',this)">GRN</button>
@@ -602,7 +668,88 @@ tr:hover{
 <!-- LEFT PANEL -->
 <div class="left">
 
-<div class="header"> Supplier Management</div>
+<div class="header">Supplier Management</div>
+
+<button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+    Add Supplier
+</button>
+
+<div class="search" style="margin-top:12px;">
+    <input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search suppliers by name, phone, or location...">
+</div>
+
+<table id="supplierTable">
+<thead>
+<tr>
+    <th>Supplier</th>
+    <th>Contact</th>
+    <th>Phone</th>
+    <th>Location</th>
+    <th>Email</th>
+</tr>
+</thead>
+<tbody id="supplierBody"></tbody>
+</table>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip">
+
+    <div class="header">
+        <h2>Supplier Details</h2>
+        <p><b>Live supplier data loaded from backend</b></p>
+    </div>
+
+    <div class="info-section">
+
+        <div class="box">
+            <p><b>Name:</b> <span id="supName">-</span></p>
+            <p><b>Contact Person:</b> <span id="supContact">-</span></p>
+            <p><b>Phone:</b> <span id="supPhone">-</span></p>
+        </div>
+
+        <div class="box">
+            <p><b>Email:</b> <span id="supEmail">-</span></p>
+            <p><b>Location:</b> <span id="supAddress">-</span></p>
+            <p><b>TIN #:</b> <span id="supTin">-</span></p>
+        </div>
+
+    </div>
+
+    <div class="supplier-section">
+        <p><b>Registration #:</b> <span id="supReg">-</span></p>
+        <p><b>Bank:</b> <span id="supBank">-</span></p>
+        <p><b>Account #:</b> <span id="supAccount">-</span></p>
+    </div>
+
+    <div class="buttons">
+        <button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+            Add Supplier
+        </button>
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- QUOTATION MODULE -->
+<div id="quotation" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header"> QUOTATION Management</div>
 
 
 
@@ -611,7 +758,7 @@ tr:hover{
 <button class="btn primary" onclick="window.location.href='/procurement/create_rfq'">
     Create RFQ
 </button>
-<input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search by name, location, or item...">
+<input id="quotationSearch" type="text" onkeyup="searchQuotation()" placeholder="Search by name, location, or item...">
 </div>
 
 <!-- ACTION BUTTONS -->
@@ -622,8 +769,8 @@ tr:hover{
 <button class="btn primary" onclick="window.print()">Print</button>
 </div>
 
-<!-- SUPPLIER TABLE -->
-<table id="supplierTable">
+<!-- QUOTATION TABLE -->
+<table id="quotationTable">
 
 <thead>
 <tr>
@@ -637,16 +784,7 @@ tr:hover{
 </tr>
 </thead>
 
-<tbody id="supplierBody">
-
-<tr>
-<td><input type="radio" name="supplierSelect"></td>
-<td>ABC Technologies</td>
-<td>Kampala</td>
-<td>Laptops</td>
-</tr>
-
-</tbody>
+<tbody id="quotationBody"></tbody>
 
 </table>
 
@@ -673,21 +811,21 @@ tr:hover{
 
         <div class="box">
 
-            <p><b>QRF No:</b> QRF/2026/001</p>
+            <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
 
-            <p><b>PRS No:</b> PRS-001</p>
+            <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
 
-            <p><b>Date:</b> 2026-05-23</p>
+            <p><b>Date:</b> <span id="qrfDate">-</span></p>
 
         </div>
 
         <div class="box">
 
-            <p><b>Requester:</b> Procurement Office</p>
+            <p><b>Requester:</b> <span id="qr_requester">-</span></p>
 
-            <p><b>Department:</b> Finance</p>
+            <p><b>Department:</b> <span id="qr_department">-</span></p>
 
-            <p><b>Contact:</b> procurement@company.com</p>
+            <p><b>Contact:</b> <span id="qr_contact">-</span></p>
 
         </div>
 
@@ -696,18 +834,18 @@ tr:hover{
     <!-- SUPPLIER -->
     <div class="supplier-section">
 
-        <p><b>To:</b> Supplier</p>
+        <p><b>To:</b> <span id="sp_to">Supplier</span></p>
 
         <p><b>Company:</b>
-            <span id="sp_name">Tech World Uganda</span>
+            <span id="sp_name">-</span>
         </p>
 
         <p><b>Location:</b>
-            <span id="sp_location">Kampala</span>
+            <span id="sp_location">-</span>
         </p>
 
         <p><b>Item:</b>
-            <span id="sp_item">Computer Equipment</span>
+            <span id="sp_item">-</span>
         </p>
 
     </div>
@@ -725,21 +863,7 @@ tr:hover{
 
         </thead>
 
-        <tbody id="sharedPRS">
-
-        <tr>
-            <td>Laptop</td>
-            <td>Dell Latitude 5400</td>
-            <td>5</td>
-        </tr>
-
-        <tr>
-            <td>Printer</td>
-            <td>HP LaserJet Pro</td>
-            <td>2</td>
-        </tr>
-
-        </tbody>
+        <tbody id="sharedPRS"></tbody>
 
     </table>
 
@@ -769,25 +893,8 @@ tr:hover{
 
     </div>
 
-    <!-- BUTTONS -->
-    <div class="buttons">
+    
 
-        <button class="btn print"
-                onclick="window.print()">
-            Print / Save PDF
-        </button>
-
-        <button class="btn whatsapp"
-                onclick="shareWhatsApp()">
-            Share WhatsApp
-        </button>
-
-        <button class="btn email"
-                onclick="shareEmail()">
-            Email Supplier
-        </button>
-
-    </div>
 
 </div>
 
@@ -840,7 +947,7 @@ tr:hover{
 </div>
 
 <table id="poTable">
-
+<thead>
 <tr>
 <th>Select</th>
 <th>PO No</th>
@@ -850,7 +957,8 @@ tr:hover{
 <th>DEPARTMENT</th>
 <th>CREATION DATE</th>
 </tr>
-
+</thead>
+<tbody id="poBody"></tbody>
 </table>
 
 </div>
@@ -878,12 +986,12 @@ tr:hover{
 
             <p>
                 <b>PO Number:</b>
-                <span id="poNumber">PO/2026/001</span>
+                <span id="poNumber">-</span>
             </p>
 
             <p>
                 <b>Date:</b>
-                <span id="poDate">2026-05-23</span>
+                <span id="poDate">-</span>
             </p>
 
             <p>
@@ -946,21 +1054,7 @@ tr:hover{
 
         </thead>
 
-        <tbody>
-
-        <tr>
-            <td>Laptop</td>
-            <td>Dell Latitude 5400</td>
-            <td>5</td>
-        </tr>
-
-        <tr>
-            <td>Printer</td>
-            <td>HP LaserJet Pro</td>
-            <td>2</td>
-        </tr>
-
-        </tbody>
+        <tbody id="poItems"></tbody>
 
     </table>
 
@@ -971,7 +1065,7 @@ tr:hover{
 
             <p>
                 <b>Total Items:</b>
-                <span id="poTotal">7</span>
+                <span id="poTotal">-</span>
             </p>
 
         </div>
@@ -1096,15 +1190,9 @@ tr:hover{
                     <th>CREATION DATE</th>
                 </thead>
 
-                <tbody>
-                    <tr>
-                        <td><input type="radio" name="grnSelect"></td>
-                        <td>GRN-001</td>
-                        <td>PRS-100</td>
-                        <td>ABC Suppliers</td>
-                        <td>Pending</td>
-                    </tr>
-                </tbody>
+                <tbody id="grnBody">
+                <!-- GRN rows loaded from procurement_view backend -->
+            </tbody>
 
             </table>
 
@@ -1133,17 +1221,17 @@ tr:hover{
 
             <p>
                 <b>GRN Number:</b>
-                <span id="grnNumber">GRN/2026/001</span>
+                <span id="grnNumber">- <!-- static sample removed --> </span>
             </p>
 
             <p>
                 <b>Date:</b>
-                <span id="grnDate">2026-05-23</span>
+                <span id="grnDate">- <!-- static sample removed --> </span>
             </p>
 
             <p>
                 <b>PO Number:</b>
-                <span id="grnPO">PO/2026/001</span>
+                <span id="grnPO">- <!-- static sample removed --> </span>
             </p>
 
         </div>
@@ -1152,19 +1240,17 @@ tr:hover{
 
             <p>
                 <b>Supplier:</b>
-                <span id="grnSupplier">
-                    Tech World Uganda
-                </span>
+                <span id="grnSupplier">- <!-- static sample removed --> </span>
             </p>
 
             <p>
                 <b>Received By:</b>
-                Store Officer
+                <span id="grnReceiver">- <!-- static sample removed --> </span>
             </p>
 
             <p>
                 <b>Delivery Status:</b>
-                Received
+                <span id="grnStatus">- <!-- static sample removed --> </span>
             </p>
 
         </div>
@@ -1176,12 +1262,12 @@ tr:hover{
 
         <p>
             <b>Delivery Location:</b>
-            Main Store - Head Office
+            <span id="grnLocation">- <!-- static sample removed --> </span>
         </p>
 
         <p>
             <b>Receiving Date:</b>
-            2026-05-23
+            <span id="grnReceivingDate">- <!-- static sample removed --> </span>
         </p>
 
     </div>
@@ -1189,7 +1275,7 @@ tr:hover{
     <!-- ITEMS -->
     <h3>Received Items</h3>
 
-    <table class="items-table" id="grnItems">
+    <table class="items-table" id="grnItemsTable">
 
         <thead>
 
@@ -1203,24 +1289,8 @@ tr:hover{
 
         </thead>
 
-        <tbody>
-
-        <tr>
-            <td>Laptop</td>
-            <td>Dell Latitude 5400</td>
-            <td>5</td>
-            <td>5</td>
-            <td>0</td>
-        </tr>
-
-        <tr>
-            <td>Printer</td>
-            <td>HP LaserJet Pro</td>
-            <td>2</td>
-            <td>2</td>
-            <td>0</td>
-        </tr>
-
+        <tbody id="grnItemsBody">
+            <!-- GRN line items loaded from procurement_view backend -->
         </tbody>
 
     </table>
@@ -1232,7 +1302,7 @@ tr:hover{
 
             <p>
                 <b>Total Items Received:</b>
-                <span id="grnTotal">7</span>
+                <span id="grnTotal">0 <!-- static sample removed --> </span>
             </p>
 
         </div>
@@ -1357,16 +1427,7 @@ tr:hover{
                     </tr>
                 </thead>
 
-                <tbody>
-                    <tr>
-                        <td><input type="radio" name="invoiceSelect"></td>
-                        <td>PRS-001</td>
-                        <td>INV-1001</td>
-                        <td>GRN-001</td>
-                        <td>ABC Suppliers</td>
-                        <td>Procurement</td>
-                        <td>Pending</td>
-                    </tr>
+                <tbody id="invoiceBody">
                 </tbody>
 
             </table>
@@ -1454,6 +1515,26 @@ document.getElementById(id).classList.add("active");
 
 document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
+
+if(id === "quotation"){
+    loadQuotationModule();
+}
+
+if(id === "supplier"){
+    loadSupplierModule();
+}
+
+if(id === "purchaseOrder"){
+    loadPOModule();
+}
+
+if(id === "grn"){
+    loadGRNModule();
+}
+
+if(id === "invoice"){
+    loadInvoiceModule();
+}
 }
 
 
@@ -1586,11 +1667,11 @@ function searchPRS() {
 // ==============================
 // SEARCH SUPPLIER
 // ==============================
-function searchSupplier(){
+function searchQuotation(){
 
-let input = document.getElementById("supplierSearch").value.toLowerCase()
+let input = document.getElementById("quotationSearch").value.toLowerCase()
 
-let rows = document.querySelectorAll("#supplierTable tbody tr")
+let rows = document.querySelectorAll("#quotationTable tbody tr")
 
 rows.forEach(row=>{
 
@@ -1612,27 +1693,432 @@ row.style.display="none"
 // ==============================
 // SELECT SUPPLIER
 // ==============================
-function selectSupplier(){
+function selectQuotation(radio){
 
-let selected = document.querySelector("input[name='supplierSelect']:checked")
+    if(!radio || !radio.dataset.qrfId){
+        alert("Please select a quotation");
+        return;
+    }
 
-if(!selected){
-alert("Please select a supplier")
-return
+    let qrfId = radio.dataset.qrfId;
+
+    fetch(`/procurement/supplier_details/${qrfId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
+            document.getElementById("qrfPrs").innerText = data.prs_no || "-";
+            document.getElementById("qrfDate").innerText = data.request_date || "-";
+            document.getElementById("qr_requester").innerText = data.requester_name || "-";
+            document.getElementById("qr_department").innerText = data.department || "-";
+            document.getElementById("qr_contact").innerText = data.supplier_phone || "-";
+            document.getElementById("sp_to").innerText = data.supplier_name || "-";
+            document.getElementById("sp_name").innerText = data.supplier_name || "-";
+            document.getElementById("sp_location").innerText = data.supplier_address || "-";
+            document.getElementById("sp_item").innerText = data.items.length > 0 ? data.items[0].material_name : "-";
+
+            let itemsBody = document.getElementById("sharedPRS");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.material_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation details.");
+        });
 }
 
-let row = selected.closest("tr")
 
-let name = row.cells[1].innerText
-let location = row.cells[2].innerText
-let item = row.cells[3].innerText
 
-document.getElementById("sp_name").innerText = name
-document.getElementById("sp_location").innerText = location
-document.getElementById("sp_item").innerText = item
+function loadQuotationModule(){
+    fetch("/procurement/supplier_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("quotationBody");
+            body.innerHTML = "";
 
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="quotationSelect" data-qrf-id="${item.qrf_id}"></td>
+                    <td>${item.qrf_no || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.request_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='quotationSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectQuotation(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation list.");
+        });
 }
 
+
+// ==============================
+// SUPPLIER LIST LOADING
+// ==============================
+function searchSupplier(){
+    let input = document.getElementById("supplierSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#supplierTable tbody tr");
+
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
+}
+
+function showSupplierDetails(supplier){
+    document.getElementById("supName").innerText = supplier.supplier_name || "-";
+    document.getElementById("supContact").innerText = supplier.contact_person || "-";
+    document.getElementById("supPhone").innerText = supplier.phone || "-";
+    document.getElementById("supEmail").innerText = supplier.email || "-";
+    document.getElementById("supAddress").innerText = supplier.address || "-";
+    document.getElementById("supTin").innerText = supplier.tin_number || "-";
+    document.getElementById("supReg").innerText = supplier.registration_number || "-";
+    document.getElementById("supBank").innerText = supplier.bank_name || "-";
+    document.getElementById("supAccount").innerText = supplier.account_number || "-";
+}
+
+function loadSupplierModule(){
+    fetch("/procurement/supplier_list")
+        .then(res => {
+            if (!res.ok) throw new Error(`Supplier list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("supplierBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;">No suppliers found.</td></tr>`;
+                showSupplierDetails({});
+                return;
+            }
+
+            data.forEach(supplier => {
+                let row = document.createElement("tr");
+                row.setAttribute("data-supplier-id", supplier.supplier_id);
+                row.innerHTML = `
+                    <td>${supplier.supplier_name || "-"}</td>
+                    <td>${supplier.contact_person || "-"}</td>
+                    <td>${supplier.phone || "-"}</td>
+                    <td>${supplier.address || "-"}</td>
+                    <td>${supplier.email || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    document.querySelectorAll("#supplierBody tr").forEach(r => r.classList.remove("selected"));
+                    row.classList.add("selected");
+                    showSupplierDetails(supplier);
+                });
+                body.appendChild(row);
+            });
+
+            showSupplierDetails(data[0]);
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load suppliers.");
+        });
+}
+
+
+// ==============================
+// PURCHASE ORDER LOADING
+// ==============================
+function selectPO(radio){
+    if(!radio || !radio.dataset.poId){
+        alert("Please select a purchase order");
+        return;
+    }
+
+    let poId = radio.dataset.poId;
+
+    fetch(`/procurement/po_details/${poId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("poNumber").innerText = data.po_number || "-";
+            document.getElementById("poDate").innerText = data.order_date || "-";
+            document.getElementById("poPRS").innerText = data.prs_no || "-";
+            document.getElementById("poSupplier").innerText = data.supplier_name || "-";
+
+            let itemsBody = document.getElementById("poItems");
+            itemsBody.innerHTML = "";
+
+            let totalQty = 0;
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.item_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || 0}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+                totalQty += parseFloat(item.quantity || 0);
+            });
+
+            document.getElementById("poTotal").innerText = totalQty;
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase order details.");
+        });
+}
+
+function loadPOModule(){
+    fetch("/procurement/po_data")
+        .then(res => res.json())
+        .then(data => {
+            let body = document.getElementById("poBody");
+            body.innerHTML = "";
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><input type="radio" name="poSelect" data-po-id="${item.purchase_order_id}" onchange="selectPO(this)"></td>
+                    <td>${item.po_number || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.order_date || "-"}</td>
+                `;
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase orders.");
+        });
+}
+
+
+// ==============================
+// GRN LOADING
+// ==============================
+function searchGRN(){
+    let input = document.getElementById("grnSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#grnTable tbody tr");
+
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
+}
+
+function selectGRN(radio){
+    if(!radio || !radio.dataset.grnId){
+        alert("Please select a GRN");
+        return;
+    }
+
+    let grnId = radio.dataset.grnId;
+
+    fetch(`/procurement/grn_details/${grnId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("grnNumber").innerText = data.grn_no || "-";
+            document.getElementById("grnDate").innerText = data.received_date || "-";
+            document.getElementById("grnPO").innerText = data.po_number || "-";
+            document.getElementById("grnSupplier").innerText = data.supplier_name || "-";
+            document.getElementById("grnReceiver").innerText = data.received_by || "-";
+            document.getElementById("grnStatus").innerText = data.inspection_status || "-";
+            document.getElementById("grnLocation").innerText = data.supplier_address || "-";
+            document.getElementById("grnReceivingDate").innerText = data.received_date || "-";
+
+            let itemsBody = document.getElementById("grnItemsBody");
+            itemsBody.innerHTML = "";
+
+            let totalReceived = 0;
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.material_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity_ordered || 0}</td>
+                    <td>${item.quantity_received || 0}</td>
+                    <td>${item.balance || 0}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+                totalReceived += parseFloat(item.quantity_received || 0);
+            });
+
+            document.getElementById("grnTotal").innerText = totalReceived;
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load GRN details.");
+        });
+}
+
+function loadGRNModule(){
+    fetch("/procurement/grn_data")
+        .then(res => res.json())
+        .then(data => {
+            let body = document.getElementById("grnBody");
+            body.innerHTML = "";
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><input type="radio" name="grnSelect" data-grn-id="${item.grn_id}" onchange="selectGRN(this)"></td>
+                    <td>${item.grn_no || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.received_date || "-"}</td>
+                `;
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load GRN records.");
+        });
+}
+
+
+// ==============================
+// INVOICE LOADING
+// ==============================
+function searchInvoice(){
+    let input = document.getElementById("invoiceSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#invoiceTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+    });
+}
+
+function selectInvoice(radio){
+    if(!radio || !radio.dataset.invoiceId){
+        alert("Please select an invoice");
+        return;
+    }
+
+    let invoiceId = radio.dataset.invoiceId;
+
+    fetch(`/procurement/invoice_details/${invoiceId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("i_invoice").innerText = data.invoice_number || "-";
+            document.getElementById("i_grn").innerText = data.grn_no || "-";
+            document.getElementById("i_supplier").innerText = data.supplier_name || "-";
+            document.getElementById("i_amount").innerText = data.total_amount || "-";
+            document.getElementById("i_date").innerText = data.invoice_date || "-";
+
+            let itemsBody = document.querySelector("#invoicePrintArea .items-table tbody");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                    <td>${item.unit_price || "-"}</td>
+                    <td>${item.total_price || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load invoice details.");
+        });
+}
+
+function loadInvoiceModule(){
+    fetch("/procurement/invoice_data")
+        .then(res => res.json())
+        .then(data => {
+            let body = document.getElementById("invoiceBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;">No invoices found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><input type="radio" name="invoiceSelect" data-invoice-id="${item.invoice_id}" onchange="selectInvoice(this)"></td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.invoice_number || "-"}</td>
+                    <td>${item.grn_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.invoice_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='invoiceSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#invoiceBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectInvoice(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load invoice records.");
+        });
+}
+
+function printInvoice(){
+    window.print();
+}
 
 
 // ==============================
@@ -1654,6 +2140,7 @@ let row = table.insertRow()
 row.innerHTML = `
 <td>PRS-${Math.floor(Math.random()*1000)}</td>
 <td>Quotation Sent</td>
+<td>-</td>
 `
 
 alert("Quotation request sent to "+supplier)

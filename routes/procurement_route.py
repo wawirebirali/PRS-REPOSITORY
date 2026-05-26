@@ -240,29 +240,51 @@ def add_supplier():
 def create_rfq():
 
     conn = get_db_connection()
+
     cursor = conn.cursor(dictionary=True)
 
+    # ====================================
     # GET REQUISITIONS
+    # ====================================
     cursor.execute("""
         SELECT requisition_id, prs_no
         FROM requisitions
     """)
+
     requisitions = cursor.fetchall()
 
+    # ====================================
     # GET SUPPLIERS
+    # ====================================
     cursor.execute("""
         SELECT supplier_id, supplier_name
         FROM suppliers
     """)
+
     suppliers = cursor.fetchall()
+
+    # ====================================
+    # GET USERS
+    # ====================================
+    cursor.execute("""
+        SELECT user_id, username
+        FROM users
+    """)
+
+    users = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
     return render_template(
+
         "create_quotation_form.html",
+
         requisitions=requisitions,
-        suppliers=suppliers
+
+        suppliers=suppliers,
+
+        users=users
     )
 
 
@@ -699,6 +721,30 @@ def get_prs_list():
     return jsonify(data)
 
 
+# GET USERS
+# ====================================================
+@procurement_dashboard_bp.route("/get_users")
+def get_users():
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+
+        SELECT user_id, username
+        FROM users
+
+    """)
+
+    users = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(users)
+
+
 # =========================
 # GET SUPPLIERS LIST
 # =========================
@@ -706,20 +752,22 @@ def get_prs_list():
 def get_suppliers():
 
     conn = get_db_connection()
+
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
+
         SELECT supplier_id, supplier_name
         FROM suppliers
-        ORDER BY supplier_name ASC
+
     """)
 
-    data = cursor.fetchall()
+    suppliers = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return jsonify(data)
+    return jsonify(suppliers)
 
 
 # =========================
@@ -735,7 +783,7 @@ def create_po_post():
     created_by = data.get("created_by")
 
     requisition_id = data.get("requisition_id")
-    supplier_name = data.get("supplier_name")
+    supplier_id = data.get("supplier_id")
 
     items = data.get("items", [])
 
@@ -743,7 +791,7 @@ def create_po_post():
     if not requisition_id:
         return jsonify({"success": False, "message": "PRS is required"}), 400
 
-    if not supplier_name:
+    if not supplier_id:
         return jsonify({"success": False, "message": "Supplier is required"}), 400
 
     if len(items) == 0:
@@ -762,12 +810,12 @@ def create_po_post():
         # INSERT PURCHASE ORDER
         cursor.execute("""
             INSERT INTO purchase_orders
-            (requisition_id, po_number, supplier_name, order_date, total_amount)
+            (requisition_id, po_number, supplier_id, order_date, total_amount)
             VALUES (%s, %s, %s, %s, %s)
         """, (
             requisition_id,
             po_number,
-            supplier_name,
+            supplier_id,
             order_date,
             total_amount
         ))
@@ -778,11 +826,12 @@ def create_po_post():
         for i in items:
             cursor.execute("""
                 INSERT INTO purchase_order_items
-                (purchase_order_id, item_name, quantity, unit_price)
-                VALUES (%s, %s, %s, %s)
+                (purchase_order_id, item_name, description, quantity, unit_price)
+                VALUES (%s, %s, %s, %s, %s)
             """, (
                 po_id,
                 i.get("item_name"),
+                i.get("description"),
                 i.get("quantity"),
                 i.get("unit_price")
             ))
@@ -819,6 +868,8 @@ def create_po_post():
 
 # =========================================
 # CREATE GRN PAGE
+## =========================================
+# CREATE GRN PAGE
 # =========================================
 @procurement_dashboard_bp.route("/create_grn")
 def create_grn():
@@ -827,7 +878,9 @@ def create_grn():
 
     cursor = conn.cursor(dictionary=True)
 
+    # =====================================
     # PURCHASE ORDERS
+    # =====================================
     cursor.execute("""
 
         SELECT
@@ -842,7 +895,10 @@ def create_grn():
 
     pos = cursor.fetchall()
 
+
+    # =====================================
     # SUPPLIERS
+    # =====================================
     cursor.execute("""
 
         SELECT
@@ -859,7 +915,10 @@ def create_grn():
 
     suppliers = cursor.fetchall()
 
+
+    # =====================================
     # USERS
+    # =====================================
     cursor.execute("""
 
         SELECT
@@ -884,7 +943,9 @@ def create_grn():
         pos=pos,
         suppliers=suppliers,
         users=users
+
     )
+
 
 
 # =========================================
@@ -903,7 +964,7 @@ def save_grn():
     try:
 
         # =====================================
-        # GRN HEADER DATA
+        # HEADER DATA
         # =====================================
         grn_no = request.form["grn_no"]
 
@@ -915,8 +976,6 @@ def save_grn():
 
         received_date = request.form["received_date"]
 
-
-        # OPTIONAL
         delivery_note_no = request.form.get(
             "delivery_note_no"
         )
@@ -927,7 +986,7 @@ def save_grn():
 
 
         # =====================================
-        # DETERMINE INSPECTION STATUS
+        # DETERMINE STATUS
         # =====================================
         remarks_list = request.form.getlist(
             "remarks[]"
@@ -936,14 +995,16 @@ def save_grn():
         inspection_status = "ACCEPTED"
 
         if "PARTIAL" in remarks_list:
+
             inspection_status = "PARTIAL"
 
         if "REJECTED" in remarks_list:
+
             inspection_status = "REJECTED"
 
 
         # =====================================
-        # INSERT INTO GRN TABLE
+        # INSERT GRN HEADER
         # =====================================
         cursor.execute("""
 
@@ -985,6 +1046,7 @@ def save_grn():
             main_remarks
 
         ))
+
 
         # =====================================
         # GET NEW GRN ID
@@ -1031,6 +1093,7 @@ def save_grn():
 
                     grn_id,
                     material_name,
+                    description,
                     quantity_ordered,
                     quantity_received,
                     quantity_rejected,
@@ -1045,6 +1108,7 @@ def save_grn():
                     %s,
                     %s,
                     %s,
+                    %s,
                     %s
 
                 )
@@ -1053,6 +1117,7 @@ def save_grn():
 
                 grn_id,
                 material_names[i],
+                descriptions[i],
                 qty_ordered[i],
                 qty_received[i],
                 qty_rejected[i],
@@ -1062,7 +1127,7 @@ def save_grn():
 
 
         # =====================================
-        # UPDATE PURCHASE ORDER STATUS
+        # UPDATE PO STATUS
         # =====================================
         cursor.execute("""
 
@@ -1110,20 +1175,33 @@ def save_grn():
         conn.close()
 
 
-@procurement_dashboard_bp.route("/get_po_items/<int:po_id>")
+
+# =========================================
+# GET PO ITEMS
+# =========================================
+@procurement_dashboard_bp.route(
+    "/get_po_items/<int:po_id>"
+)
 def get_po_items(po_id):
 
     db = get_db_connection()
+
     cursor = db.cursor(dictionary=True)
 
     cursor.execute("""
+
         SELECT
+
             po_item_id,
             item_name,
+            description,
             quantity,
             unit_price
+
         FROM purchase_order_items
+
         WHERE purchase_order_id = %s
+
     """, (po_id,))
 
     items = cursor.fetchall()
@@ -1133,6 +1211,27 @@ def get_po_items(po_id):
 
     return jsonify(items)
 
+
+@procurement_dashboard_bp.route("/get_grn_items/<int:grn_id>")
+def get_grn_items(grn_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+            material_name,
+            remarks,
+            quantity_received
+        FROM grn_items
+        WHERE grn_id = %s
+    """, (grn_id,))
+
+    items = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(items)
 
 
 @procurement_dashboard_bp.route("/create_invoice")
@@ -1209,6 +1308,18 @@ def save_invoice():
         po_id = cursor.fetchone()[0]
 
         # =========================
+        # GET SUPPLIER NAME
+        # =========================
+        cursor.execute("""
+            SELECT supplier_name
+            FROM suppliers
+            WHERE supplier_id = %s
+            LIMIT 1
+        """, (supplier_id,))
+        supplier = cursor.fetchone()
+        supplier_name = supplier[0] if supplier else ""
+
+        # =========================
         # INSERT INVOICE HEADER
         # =========================
         cursor.execute("""
@@ -1224,7 +1335,7 @@ def save_invoice():
         """, (
             po_id,
             invoice_no,
-            supplier_id,
+            supplier_name,
             invoice_date,
             total
         ))
@@ -1261,7 +1372,7 @@ def save_invoice():
 
         conn.commit()
 
-        return redirect("/procurement/dashboard")
+        return redirect(url_for("procurement_dashboard.procurement_dashboard"))
 
     except Exception as e:
         conn.rollback()

@@ -6,52 +6,120 @@
 
 <style>
 
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
 body{
-font-family:Arial;
-background:#f2f6fa;
-padding:20px;
+    font-family:Arial,sans-serif;
+    background:#eef2f7;
+    padding:30px;
 }
 
 .container{
-max-width:1100px;
-margin:auto;
-background:white;
-padding:20px;
-border-radius:10px;
+    max-width:1200px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.1);
 }
 
-select,input{
-padding:8px;
-width:100%;
-margin-top:5px;
-box-sizing:border-box;
+h2{
+    text-align:center;
+    color:#2c7a7b;
+    margin-bottom:25px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+label{
+    font-weight:bold;
+    display:block;
+    margin-bottom:6px;
+    color:#333;
+}
+
+input,
+select{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    margin-bottom:15px;
+    font-size:14px;
+}
+
+input:focus,
+select:focus{
+    outline:none;
+    border:1px solid #2c7a7b;
 }
 
 table{
-width:100%;
-border-collapse:collapse;
-margin-top:20px;
+    width:100%;
+    border-collapse:collapse;
+    margin-top:25px;
 }
 
 th,td{
-border:1px solid #ddd;
-padding:10px;
-text-align:center;
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
 }
 
 th{
-background:#2c7a7b;
-color:white;
+    background:#2c7a7b;
+    color:white;
+}
+
+tr:nth-child(even){
+    background:#f9f9f9;
 }
 
 button{
-padding:10px 15px;
-margin-top:15px;
-cursor:pointer;
-background:#2c7a7b;
-color:white;
-border:none;
-border-radius:5px;
+    padding:12px 18px;
+    margin-top:20px;
+    cursor:pointer;
+    background:#2c7a7b;
+    color:white;
+    border:none;
+    border-radius:6px;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+button:hover{
+    background:#225e5f;
+}
+
+.ok{
+    color:green;
+    font-weight:bold;
+}
+
+.partial{
+    color:orange;
+    font-weight:bold;
+}
+
+.rejected{
+    color:red;
+    font-weight:bold;
+}
+
+@media(max-width:768px){
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
 }
 
 </style>
@@ -66,84 +134,114 @@ border-radius:5px;
 
 <form method="POST" action="/procurement/save_grn">
 
-<!-- ========================= -->
-<!-- PO NUMBER -->
-<!-- ========================= -->
-<label>PO Number</label>
+<div class="grid">
 
-<select name="po_id" id="po_id" required>
+    <!-- PO NUMBER -->
+    <div>
 
-<option value="">-- Select PO --</option>
+        <label>PO Number</label>
 
-{% for po in pos %}
-<option value="{{ po.purchase_order_id }}">
-    {{ po.po_number }}
-</option>
-{% endfor %}
+        <select name="po_id"
+                id="po_id"
+                required>
 
-</select>
+            <option value="">
+                -- Select PO --
+            </option>
 
-<!-- ========================= -->
-<!-- SUPPLIER -->
-<!-- ========================= -->
-<label>Supplier</label>
+            {% for po in pos %}
 
-<select name="supplier_id" id="supplier_id" required>
+            <option value="{{ po.purchase_order_id }}">
+                {{ po.po_number }}
+            </option>
 
-<option value="">-- Select Supplier --</option>
+            {% endfor %}
 
-{% for s in suppliers %}
-<option value="{{ s.supplier_id }}">
-    {{ s.supplier_name }}
-</option>
-{% endfor %}
+        </select>
 
-</select>
+    </div>
 
-<!-- ========================= -->
-<!-- GRN NUMBER -->
-<!-- ========================= -->
-<label>GRN Number</label>
+    <!-- SUPPLIER -->
+    <div>
 
-<input
-    type="text"
-    name="grn_no"
-    id="grn_no"
-    readonly
->
+        <label>Supplier</label>
 
-<!-- ========================= -->
-<!-- DATE -->
-<!-- ========================= -->
-<label>Creation Date</label>
+        <select name="supplier_id"
+                id="supplier_id"
+                required>
 
-<input
-    type="date"
-    name="received_date"
-    id="creation_date"
-    readonly
->
+            <option value="">
+                -- Select Supplier --
+            </option>
 
-<!-- ========================= -->
-<!-- CREATED BY -->
-<!-- ========================= -->
-<label>Created By</label>
+            {% for s in suppliers %}
 
-<select name="received_by" id="created_by" required>
+            <option value="{{ s.supplier_id }}">
+                {{ s.supplier_name }}
+            </option>
 
-<option value="">-- Select User --</option>
+            {% endfor %}
 
-{% for u in users %}
-<option value="{{ u.user_id }}">
-    {{ u.username }}
-</option>
-{% endfor %}
+        </select>
 
-</select>
+    </div>
 
-<!-- ========================= -->
+    <!-- GRN NUMBER -->
+    <div>
+
+        <label>GRN Number</label>
+
+        <input
+            type="text"
+            name="grn_no"
+            id="grn_no"
+            readonly
+        >
+
+    </div>
+
+    <!-- DATE TIME -->
+    <div>
+
+        <label>Creation Date & Time</label>
+
+        <input
+            type="datetime-local"
+            name="received_date"
+            id="creation_date"
+            readonly
+        >
+
+    </div>
+
+    <!-- CREATED BY -->
+    <div>
+
+        <label>Created By</label>
+
+        <select name="received_by"
+                id="created_by"
+                required>
+
+            <option value="">
+                -- Select User --
+            </option>
+
+            {% for u in users %}
+
+            <option value="{{ u.user_id }}">
+                {{ u.username }}
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+</div>
+
 <!-- ITEMS TABLE -->
-<!-- ========================= -->
 <table id="grnTable">
 
 <thead>
@@ -161,7 +259,78 @@ border-radius:5px;
 
 <tbody id="itemsBody">
 
-<!-- ITEMS AUTO LOAD HERE -->
+<!-- DEFAULT ROW -->
+
+<tr>
+
+<td>
+
+<input
+type="text"
+name="material_name[]"
+placeholder="Item"
+readonly
+>
+
+</td>
+
+<td>
+
+<input
+type="text"
+name="description[]"
+placeholder="Description"
+readonly
+>
+
+</td>
+
+<td>
+
+<input
+type="number"
+class="ordered"
+name="quantity_ordered[]"
+readonly
+>
+
+</td>
+
+<td>
+
+<input
+type="number"
+class="received"
+name="quantity_received[]"
+onkeyup="calculateRow(this)"
+>
+
+</td>
+
+<td>
+
+<input
+type="number"
+class="rejected"
+name="quantity_rejected[]"
+readonly
+>
+
+</td>
+
+<td>
+
+<span class="remark"></span>
+
+<input
+type="hidden"
+class="remarkInput"
+name="remarks[]"
+>
+
+</td>
+
+</tr>
 
 </tbody>
 
@@ -177,49 +346,83 @@ Save GRN
 
 <script>
 
-// =========================
+// =====================================
 // PAGE INIT
-// =========================
-window.onload = function () {
+// =====================================
+window.onload = function(){
 
     generateGRN();
-    setTodayDate();
+
+    setDateTime();
 
 };
 
 
-// =========================
-// AUTO GRN NUMBER
-// =========================
-function generateGRN() {
+// =====================================
+// DATE TIME
+// =====================================
+function setDateTime(){
 
     let now = new Date();
 
-    document.getElementById("grn_no").value =
+    let formatted =
+        now.toISOString().slice(0,16);
 
-        `GRN-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${Math.floor(1000+Math.random()*9000)}`;
+    document.getElementById(
+        "creation_date"
+    ).value = formatted;
 }
 
 
-// =========================
-// AUTO DATE
-// =========================
-function setTodayDate() {
+// =====================================
+// AUTO GRN NUMBER
+// =====================================
+function generateGRN(){
 
-    document.getElementById("creation_date").value =
-        new Date().toISOString().split('T')[0];
+    let now = new Date();
+
+    let year =
+        now.getFullYear();
+
+    // RANDOM NUMBER
+    let number =
+        localStorage.getItem("grn_counter");
+
+    if(!number){
+
+        number = 1;
+
+    }else{
+
+        number = parseInt(number) + 1;
+    }
+
+    localStorage.setItem(
+        "grn_counter",
+        number
+    );
+
+    // FORMAT 0001
+    let formattedNumber =
+        String(number).padStart(4,'0');
+
+    document.getElementById(
+        "grn_no"
+    ).value =
+        `GRN/${year}/${formattedNumber}`;
 }
 
 
-// =========================
+// =====================================
 // LOAD PO ITEMS
-// =========================
+// =====================================
 document.getElementById("po_id")
-.addEventListener("change", function () {
+.addEventListener("change", function(){
 
     let po_id = this.value;
 
     if(!po_id){
+
         return;
     }
 
@@ -230,7 +433,9 @@ document.getElementById("po_id")
     .then(data => {
 
         let body =
-            document.getElementById("itemsBody");
+            document.getElementById(
+                "itemsBody"
+            );
 
         body.innerHTML = "";
 
@@ -302,7 +507,7 @@ document.getElementById("po_id")
 
                 </td>
 
-                <!-- REMARKS -->
+                <!-- REMARK -->
                 <td>
 
                     <span class="remark"></span>
@@ -328,12 +533,13 @@ document.getElementById("po_id")
 });
 
 
-// =========================
-// CALCULATE ROW
-// =========================
+// =====================================
+// CALCULATE
+// =====================================
 function calculateRow(input){
 
-    let row = input.closest("tr");
+    let row =
+        input.closest("tr");
 
     let ordered =
         parseFloat(
@@ -353,9 +559,7 @@ function calculateRow(input){
         row.querySelector(".remarkInput");
 
 
-    // =========================
     // VALIDATION
-    // =========================
     if(received > ordered){
 
         alert(
@@ -374,33 +578,49 @@ function calculateRow(input){
     }
 
 
-    // =========================
     // CALCULATE REJECTED
-    // =========================
-    let rejected = ordered - received;
+    let rejected =
+        ordered - received;
 
-    rejectedField.value = rejected;
+    rejectedField.value =
+        rejected;
 
 
-    // =========================
-    // AUTO REMARKS
-    // =========================
+    // AUTO REMARK
     if(received == ordered){
 
-        remarkText.innerText = "OK";
+        remarkText.innerText =
+            "OK";
 
-        remarkText.style.color = "green";
+        remarkText.className =
+            "ok";
 
-        remarkInput.value = "OK";
+        remarkInput.value =
+            "OK";
     }
 
     else if(received < ordered){
 
-        remarkText.innerText = "PARTIAL";
+        remarkText.innerText =
+            "PARTIAL";
 
-        remarkText.style.color = "orange";
+        remarkText.className =
+            "partial";
 
-        remarkInput.value = "PARTIAL";
+        remarkInput.value =
+            "PARTIAL";
+    }
+
+    else{
+
+        remarkText.innerText =
+            "REJECTED";
+
+        remarkText.className =
+            "rejected";
+
+        remarkInput.value =
+            "REJECTED";
     }
 
 }

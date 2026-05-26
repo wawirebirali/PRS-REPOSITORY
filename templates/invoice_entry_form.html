@@ -136,9 +136,7 @@ button{
 </tr>
 </thead>
 
-<tbody id="itemsBody">
-<!-- dynamic rows -->
-</tbody>
+<tbody id="itemsBody"></tbody>
 
 </table>
 
@@ -160,7 +158,44 @@ Total: <span id="total">0</span>
 window.onload = function () {
     generateInvoiceNo();
     setDate();
+    addBlankInvoiceRow();
 };
+
+function createInvoiceRow(item = {}) {
+    const materialName = item.material_name || "";
+    const description = item.remarks || item.description || "";
+    const quantity = item.quantity_received != null ? item.quantity_received : "";
+
+    return `
+        <tr>
+            <td>
+                ${materialName}
+                <input type="hidden" name="material_name[]" value="${materialName}">
+            </td>
+            <td>
+                ${description}
+                <input type="hidden" name="description[]" value="${description}">
+            </td>
+            <td class="qty">
+                ${quantity}
+                <input type="hidden" name="quantity[]" value="${quantity}">
+            </td>
+            <td>
+                <input type="number" name="unit_price[]" class="price" oninput="calc(this)" required>
+            </td>
+            <td>
+                <input type="number" name="amount[]" class="amount" readonly>
+            </td>
+        </tr>
+    `;
+}
+
+function addBlankInvoiceRow() {
+    let body = document.getElementById("itemsBody");
+    if (body.children.length === 0) {
+        body.innerHTML = createInvoiceRow();
+    }
+}
 
 // =========================
 // AUTO INVOICE NO
@@ -199,41 +234,13 @@ document.getElementById("grn_id")
         let body = document.getElementById("itemsBody");
         body.innerHTML = "";
 
+        if (!data || data.length === 0) {
+            body.innerHTML = createInvoiceRow();
+            return;
+        }
+
         data.forEach(item => {
-
-            body.innerHTML += `
-            <tr>
-
-                <!-- ITEM -->
-                <td>
-                    ${item.material_name}
-                    <input type="hidden" name="item_name[]" value="${item.material_name}">
-                </td>
-
-                <!-- DESCRIPTION -->
-                <td>
-                    ${item.remarks || ''}
-                    <input type="hidden" name="description[]" value="${item.remarks || ''}">
-                </td>
-
-                <!-- QTY -->
-                <td class="qty">
-                    ${item.quantity_received}
-                    <input type="hidden" name="quantity[]" value="${item.quantity_received}">
-                </td>
-
-                <!-- UNIT PRICE -->
-                <td>
-                    <input type="number" name="unit_price[]" class="price" onkeyup="calc(this)" required>
-                </td>
-
-                <!-- AMOUNT -->
-                <td>
-                    <input type="number" name="amount[]" class="amount" readonly>
-                </td>
-
-            </tr>
-            `;
+            body.innerHTML += createInvoiceRow(item);
         });
     });
 });

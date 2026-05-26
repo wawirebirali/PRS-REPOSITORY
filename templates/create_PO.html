@@ -7,57 +7,76 @@
 <style>
 
 body{
-font-family:Arial;
-background:#f2f6fa;
-padding:20px;
+    font-family:Arial;
+    background:#f2f6fa;
+    padding:20px;
 }
 
 .container{
-max-width:1000px;
-margin:auto;
-background:white;
-padding:20px;
-border-radius:10px;
+    max-width:1100px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+}
+
+h2{
+    color:#2c7a7b;
+}
+
+label{
+    font-weight:bold;
 }
 
 input,select{
-padding:8px;
-width:100%;
-box-sizing:border-box;
-margin-bottom:10px;
+    padding:10px;
+    width:100%;
+    box-sizing:border-box;
+    margin-bottom:15px;
+    border:1px solid #ccc;
+    border-radius:5px;
 }
 
 table{
-width:100%;
-border-collapse:collapse;
-margin-top:20px;
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
 }
 
 th,td{
-border:1px solid #ddd;
-padding:10px;
-text-align:center;
+    border:1px solid #ddd;
+    padding:10px;
+    text-align:center;
 }
 
 th{
-background:#2c7a7b;
-color:white;
+    background:#2c7a7b;
+    color:white;
 }
 
 button{
-padding:10px 15px;
-margin-top:15px;
-cursor:pointer;
-background:#2c7a7b;
-color:white;
-border:none;
-border-radius:5px;
+    padding:10px 15px;
+    cursor:pointer;
+    background:#2c7a7b;
+    color:white;
+    border:none;
+    border-radius:5px;
+}
+
+button:hover{
+    background:#225e5f;
 }
 
 .totalBox{
-margin-top:20px;
-font-size:18px;
-font-weight:bold;
+    margin-top:20px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.top-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
 }
 
 </style>
@@ -72,50 +91,80 @@ font-weight:bold;
 
 <form id="poForm">
 
-<!-- PO NUMBER -->
+<div class="top-grid">
+
+<div>
+
 <label>PO Number</label>
 <input type="text" id="po_number" readonly>
 
-<!-- DATE -->
-<label>Submission Date</label>
-<input type="date" id="po_date" readonly>
+</div>
 
-<!-- CREATED BY -->
+<div>
+
+<label>PO Date</label>
+<input type="datetime-local" id="po_date" readonly>
+
+</div>
+
+<div>
+
 <label>Created By</label>
-<input type="text" id="created_by" readonly>
 
-<!-- PRS -->
+<select id="created_by">
+    <option value="">-- Select User --</option>
+</select>
+
+</div>
+
+<div>
+
 <label>PRS Number</label>
+
 <select id="prs">
-<option value="">-- Select PRS --</option>
+    <option value="">-- Select PRS --</option>
 </select>
 
-<!-- SUPPLIER -->
+</div>
+
+<div>
+
 <label>Supplier</label>
+
 <select id="supplier">
-<option value="">-- Select Supplier --</option>
+    <option value="">-- Select Supplier --</option>
 </select>
+
+</div>
+
+</div>
 
 <table id="poTable">
 
 <tr>
-<th>Item</th>
-<th>Description</th>
-<th>Quantity</th>
-<th>Unit Price</th>
-<th>Amount</th>
-<th>Action</th>
+    <th>Item</th>
+    <th>Description</th>
+    <th>Quantity</th>
+    <th>Unit Price</th>
+    <th>Amount</th>
+    <th>Action</th>
 </tr>
 
 </table>
 
+<br>
+
 <button type="button" onclick="addRow()">+ Add Item</button>
 
 <div class="totalBox">
-Total Amount: <span id="total">0.00</span>
+    Total Amount: <span id="total">0.00</span>
 </div>
 
-<button type="button" onclick="submitPO()">Create Purchase Order</button>
+<br>
+
+<button type="button" onclick="submitPO()">
+    Create Purchase Order
+</button>
 
 </form>
 
@@ -123,195 +172,70 @@ Total Amount: <span id="total">0.00</span>
 
 <script>
 
-// =========================
-// INIT
-// =========================
+// =====================================
+// PAGE LOAD
+// =====================================
 window.onload = function(){
 
+    // GENERATE PO NUMBER
     document.getElementById("po_number").value =
         "PO-" + Math.floor(Math.random() * 90000 + 10000);
 
+    // TODAY DATE
     document.getElementById("po_date").value =
-        new Date().toISOString().split("T")[0];
+        new Date().toISOString().slice(0,16);
 
-    // IMPORTANT: replace with Flask session user
-    document.getElementById("created_by").value = "CURRENT_USER";
-};
-
-
-// =========================
-// ADD ROW
-// =========================
-function addRow(){
-
-    let table = document.getElementById("poTable");
-
-    let row = table.insertRow();
-
-    row.innerHTML = `
-        <td><input class="item" placeholder="Item name"></td>
-        <td><input class="desc" placeholder="Description"></td>
-
-        <td>
-            <input type="number" class="qty" oninput="calc(this)">
-        </td>
-
-        <td>
-            <input type="number" class="price" oninput="calc(this)">
-        </td>
-
-        <td>
-            <input class="amount" readonly>
-        </td>
-
-        <td>
-            <button type="button" onclick="removeRow(this)">X</button>
-        </td>
-    `;
-}
-
-
-// =========================
-// REMOVE ROW
-// =========================
-function removeRow(btn){
-    btn.parentElement.parentElement.remove();
-    calculateTotal();
-}
-
-
-// =========================
-// CALCULATE ROW AMOUNT
-// =========================
-function calc(input){
-
-    let row = input.parentElement.parentElement;
-
-    let qty = parseFloat(row.querySelector(".qty").value) || 0;
-    let price = parseFloat(row.querySelector(".price").value) || 0;
-
-    let amount = qty * price;
-
-    row.querySelector(".amount").value = amount.toFixed(2);
-
-    calculateTotal();
-}
-
-
-// =========================
-// TOTAL
-// =========================
-function calculateTotal(){
-
-    let total = 0;
-
-    document.querySelectorAll(".amount").forEach(a => {
-        total += parseFloat(a.value) || 0;
-    });
-
-    document.getElementById("total").innerText = total.toFixed(2);
-}
-
-
-// =========================
-// SUBMIT PO
-// =========================
-function submitPO(){
-
-    let po_number = document.getElementById("po_number").value;
-    let po_date = document.getElementById("po_date").value;
-    let created_by = document.getElementById("created_by").value;
-
-    let requisition_id = document.getElementById("prs").value;
-    let supplier_name = document.getElementById("supplier").value;
-
-    if(!requisition_id || !supplier_name){
-        alert("Please select PRS and Supplier");
-        return;
-    }
-
-    let rows = document.querySelectorAll("#poTable tr");
-
-    let items = [];
-
-    rows.forEach((row, index) => {
-
-        // skip header row
-        if(index === 0) return;
-
-        let item = row.querySelector(".item")?.value;
-        let desc = row.querySelector(".desc")?.value;
-        let qty = parseFloat(row.querySelector(".qty")?.value);
-        let price = parseFloat(row.querySelector(".price")?.value);
-
-        if(item && qty > 0 && price > 0){
-
-            items.push({
-                item_name: item,
-                description: desc,
-                quantity: qty,
-                unit_price: price
-            });
-        }
-    });
-
-    if(items.length === 0){
-        alert("Please add at least one valid item");
-        return;
-    }
-
-    fetch("/procurement/create_po", {
-
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify({
-            po_number,
-            order_date: po_date,
-            created_by,
-            requisition_id,
-            supplier_name,
-            items
-        })
-    })
-
-    .then(data => {
-    if (data.success) {
-        alert(data.message);
-
-        // 🔥 THIS IS WHAT YOU ARE MISSING
-        window.location.href = data.redirect;
-    } else {
-        alert(data.message);
-    }
-});
-   
-}
-
-window.onload = function () {
-
-    // PO NUMBER
-    document.getElementById("po_number").value =
-        "PO-" + Math.floor(Math.random() * 90000 + 10000);
-
-    // DATE
-    document.getElementById("po_date").value =
-        new Date().toISOString().split("T")[0];
-
-    // USER
-    document.getElementById("created_by").value = "CURRENT_USER";
-
-    // LOAD PRS + SUPPLIERS
+    // LOAD DATA
+    loadUsers();
     loadPRS();
     loadSuppliers();
 };
 
-function loadPRS() {
+
+// =====================================
+// LOAD USERS
+// =====================================
+function loadUsers(){
+
+    fetch("/procurement/get_users")
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        let select = document.getElementById("created_by");
+
+        data.forEach(user => {
+
+            let option = document.createElement("option");
+
+            option.value = user.user_id;
+
+            option.textContent = user.username;
+
+            select.appendChild(option);
+        });
+
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Failed to load users");
+    });
+}
+
+
+// =====================================
+// LOAD PRS
+// =====================================
+function loadPRS(){
 
     fetch("/procurement/get_prs_list")
-    .then(res => res.json())
+
+    .then(response => response.json())
+
     .then(data => {
 
         let select = document.getElementById("prs");
@@ -319,34 +243,261 @@ function loadPRS() {
         data.forEach(prs => {
 
             let option = document.createElement("option");
+
             option.value = prs.requisition_id;
+
             option.textContent = prs.prs_no;
 
             select.appendChild(option);
         });
+
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Failed to load PRS");
     });
 }
 
 
-function loadSuppliers() {
+// =====================================
+// LOAD SUPPLIERS
+// =====================================
+function loadSuppliers(){
 
     fetch("/procurement/get_suppliers")
-    .then(res => res.json())
+
+    .then(response => response.json())
+
     .then(data => {
 
         let select = document.getElementById("supplier");
 
-        data.forEach(s => {
+        data.forEach(supplier => {
 
             let option = document.createElement("option");
-            option.value = s.supplier_name;
-            option.textContent = s.supplier_name;
+
+            option.value = supplier.supplier_id;
+
+            option.textContent = supplier.supplier_name;
 
             select.appendChild(option);
         });
+
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Failed to load suppliers");
     });
 }
 
+
+// =====================================
+// ADD ROW
+// =====================================
+function addRow(){
+
+    let table = document.getElementById("poTable");
+
+    let row = table.insertRow();
+
+    row.innerHTML = `
+
+        <td>
+            <input type="text" class="item" placeholder="Item name">
+        </td>
+
+        <td>
+            <input type="text" class="desc" placeholder="Description">
+        </td>
+
+        <td>
+            <input type="number" class="qty" min="1" oninput="calc(this)">
+        </td>
+
+        <td>
+            <input type="number" class="price" min="0" step="0.01" oninput="calc(this)">
+        </td>
+
+        <td>
+            <input type="text" class="amount" readonly>
+        </td>
+
+        <td>
+            <button type="button" onclick="removeRow(this)">
+                X
+            </button>
+        </td>
+    `;
+}
+
+
+// =====================================
+// REMOVE ROW
+// =====================================
+function removeRow(btn){
+
+    btn.parentElement.parentElement.remove();
+
+    calculateTotal();
+}
+
+
+// =====================================
+// CALCULATE ROW
+// =====================================
+function calc(input){
+
+    let row = input.parentElement.parentElement;
+
+    let qty =
+        parseFloat(row.querySelector(".qty").value) || 0;
+
+    let price =
+        parseFloat(row.querySelector(".price").value) || 0;
+
+    let amount = qty * price;
+
+    row.querySelector(".amount").value =
+        amount.toFixed(2);
+
+    calculateTotal();
+}
+
+
+// =====================================
+// TOTAL
+// =====================================
+function calculateTotal(){
+
+    let total = 0;
+
+    document.querySelectorAll(".amount").forEach(amount => {
+
+        total += parseFloat(amount.value) || 0;
+    });
+
+    document.getElementById("total").innerText =
+        total.toFixed(2);
+}
+
+
+// =====================================
+// SUBMIT PO
+// =====================================
+function submitPO(){
+
+    let po_number =
+        document.getElementById("po_number").value;
+
+    let po_date =
+        document.getElementById("po_date").value;
+
+    let created_by =
+        document.getElementById("created_by").value;
+
+    let requisition_id =
+        document.getElementById("prs").value;
+
+    let supplier_id =
+        document.getElementById("supplier").value;
+
+    if(
+        !created_by ||
+        !requisition_id ||
+        !supplier_id
+    ){
+        alert("Please fill all fields");
+        return;
+    }
+
+    let items = [];
+
+    let rows =
+        document.querySelectorAll("#poTable tr");
+
+    rows.forEach((row, index) => {
+
+        if(index === 0) return;
+
+        let item =
+            row.querySelector(".item")?.value;
+
+        let description =
+            row.querySelector(".desc")?.value;
+
+        let quantity =
+            parseFloat(row.querySelector(".qty")?.value);
+
+        let unit_price =
+            parseFloat(row.querySelector(".price")?.value);
+
+        if(item && quantity > 0 && unit_price > 0){
+
+            items.push({
+
+                item_name: item,
+                description: description,
+                quantity: quantity,
+                unit_price: unit_price
+            });
+        }
+    });
+
+    if(items.length === 0){
+
+        alert("Add at least one item");
+
+        return;
+    }
+
+    fetch("/procurement/create_po", {
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            po_number: po_number,
+            order_date: po_date,
+            created_by: created_by,
+            requisition_id: requisition_id,
+            supplier_id: supplier_id,
+            items: items
+        })
+    })
+
+    .then(response => response.json())
+
+    .then(data => {
+
+        if(data.success){
+
+            alert(data.message);
+
+            window.location.href = data.redirect;
+
+        }else{
+
+            alert(data.message);
+        }
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Error creating purchase order");
+    });
+}
 
 </script>
 

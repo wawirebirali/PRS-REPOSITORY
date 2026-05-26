@@ -1,48 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <title>Quotation Entry</title>
 
     <style>
 
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
         body{
-            font-family:Arial;
-            background:#f2f6fa;
-            padding:20px;
+            font-family:Arial,sans-serif;
+            background:#eef2f7;
+            padding:30px;
         }
 
         .container{
-            max-width:1100px;
+            max-width:1200px;
             margin:auto;
             background:white;
-            padding:20px;
-            border-radius:10px;
+            padding:30px;
+            border-radius:12px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.1);
         }
 
-        input,select{
+        h2{
+            color:#2c7a7b;
+            margin-bottom:20px;
+            text-align:center;
+        }
+
+        h3{
+            color:#2c7a7b;
+            margin-top:20px;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:20px;
+        }
+
+        label{
+            font-weight:bold;
+            display:block;
+            margin-bottom:5px;
+            color:#333;
+        }
+
+        input,
+        select,
+        textarea{
             width:100%;
-            padding:8px;
-            margin:5px 0 15px 0;
+            padding:10px;
+            border:1px solid #ccc;
+            border-radius:6px;
+            margin-bottom:15px;
+            font-size:14px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus{
+            outline:none;
+            border:1px solid #2c7a7b;
         }
 
         table{
             width:100%;
             border-collapse:collapse;
-            margin-top:15px;
+            margin-top:20px;
         }
 
         th,td{
             border:1px solid #ddd;
-            padding:8px;
+            padding:10px;
             text-align:center;
         }
 
+        th{
+            background:#2c7a7b;
+            color:white;
+        }
+
+        tr:nth-child(even){
+            background:#f9f9f9;
+        }
+
         button{
-            padding:8px 12px;
-            margin-top:10px;
-            cursor:pointer;
+            padding:10px 15px;
             border:none;
-            border-radius:5px;
+            border-radius:6px;
+            cursor:pointer;
+            font-weight:bold;
         }
 
         .add{
@@ -51,7 +104,7 @@
         }
 
         .submit{
-            background:blue;
+            background:#2c7a7b;
             color:white;
         }
 
@@ -60,7 +113,33 @@
             color:white;
         }
 
+        .top-space{
+            margin-top:20px;
+        }
+
+        .note{
+            color:#666;
+            font-size:13px;
+            margin-top:-10px;
+            margin-bottom:15px;
+        }
+
+        .btn-group{
+            margin-top:20px;
+            display:flex;
+            gap:10px;
+        }
+
+        @media(max-width:768px){
+
+            .grid{
+                grid-template-columns:1fr;
+            }
+
+        }
+
     </style>
+
 </head>
 
 <body>
@@ -69,165 +148,248 @@
 
     <h2>Quotation Entry Form</h2>
 
-    <!-- PRS -->
-    <label>PRS Number</label>
+    <div class="grid">
 
-    <select id="prs_no" required>
+        <!-- PRS -->
+        <div>
 
-        <option value="">-- Select PRS --</option>
+            <label>PRS Number</label>
 
-        {% for r in requisitions %}
+            <select id="prs_no">
 
-            <option value="{{ r.requisition_id }}">
-                {{ r.prs_no }}
-            </option>
+                <option value="">
+                    -- Select PRS --
+                </option>
 
-        {% endfor %}
+                {% for r in requisitions %}
 
-    </select>
+                <option value="{{ r.requisition_id }}">
+                    {{ r.prs_no }}
+                </option>
 
-    <!-- SUPPLIER -->
-    <label>Supplier</label>
+                {% endfor %}
 
-    <select id="supplier_id" required>
+            </select>
 
-        <option value="">-- Select Supplier --</option>
+        </div>
 
-        {% for s in suppliers %}
+        <!-- SUPPLIER -->
+        <div>
 
-            <option value="{{ s.supplier_id }}">
-                {{ s.supplier_name }}
-            </option>
+            <label>Supplier</label>
 
-        {% endfor %}
+            <select id="supplier_id">
 
-    </select>
+                <option value="">
+                    -- Select Supplier --
+                </option>
 
-    <!-- QUOTATION NUMBER -->
-    <label>Quotation Number</label>
+                {% for s in suppliers %}
 
-    <input type="text"
-           id="quotation_no"
-           readonly>
+                <option value="{{ s.supplier_id }}">
+                    {{ s.supplier_name }}
+                </option>
 
-    <!-- QUOTATION DATE -->
-    <label>Quotation Date</label>
+                {% endfor %}
 
-    <input type="date" id="quotation_date">
+            </select>
 
-    <!-- DELIVERY DATE -->
-    <label>Delivery Date</label>
+        </div>
 
-    <input type="date" id="delivery_date">
+        <!-- QUOTATION NUMBER -->
+        <div>
 
-    <!-- PAYMENT METHOD -->
-    <label>Payment Method</label>
+            <label>Quotation Number</label>
 
-    <select id="payment_terms">
+            <input type="text"
+                   id="quotation_no"
+                   readonly>
 
-        <option value="">-- Select Payment Method --</option>
+        </div>
 
-        <option value="Cash">
-            Cash
-        </option>
+        <!-- QUOTATION DATE -->
+        <div>
 
-        <option value="Bank Transfer">
-            Bank Transfer
-        </option>
+            <label>Quotation Date & Time</label>
 
-        <option value="Mobile Money">
-            Mobile Money
-        </option>
+            <input type="datetime-local"
+                   id="quotation_date"
+                   readonly>
 
-        <option value="Cheque">
-            Cheque
-        </option>
+        </div>
 
-    </select>
+        <!-- DELIVERY DATE -->
+        <div>
 
-    <!-- WARRANTY -->
-    <label>Warranty</label>
+            <label>Delivery Date</label>
 
-    <input type="text" id="warranty">
+            <input type="date"
+                   id="delivery_date">
 
-    <!-- REMARKS -->
-    <label>Remarks</label>
+        </div>
 
-    <input type="text" id="remarks">
+        <!-- PAYMENT TERMS -->
+        <div>
+
+            <label>Payment Method</label>
+
+            <select id="payment_terms">
+
+                <option value="">
+                    -- Select Payment Method --
+                </option>
+
+                <option value="Cash">
+                    Cash
+                </option>
+
+                <option value="Bank Transfer">
+                    Bank Transfer
+                </option>
+
+                <option value="Mobile Money">
+                    Mobile Money
+                </option>
+
+                <option value="Cheque">
+                    Cheque
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- WARRANTY -->
+        <div>
+
+            <label>Warranty Period</label>
+
+            <input type="number"
+                   id="warranty"
+                   placeholder="Enter warranty period">
+
+            <div class="note">
+                Example: 12 Months
+            </div>
+
+        </div>
+
+        <!-- REMARKS -->
+        <div>
+
+            <label>Remarks</label>
+
+            <textarea id="remarks"
+                      rows="3"
+                      placeholder="Enter remarks"></textarea>
+
+        </div>
+
+    </div>
 
     <!-- ITEMS -->
-    <h3>Items</h3>
+    <div class="top-space">
 
-    <table id="itemsTable">
+        <h3>Quotation Items</h3>
 
-        <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Qty</th>
-            <th>Unit Price</th>
-            <th>Amount</th>
-            <th>Action</th>
-        </tr>
+        <table id="itemsTable">
 
-    </table>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
 
-    <button type="button"
-            class="add"
-            onclick="addRow()">
+        </table>
 
-        Add Item
+        <div class="btn-group">
 
-    </button>
+            <button type="button"
+                    class="add"
+                    onclick="addRow()">
 
-    <button type="button"
-            class="submit"
-            onclick="submitForm()">
+                + Add Item
 
-        Save Quotation
+            </button>
 
-    </button>
+            <button type="button"
+                    class="submit"
+                    onclick="submitForm()">
+
+                Save Quotation
+
+            </button>
+
+        </div>
+
+    </div>
 
 </div>
 
 <script>
 
-// ===========================
-// AUTO GENERATE QUOTATION NO
-// ===========================
+// =====================================
+// PAGE LOAD
+// =====================================
 window.onload = function(){
+
+    // CURRENT DATE TIME
+    let now = new Date();
+
+    let formatted =
+        now.toISOString().slice(0,16);
+
+    document.getElementById(
+        "quotation_date"
+    ).value = formatted;
+
+    // QUOTATION NUMBER
+    let year = now.getFullYear();
 
     let random =
         Math.floor(Math.random() * 9000) + 1000;
 
-    document.getElementById("quotation_no").value =
-        "QT-" + random;
+    document.getElementById(
+        "quotation_no"
+    ).value =
+        "QT/" + year + "/" + random;
+
+    // DEFAULT ONE ROW
+    addRow();
 
 };
 
 
-// ===========================
-// ADD ITEM ROW
-// ===========================
+// =====================================
+// ADD ROW
+// =====================================
 function addRow(){
 
     let table =
         document.getElementById("itemsTable");
 
-    let row = table.insertRow();
+    let row =
+        table.insertRow();
 
     row.innerHTML = `
 
         <td>
-            <input class="item">
+            <input class="item"
+                   placeholder="Item name">
         </td>
 
         <td>
-            <input class="desc">
+            <input class="desc"
+                   placeholder="Description">
         </td>
 
         <td>
             <input type="number"
                    class="qty"
+                   min="1"
                    oninput="calc(this)">
         </td>
 
@@ -239,34 +401,54 @@ function addRow(){
         </td>
 
         <td>
-            <input class="amount" readonly>
+            <input class="amount"
+                   readonly>
         </td>
 
         <td>
+
             <button type="button"
                     class="remove"
                     onclick="removeRow(this)">
+
                 X
+
             </button>
+
         </td>
 
     `;
 }
 
 
-// ===========================
+// =====================================
 // REMOVE ROW
-// ===========================
+// =====================================
 function removeRow(btn){
+
+    let rows =
+        document.querySelectorAll(
+            "#itemsTable tr"
+        );
+
+    // KEEP AT LEAST ONE ROW
+    if(rows.length <= 2){
+
+        alert(
+            "At least one row is required"
+        );
+
+        return;
+    }
 
     btn.parentElement.parentElement.remove();
 
 }
 
 
-// ===========================
+// =====================================
 // CALCULATE AMOUNT
-// ===========================
+// =====================================
 function calc(input){
 
     let row =
@@ -282,15 +464,17 @@ function calc(input){
             row.querySelector(".price").value
         ) || 0;
 
+    let total = qty * price;
+
     row.querySelector(".amount").value =
-        (qty * price).toFixed(2);
+        total.toFixed(2);
 
 }
 
 
-// ===========================
+// =====================================
 // SUBMIT FORM
-// ===========================
+// =====================================
 function submitForm(){
 
     let qrf_id =
@@ -312,15 +496,15 @@ function submitForm(){
         document.getElementById("payment_terms").value;
 
     let warranty =
-        document.getElementById("warranty").value;
+        document.getElementById("warranty").value + " Months";
 
     let remarks =
         document.getElementById("remarks").value;
 
 
-    // ===========================
+    // =====================================
     // GET ITEMS
-    // ===========================
+    // =====================================
     let rows =
         document.querySelectorAll(
             "#itemsTable tr:not(:first-child)"
@@ -347,8 +531,11 @@ function submitForm(){
             items.push({
 
                 item_name:item_name,
+
                 description:description,
+
                 quantity:quantity,
+
                 unit_price:unit_price
 
             });
@@ -358,9 +545,9 @@ function submitForm(){
     });
 
 
-    // ===========================
+    // =====================================
     // VALIDATION
-    // ===========================
+    // =====================================
     if(
         !qrf_id ||
         !supplier_id ||
@@ -369,22 +556,26 @@ function submitForm(){
         !payment_terms
     ){
 
-        alert("Please fill all required fields");
+        alert(
+            "Please fill all required fields"
+        );
 
         return;
     }
 
     if(items.length === 0){
 
-        alert("Please add at least one item");
+        alert(
+            "Please add at least one item"
+        );
 
         return;
     }
 
 
-    // ===========================
+    // =====================================
     // SEND TO FLASK
-    // ===========================
+    // =====================================
     fetch("/procurement/Quotation_entry", {
 
         method:"POST",
@@ -396,9 +587,11 @@ function submitForm(){
         body:JSON.stringify({
 
             qrf_id:qrf_id,
+
             supplier_id:supplier_id,
 
             quotation_no:quotation_no,
+
             quotation_date:quotation_date,
 
             delivery_date:delivery_date,
@@ -406,6 +599,7 @@ function submitForm(){
             payment_terms:payment_terms,
 
             warranty:warranty,
+
             remarks:remarks,
 
             items:items

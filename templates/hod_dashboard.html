@@ -197,6 +197,48 @@ tr:hover{
     font-size:13px;
 }
 
+.info-section{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.box{
+    flex:1;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    background:#fafafa;
+}
+
+.box p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.supplier-section{
+    margin-top:10px;
+    margin-bottom:20px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.supplier-section p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.buttons{
+    margin-top:20px;
+    text-align:center;
+}
+
+.buttons .btn{
+    margin:0 4px;
+}
+
 /* ITEMS TABLE */
 .items-table{
     width:100%;
@@ -288,6 +330,7 @@ tr:hover{
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
 <button onclick="openModule('supplier',this)">Supplier</button>
+<button onclick="openModule('quotation',this)">Quotations</button>
 <button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
 <button onclick="openModule('invoice',this)">Invoice</button>
 <button onclick="openModule('grn',this)">GRN</button>
@@ -430,51 +473,35 @@ tr:hover{
 
 
 </div>
-<!-- QUOTATION REQUEST FORM-->
+<!-- SUPPLIER MODULE -->
 <div id="supplier" class="module">
+
+<div class="container">
 
 <!-- LEFT PANEL -->
 <div class="left">
 
 <div class="header">Supplier Management</div>
 
-<!-- ADD SUPPLIER FORM -->
-<div style="background:white;padding:15px;border-radius:10px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+<button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+    Add Supplier
+</button>
 
-<h3>Add Supplier</h3>
-
-<input id="s_name" placeholder="Supplier Name" style="padding:8px;width:30%;">
-<input id="s_location" placeholder="Location" style="padding:8px;width:30%;">
-<input id="s_item" placeholder="Supplied Item" style="padding:8px;width:30%;">
-
-<button class="btn primary" onclick="addSupplier()">Add</button>
-
+<div class="search" style="margin-top:12px;">
+    <input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search suppliers by name, phone, or location...">
 </div>
 
-<!-- SEARCH -->
-<div class="search">
-<input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search by name, location, or item...">
-</div>
-
-<!-- ACTION BUTTON -->
-<div style="margin:10px 0;">
-<button class="btn success" onclick="shareRequisition()">select quotation</button>
-<button class="btn success" onclick="shareRequisition()">approve quotation</button>
-<button class="btn danger" onclick="shareRequisition()">Reject quotation</button>
-</div>
-
-<!-- SUPPLIER TABLE -->
 <table id="supplierTable">
-
+<thead>
 <tr>
-<th>Select</th>
-<th>QRF No</th>
-<th>Prs_no</th>
-<th>Supplier Name</th>
-<th>qutation Status</th>
-
+    <th>Supplier</th>
+    <th>Contact</th>
+    <th>Phone</th>
+    <th>Location</th>
+    <th>Email</th>
 </tr>
-
+</thead>
+<tbody id="supplierBody"></tbody>
 </table>
 
 </div>
@@ -484,71 +511,174 @@ tr:hover{
 
 <div class="slip">
 
-<h2>Quotation request form</h2>
+    <div class="header">
+        <h2>Supplier Details</h2>
+        <p><b>Live supplier data loaded from backend</b></p>
+    </div>
 
-<div class="info">
-<p><b>Supplier:</b> <span id="sp_name">-</span></p>
-<p><b>Location:</b> <span id="sp_location">-</span></p>
-<p><b>Item:</b> <span id="sp_item">-</span></p>
+    <div class="info-section">
+
+        <div class="box">
+            <p><b>Name:</b> <span id="supName">-</span></p>
+            <p><b>Contact Person:</b> <span id="supContact">-</span></p>
+            <p><b>Phone:</b> <span id="supPhone">-</span></p>
+        </div>
+
+        <div class="box">
+            <p><b>Email:</b> <span id="supEmail">-</span></p>
+            <p><b>Location:</b> <span id="supAddress">-</span></p>
+            <p><b>TIN #:</b> <span id="supTin">-</span></p>
+        </div>
+
+    </div>
+
+    <div class="supplier-section">
+        <p><b>Registration #:</b> <span id="supReg">-</span></p>
+        <p><b>Bank:</b> <span id="supBank">-</span></p>
+        <p><b>Account #:</b> <span id="supAccount">-</span></p>
+    </div>
+
+    <div class="buttons">
+        <button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+            Add Supplier
+        </button>
+    </div>
+
 </div>
 
-<h3>Shared PRS</h3>
+</div>
 
-<table class="items-table">
+</div>
+
+</div>
+
+</div>
+
+<!-- QUOTATION MODULE -->
+<div id="quotation" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header">QUOTATION Management</div>
+
+<div class="search">
+    <input id="quotationSearch" type="text" onkeyup="searchQuotation()" placeholder="Search quotation, supplier, or PRS...">
+</div>
+
+<div style="margin:10px 0;">
+    <button class="btn success" onclick="approveQuotation()">Approve</button>
+    <button class="btn danger" onclick="rejectQuotation()">Reject</button>
+    <button class="btn primary" onclick="printQuotation()">Print</button>
+</div>
+
+<table id="quotationTable">
+<thead>
 <tr>
-<th>PRS No</th>
-<th>Status</th>
+    <th>Select</th>
+    <th>Quotation No</th>
+    <th>PRS No</th>
+    <th>Supplier</th>
+    <th>Status</th>
+    <th>Department</th>
+    <th>Creation Date</th>
 </tr>
-
-<tbody id="sharedPRS">
-<tr><td colspan="2" style="text-align:center;">No requisition shared yet</td></tr>
-</tbody>
-
+</thead>
+<tbody id="quotationBody"></tbody>
 </table>
 
 </div>
 
+<!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip">
+
+    <div class="header">
+        <h2>QUOTATION REQUEST SLIP (QRF)</h2>
+        <p><b>Official Procurement Document</b></p>
+    </div>
+
+    <div class="info-section">
+
+        <div class="box">
+            <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
+            <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
+            <p><b>Date:</b> <span id="qrfDate">-</span></p>
+        </div>
+
+        <div class="box">
+            <p><b>Requester:</b> <span id="qr_requester">-</span></p>
+            <p><b>Department:</b> <span id="qr_department">-</span></p>
+            <p><b>Contact:</b> <span id="qr_contact">-</span></p>
+        </div>
+
+    </div>
+
+    <div class="supplier-section">
+        <p><b>To:</b> <span id="sp_to">Supplier</span></p>
+        <p><b>Company:</b> <span id="sp_name">-</span></p>
+        <p><b>Location:</b> <span id="sp_location">-</span></p>
+        <p><b>Item:</b> <span id="sp_item">-</span></p>
+    </div>
+
+    <table class="items-table">
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+        </tr>
+        </thead>
+        <tbody id="sharedPRS"></tbody>
+    </table>
+
+    <div class="footer">
+        <p>Kindly submit your quotation within <b>3–5 working days</b>.</p>
+        <p>Ensure all requested items are available and include delivery details.</p>
+        <br>
+        <p>Authorized By: ________________________</p>
+        <p>Procurement Department</p>
+    </div>
+
+</div>
+
 </div>
 
 </div>
 
-
-
-
-
-
-
-
+</div>
 
 <div id="purchaseOrder" class="module">
-
+<div class="container">
 <div class="left">
-
 <div class="header">Purchase Order Management</div>
 
 <div class="search">
-<input id="poSearch" type="text" onkeyup="searchPO()" placeholder="Search PO or Supplier...">
+<input id="poSearch" type="text" onkeyup="searchPO()" placeholder="Search PO, Supplier, or Department...">
 </div>
 
 <div style="margin:10px 0;">
-
-<button class="btn selected" onclick="createPO()"> Select PO</button>
-<button class="btn success" onclick="createPO()">Approve PO</button>
-<button class="btn danger" onclick="createPO()">Recject PO</button>
-<button class="btn primary" onclick="printPO()">Print PO</button>
+<button class="btn success" onclick="approvePO()">Approve</button>
+<button class="btn danger" onclick="rejectPO()">Reject</button>
+<button class="btn primary" onclick="printPO()">Print</button>
 </div>
 
 <table id="poTable">
-
+<thead>
 <tr>
+<th>Select</th>
 <th>PO No</th>
-<th>Prs_no</th>
-<th>department</th>
-<th>submision date</th>
-<th>Approval date</th>
+<th>PRS No</th>
+<th>Supplier</th>
 <th>Status</th>
+<th>Department</th>
+<th>Creation Date</th>
 </tr>
-
+</thead>
+<tbody id="poBody"></tbody>
 </table>
 
 </div>
@@ -568,13 +698,16 @@ tr:hover{
 
 <h3>Items</h3>
 
-<table class="items-table" id="poItems">
+<table class="items-table">
+<thead>
 <tr>
 <th>Material</th>
 <th>Qty</th>
 <th>Price</th>
 <th>Total</th>
 </tr>
+</thead>
+<tbody id="poItemsBody"></tbody>
 </table>
 
 <div class="info">
@@ -604,86 +737,78 @@ tr:hover{
 
 <!-- GRN MODULE -->
 <div id="grn" class="module">
+    <div class="container">
+        <div class="left">
+            <div class="header">Goods Received Note (GRN)</div>
 
-<!-- LEFT -->
-<div class="left">
+            <div class="search">
+                <input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN, PO or PRS...">
+            </div>
 
-<div class="header">Goods Received Note (GRN)</div>
+            <div style="margin:10px 0;">
+                <button class="btn success" onclick="approveGRN()">Approve</button>
+                <button class="btn danger" onclick="rejectGRN()">Reject</button>
+                <button class="btn primary" onclick="printGRN()">Print GRN</button>
+            </div>
 
-<div class="search">
-<input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN or PRS...">
-</div>
+            <table id="grnTable">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>GRN No</th>
+                        <th>PO No</th>
+                        <th>PRS No</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                        <th>Received Date</th>
+                    </tr>
+                </thead>
+                <tbody id="grnBody"></tbody>
+            </table>
+        </div>
 
-<div style="margin:10px 0;">
-<button class="btn primary" onclick="printGRN()">Print GRN</button>
-<button class="btn success" onclick="createGRN()">Aprove</button>
-<button class="btn danger" onclick="createGRN()">Reject</button>
-</div>
+        <div class="right">
+            <div class="slip" id="grnPrintArea">
+                <h2>GOODS RECEIVED NOTE</h2>
 
-<table id="grnTable">
+                <div class="info">
+                    <p><b>GRN No:</b> <span id="grnNumber">-</span></p>
+                    <p><b>PO No:</b> <span id="grnPO">-</span></p>
+                    <p><b>PRS No:</b> <span id="grnPRS">-</span></p>
+                    <p><b>Supplier:</b> <span id="grnSupplier">-</span></p>
+                    <p><b>Received By:</b> <span id="grnReceivedBy">-</span></p>
+                    <p><b>Status:</b> <span id="grnStatus">-</span></p>
+                </div>
 
-<tr>
-<th>Select</th>
-<th>GRN No</th>
-<th>PRS No</th>
-<th>Supplier</th>
-<th>Status</th>
-</tr>
+                <h3>Received Items</h3>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Description</th>
+                            <th>Ordered</th>
+                            <th>Received</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grnItemsBody"></tbody>
+                </table>
 
-</table>
+                <div class="info">
+                    <p><b>Total Items Received:</b> <span id="grnTotal">0</span></p>
+                </div>
 
-</div>
-
-<!-- RIGHT -->
-<div class="right">
-
-<div class="slip" id="grnPrintArea">
-
-<h2>GOODS RECEIVED NOTE</h2>
-
-<div class="info">
-<p><b>GRN No:</b> <span id="g_grn">-</span></p>
-<p><b>PRS No:</b> <span id="g_prs">-</span></p>
-<p><b>Supplier:</b> <span id="g_supplier">-</span></p>
-<p><b>Date:</b> <span id="g_date">-</span></p>
-</div>
-
-<h3>Delivery Status</h3>
-
-<table class="items-table">
-<tr>
-<th>Item</th>
-<th>Ordered</th>
-<th>Received</th>
-<th>Remarks</th>
-</tr>
-
-<tr>
-<td>Laptop</td>
-<td>2</td>
-<td><input id="r1" type="number" value="2" style="width:60px;"></td>
-<td>OK</td>
-</tr>
-
-<tr>
-<td>Printer</td>
-<td>1</td>
-<td><input id="r2" type="number" value="1" style="width:60px;"></td>
-<td>OK</td>
-</tr>
-
-</table>
-
-<div class="signature">
-<div class="sig">Store Keeper</div>
-<div class="sig">Procurement</div>
-<div class="sig">Supplier</div>
-</div>
-
-</div>
-
-</div>
-
+                <div class="footer">
+                    <p>The goods were received subject to inspection and verification.</p>
+                    <div class="signature">
+                        <div class="sig">Received By</div>
+                        <div class="sig">Verified By</div>
+                        <div class="sig">Supplier</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -820,6 +945,22 @@ document.getElementById(id).classList.add("active");
 
 document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
+
+if(id === "supplier"){
+    loadSupplierModule();
+}
+
+if(id === "quotation"){
+    loadQuotationModule();
+}
+
+if(id === "purchaseOrder"){
+    loadPOModule();
+}
+
+if(id === "grn"){
+    loadGRNModule();
+}
 }
 
 
@@ -945,6 +1086,546 @@ function searchPRS() {
     }
 }
 
+function searchQuotation(){
+    let input = document.getElementById("quotationSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#quotationTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function searchSupplier(){
+    let input = document.getElementById("supplierSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#supplierBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function searchPO(){
+    let input = document.getElementById("poSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#poBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function printPO(){
+    window.print();
+}
+
+function approvePO(){
+    const selected = document.querySelector("input[name='poSelect']:checked");
+    if (!selected) {
+        alert("Please select a purchase order first.");
+        return;
+    }
+
+    const poId = selected.dataset.poId;
+    fetch(`/hod/po_approve/${poId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Approval failed.");
+        alert(data.message || "Purchase order approved.");
+        loadPOModule();
+        selectPO(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to approve purchase order.");
+    });
+}
+
+function rejectPO(){
+    const selected = document.querySelector("input[name='poSelect']:checked");
+    if (!selected) {
+        alert("Please select a purchase order first.");
+        return;
+    }
+
+    const poId = selected.dataset.poId;
+    fetch(`/hod/po_reject/${poId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remarks: "Rejected by HOD" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Rejection failed.");
+        alert(data.message || "Purchase order rejected.");
+        loadPOModule();
+        selectPO(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to reject purchase order.");
+    });
+}
+
+function selectPO(radio){
+    if(!radio || !radio.dataset.poId){
+        alert("Please select a purchase order");
+        return;
+    }
+
+    let poId = radio.dataset.poId;
+    fetch(`/hod/po_details/${poId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`PO details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("poNumber").innerText = data.po_number || "-";
+            document.getElementById("poSupplier").innerText = data.supplier_name || "-";
+            document.getElementById("poDate").innerText = data.order_date || "-";
+            document.getElementById("poTotal").innerText = data.total_amount || "0";
+
+            let itemsBody = document.getElementById("poItemsBody");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.item_name || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                    <td>${item.unit_price || "-"}</td>
+                    <td>${item.total_price || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase order details.");
+        });
+}
+
+function loadPOModule(){
+    fetch("/hod/po_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`PO list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("poBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No purchase orders found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="poSelect" data-po-id="${item.purchase_order_id}"></td>
+                    <td>${item.po_number || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.order_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='poSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#poBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectPO(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase order list.");
+        });
+}
+
+function searchGRN(){
+    let input = document.getElementById("grnSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#grnBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function printGRN(){
+    window.print();
+}
+
+function approveGRN(){
+    const selected = document.querySelector("input[name='grnSelect']:checked");
+    if (!selected) {
+        alert("Please select a GRN first.");
+        return;
+    }
+
+    const grnId = selected.dataset.grnId;
+    fetch(`/hod/grn_approve/${grnId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Approval failed.");
+        alert(data.message || "GRN approved.");
+        loadGRNModule();
+        selectGRN(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to approve GRN.");
+    });
+}
+
+function rejectGRN(){
+    const selected = document.querySelector("input[name='grnSelect']:checked");
+    if (!selected) {
+        alert("Please select a GRN first.");
+        return;
+    }
+
+    const grnId = selected.dataset.grnId;
+    fetch(`/hod/grn_reject/${grnId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remarks: "Rejected by HOD" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Rejection failed.");
+        alert(data.message || "GRN rejected.");
+        loadGRNModule();
+        selectGRN(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to reject GRN.");
+    });
+}
+
+function selectGRN(radio){
+    if(!radio || !radio.dataset.grnId){
+        alert("Please select a GRN");
+        return;
+    }
+
+    let grnId = radio.dataset.grnId;
+    fetch(`/hod/grn_details/${grnId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`GRN details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("grnNumber").innerText = data.grn_no || "-";
+            document.getElementById("grnPO").innerText = data.po_number || "-";
+            document.getElementById("grnPRS").innerText = data.prs_no || "-";
+            document.getElementById("grnSupplier").innerText = data.supplier_name || "-";
+            document.getElementById("grnReceivedBy").innerText = data.received_by || "-";
+            document.getElementById("grnStatus").innerText = data.inspection_status || "-";
+
+            let itemsBody = document.getElementById("grnItemsBody");
+            itemsBody.innerHTML = "";
+
+            let totalItems = 0;
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.material_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity_ordered || "-"}</td>
+                    <td>${item.quantity_received || "-"}</td>
+                    <td>${item.balance || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+                totalItems += 1;
+            });
+
+            document.getElementById("grnTotal").innerText = totalItems;
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load GRN details.");
+        });
+}
+
+function loadGRNModule(){
+    fetch("/hod/grn_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`GRN list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("grnBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No GRN records found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="grnSelect" data-grn-id="${item.grn_id}"></td>
+                    <td>${item.grn_no || "-"}</td>
+                    <td>${item.po_number || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.received_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='grnSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectGRN(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load GRN list.");
+        });
+}
+
+function approveQuotation(){
+    const selected = document.querySelector("input[name='quotationSelect']:checked");
+    if (!selected) {
+        alert("Please select a quotation first.");
+        return;
+    }
+
+    const qrfId = selected.dataset.qrfId;
+
+    fetch(`/hod/quotation_approve/${qrfId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || "Approval failed.");
+        }
+        alert(data.message || "Quotation approved.");
+        loadQuotationModule();
+        selectQuotation(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to approve quotation.");
+    });
+}
+
+function rejectQuotation(){
+    const selected = document.querySelector("input[name='quotationSelect']:checked");
+    if (!selected) {
+        alert("Please select a quotation first.");
+        return;
+    }
+
+    const qrfId = selected.dataset.qrfId;
+
+    fetch(`/hod/quotation_reject/${qrfId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ remarks: "Rejected by HOD" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || "Rejection failed.");
+        }
+        alert(data.message || "Quotation rejected.");
+        loadQuotationModule();
+        selectQuotation(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to reject quotation.");
+    });
+}
+
+function selectQuotation(radio){
+    if(!radio || !radio.dataset.qrfId){
+        alert("Please select a quotation");
+        return;
+    }
+
+    let qrfId = radio.dataset.qrfId;
+
+    fetch(`/hod/quotation_details/${qrfId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
+            document.getElementById("qrfPrs").innerText = data.prs_no || "-";
+            document.getElementById("qrfDate").innerText = data.request_date || "-";
+            document.getElementById("qr_requester").innerText = data.requester_name || "-";
+            document.getElementById("qr_department").innerText = data.department || "-";
+            document.getElementById("qr_contact").innerText = data.supplier_phone || "-";
+            document.getElementById("sp_to").innerText = data.supplier_name || "-";
+            document.getElementById("sp_name").innerText = data.supplier_name || "-";
+            document.getElementById("sp_location").innerText = data.supplier_address || "-";
+            document.getElementById("sp_item").innerText = data.items.length > 0 ? data.items[0].material_name : "-";
+
+            let itemsBody = document.getElementById("sharedPRS");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.material_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation details.");
+        });
+}
+
+function loadQuotationModule(){
+    fetch("/hod/quotation_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("quotationBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotations found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="quotationSelect" data-qrf-id="${item.qrf_id}"></td>
+                    <td>${item.qrf_no || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.request_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='quotationSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectQuotation(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation list.");
+        });
+}
+
+function showSupplierDetails(supplier){
+    document.getElementById("supName").innerText = supplier.supplier_name || "-";
+    document.getElementById("supContact").innerText = supplier.contact_person || "-";
+    document.getElementById("supPhone").innerText = supplier.phone || "-";
+    document.getElementById("supEmail").innerText = supplier.email || "-";
+    document.getElementById("supAddress").innerText = supplier.address || "-";
+    document.getElementById("supTin").innerText = supplier.tin_number || "-";
+    document.getElementById("supReg").innerText = supplier.registration_number || "-";
+    document.getElementById("supBank").innerText = supplier.bank_name || "-";
+    document.getElementById("supAccount").innerText = supplier.account_number || "-";
+}
+
+function loadSupplierModule(){
+    fetch("/hod/supplier_list")
+        .then(res => {
+            if (!res.ok) throw new Error(`Supplier list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("supplierBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;">No suppliers found.</td></tr>`;
+                showSupplierDetails({});
+                return;
+            }
+
+            data.forEach(supplier => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${supplier.supplier_name || "-"}</td>
+                    <td>${supplier.contact_person || "-"}</td>
+                    <td>${supplier.phone || "-"}</td>
+                    <td>${supplier.address || "-"}</td>
+                    <td>${supplier.email || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    document.querySelectorAll("#supplierBody tr").forEach(r => r.classList.remove("selected"));
+                    row.classList.add("selected");
+                    showSupplierDetails(supplier);
+                });
+                body.appendChild(row);
+            });
+
+            showSupplierDetails(data[0]);
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load suppliers.");
+        });
+}
 
 </script>
 

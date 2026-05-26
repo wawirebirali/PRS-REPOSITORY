@@ -147,6 +147,7 @@ CREATE TABLE purchase_order_items (
     po_item_id INT AUTO_INCREMENT PRIMARY KEY,
     purchase_order_id INT NOT NULL,
     item_name VARCHAR(255) NOT NULL,
+    description TEXT,
     quantity INT NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
@@ -510,6 +511,8 @@ CREATE TABLE grn_items (
     grn_id INT NOT NULL,
 
     material_name VARCHAR(255),
+
+    description TEXT,
 
     quantity_ordered DECIMAL(10,2),
 
