@@ -1173,6 +1173,190 @@ tr:hover{
 
 </div>
 
+<!-- ================= PAYMENT MODULE ================= -->
+<div id="payment" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">
+                Payment Management
+            </div>
+
+            <!-- SEARCH -->
+            <div class="search">
+
+                <input
+                    id="paymentSearch"
+                    type="text"
+                    onkeyup="searchPayment()"
+                    placeholder="Search Payment, Invoice, Supplier..."
+                >
+
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+
+                <button class="btn success"
+                        onclick="approvePayment()">
+                    Approve Payment
+                </button>
+
+                <button class="btn danger"
+                        onclick="rejectPayment()">
+                    Reject Payment
+                </button>
+
+                <button class="btn primary"
+                        onclick="printPayment()">
+                    Print
+                </button>
+
+            </div>
+
+            <!-- TABLE -->
+            <table id="paymentTable">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Select</th>
+                        <th>Payment No</th>
+                        <th>Invoice No</th>
+                        <th>Supplier</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="paymentBody">
+                    <!-- Loaded dynamically -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip" id="paymentPrintArea">
+
+                <h2>PAYMENT VOUCHER</h2>
+
+                <!-- PAYMENT INFO -->
+                <div class="info">
+
+                    <p>
+                        <b>Payment No:</b>
+                        <span id="payNumber">-</span>
+                    </p>
+
+                    <p>
+                        <b>Invoice No:</b>
+                        <span id="payInvoice">-</span>
+                    </p>
+
+                    <p>
+                        <b>Supplier:</b>
+                        <span id="paySupplier">-</span>
+                    </p>
+
+                    <p>
+                        <b>Amount:</b>
+                        <span id="payAmount">-</span>
+                    </p>
+
+                    <p>
+                        <b>Payment Method:</b>
+                        <span id="payMethod">-</span>
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        <span id="payStatus">-</span>
+                    </p>
+
+                    <p>
+                        <b>Date:</b>
+                        <span id="payDate">-</span>
+                    </p>
+
+                </div>
+
+                <!-- ITEMS -->
+                <h3>Invoice Items</h3>
+
+                <table class="items-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="paymentItemsBody">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURE -->
+                <div class="signature-section">
+
+                    <div class="sig-box">
+
+                        <p>Prepared By</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                    <div class="sig-box">
+
+                        <p>Approved By</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                    <div class="sig-box">
+
+                        <p>Finance</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 
 
 
