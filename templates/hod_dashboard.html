@@ -329,16 +329,19 @@ tr:hover{
 <h2>PRS SYSTEM</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button onclick="openModule('supplier',this)">Supplier</button>
-<button onclick="openModule('quotation',this)">Quotations</button>
-<button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
-<button onclick="openModule('invoice',this)">Invoice</button>
-<button onclick="openModule('grn',this)">GRN</button>
-<button onclick="openModule('payment',this)">Payment</button>
+<button class="active" onclick="openModule('supplier',this)">Supplier</button>
+<button class="active" onclick="openModule('quotation',this)">Quotations</button>
+<button class="active" onclick="openModule('purchaseOrder',this)">Purchase Order</button>
+<button class="active" onclick="openModule('grn',this)">GRN</button>
+<button class="active" onclick="openModule('invoice',this)">Invoice</button>
+<button class="active" onclick="openModule('payment',this)">Payment</button>
 </div>
 
 
 <div class="main">
+
+<!-- REQUISITION MODULE -->
+<div id="requisition" class="module active">
 
 <div class="container">
 
@@ -470,6 +473,9 @@ tr:hover{
 </div>
 
 </div>
+</div> <!-- END requisition module -->
+
+
 
 
 </div>
@@ -651,267 +657,386 @@ tr:hover{
 
 </div>
 
+
+
+<!-- ================= PURCHASE ORDER MODULE ================= -->
 <div id="purchaseOrder" class="module">
-<div class="container">
-<div class="left">
-<div class="header">Purchase Order Management</div>
 
-<div class="search">
-<input id="poSearch" type="text" onkeyup="searchPO()" placeholder="Search PO, Supplier, or Department...">
-</div>
-
-<div style="margin:10px 0;">
-<button class="btn success" onclick="approvePO()">Approve</button>
-<button class="btn danger" onclick="rejectPO()">Reject</button>
-<button class="btn primary" onclick="printPO()">Print</button>
-</div>
-
-<table id="poTable">
-<thead>
-<tr>
-<th>Select</th>
-<th>PO No</th>
-<th>PRS No</th>
-<th>Supplier</th>
-<th>Status</th>
-<th>Department</th>
-<th>Creation Date</th>
-</tr>
-</thead>
-<tbody id="poBody"></tbody>
-</table>
-
-</div>
-
-
-<div class="right">
-
-<div class="slip" id="poPrintArea">
-
-<h2>Purchase Order</h2>
-
-<div class="info">
-<p><b>PO Number:</b> <span id="poNumber">-</span></p>
-<p><b>Supplier:</b> <span id="poSupplier">-</span></p>
-<p><b>Date:</b> <span id="poDate">-</span></p>
-</div>
-
-<h3>Items</h3>
-
-<table class="items-table">
-<thead>
-<tr>
-<th>Material</th>
-<th>Qty</th>
-<th>Price</th>
-<th>Total</th>
-</tr>
-</thead>
-<tbody id="poItemsBody"></tbody>
-</table>
-
-<div class="info">
-<p><b>Total:</b> <span id="poTotal">0</span></p>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- GRN MODULE -->
-<div id="grn" class="module">
     <div class="container">
+
+        <!-- LEFT PANEL -->
         <div class="left">
-            <div class="header">Goods Received Note (GRN)</div>
 
+            <div class="header">
+                Purchase Order Management
+            </div>
+
+            <!-- SEARCH -->
             <div class="search">
-                <input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN, PO or PRS...">
+
+                <input
+                    id="poSearch"
+                    type="text"
+                    onkeyup="searchPO()"
+                    placeholder="Search PO, Supplier, or Department..."
+                >
+
             </div>
 
+            <!-- ACTION BUTTONS -->
             <div style="margin:10px 0;">
-                <button class="btn success" onclick="approveGRN()">Approve</button>
-                <button class="btn danger" onclick="rejectGRN()">Reject</button>
-                <button class="btn primary" onclick="printGRN()">Print GRN</button>
+
+                <button class="btn success"
+                        onclick="approvePO()">
+                    Approve
+                </button>
+
+                <button class="btn danger"
+                        onclick="rejectPO()">
+                    Reject
+                </button>
+
+                <button class="btn primary"
+                        onclick="printPO()">
+                    Print
+                </button>
+
             </div>
 
-            <table id="grnTable">
+            <!-- TABLE -->
+            <table id="poTable">
+
                 <thead>
+
                     <tr>
+
                         <th>Select</th>
-                        <th>GRN No</th>
                         <th>PO No</th>
                         <th>PRS No</th>
                         <th>Supplier</th>
                         <th>Status</th>
-                        <th>Received Date</th>
+                        <th>Department</th>
+                        <th>Creation Date</th>
+
                     </tr>
+
                 </thead>
-                <tbody id="grnBody"></tbody>
+
+                <tbody id="poBody">
+                    <!-- PO rows loaded dynamically -->
+                </tbody>
+
             </table>
+
         </div>
 
+        <!-- RIGHT PANEL -->
         <div class="right">
-            <div class="slip" id="grnPrintArea">
-                <h2>GOODS RECEIVED NOTE</h2>
 
+            <div class="slip" id="poPrintArea">
+
+                <!-- HEADER -->
+                <h2>Purchase Order</h2>
+
+                <!-- INFO -->
                 <div class="info">
-                    <p><b>GRN No:</b> <span id="grnNumber">-</span></p>
-                    <p><b>PO No:</b> <span id="grnPO">-</span></p>
-                    <p><b>PRS No:</b> <span id="grnPRS">-</span></p>
-                    <p><b>Supplier:</b> <span id="grnSupplier">-</span></p>
-                    <p><b>Received By:</b> <span id="grnReceivedBy">-</span></p>
-                    <p><b>Status:</b> <span id="grnStatus">-</span></p>
+
+                    <p>
+                        <b>PO Number:</b>
+                        <span id="poNumber">-</span>
+                    </p>
+
+                    <p>
+                        <b>Supplier:</b>
+                        <span id="poSupplier">-</span>
+                    </p>
+
+                    <p>
+                        <b>Date:</b>
+                        <span id="poDate">-</span>
+                    </p>
+
                 </div>
 
-                <h3>Received Items</h3>
+                <!-- ITEMS -->
+                <h3>Items</h3>
+
                 <table class="items-table">
+
                     <thead>
+
                         <tr>
+
                             <th>Material</th>
-                            <th>Description</th>
-                            <th>Ordered</th>
-                            <th>Received</th>
-                            <th>Balance</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+
                         </tr>
+
                     </thead>
-                    <tbody id="grnItemsBody"></tbody>
+
+                    <tbody id="poItemsBody">
+                        <!-- PO items loaded dynamically -->
+                    </tbody>
+
                 </table>
 
+                <!-- TOTAL -->
                 <div class="info">
-                    <p><b>Total Items Received:</b> <span id="grnTotal">0</span></p>
+
+                    <p>
+                        <b>Total:</b>
+                        <span id="poTotal">0</span>
+                    </p>
+
                 </div>
 
-                <div class="footer">
-                    <p>The goods were received subject to inspection and verification.</p>
-                    <div class="signature">
-                        <div class="sig">Received By</div>
-                        <div class="sig">Verified By</div>
-                        <div class="sig">Supplier</div>
-                    </div>
-                </div>
             </div>
+
         </div>
+
     </div>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div id="invoice" class="module">
-
-<!-- LEFT -->
-<div class="left">
-
-<div class="header">Invoice Management</div>
-
-<div class="search">
-<input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
-</div>
-
-<div style="margin:10px 0;">
-<button class="btn primary" onclick="printInvoice()">Print Invoice</button>
-<button class="btn success" onclick="createInvoice()">Record Invoice Details</button>
 
 </div>
 
-<table id="invoiceTable">
 
-<tr>
-<th>Prs_no</th>
-<th>Invoice No</th>
-<th>GRN No</th>
-<th>Supplier</th>
-<th>Department</th>
-<th>Status</th>
-</tr>
 
-</table>
 
-</div>
 
-<!-- RIGHT -->
+
+
+
+
+
+
+
+
+
+<!-- ================= GRN MODULE ================= -->
+<div id="grn" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Goods Received Note (GRN)</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                
+                <input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN or PRS...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printGRN()">Print GRN</button>
+                <button class="btn primary" onclick="approveGRN()">Approve GRN</button>
+                <button class="btn danger" onclick="rejectGRN()">Reject GRN</button>
+            </div>
+
+            <!-- TABLE -->
+            <table id="grnTable">
+
+                <thead>
+                    <th>Select</th>
+                    <th>Quotation No</th>
+                    <th> PRS_NO</th>
+                    <th>Supplier Name</th>
+                    <th>STATUS</th>
+                    <th>DEPARTMENT</th>
+                    <th>CREATION DATE</th>
+                </thead>
+
+                <tbody id="grnBody">
+                <!-- GRN rows loaded from procurement_view backend -->
+            </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- RIGHT PANEL -->
 <div class="right">
 
-<div class="slip" id="invoicePrintArea">
+<div class="slip" id="grnPrintArea">
 
-<h2>PURCHASE INVOICE</h2>
+    <!-- HEADER -->
+    <div class="header">
 
-<div class="info">
-<p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
-<p><b>GRN No:</b> <span id="i_grn">-</span></p>
-<p><b>Supplier:</b> <span id="i_supplier">-</span></p>
-<p><b>Amount:</b> <span id="i_amount">-</span></p>
-<p><b>Date:</b> <span id="i_date">-</span></p>
+        <h2>GOODS RECEIVED NOTE (GRN)</h2>
+
+        <p>
+            <b>Official Receiving Document</b>
+        </p>
+
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="info-section">
+
+        <div class="box">
+
+            <p>
+                <b>GRN Number:</b>
+                <span id="grnNumber">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Date:</b>
+                <span id="grnDate">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>PO Number:</b>
+                <span id="grnPO">- <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+        <div class="box">
+
+            <p>
+                <b>Supplier:</b>
+                <span id="grnSupplier">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Received By:</b>
+                <span id="grnReceiver">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Delivery Status:</b>
+                <span id="grnStatus">- <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- DELIVERY INFO -->
+    <div class="supplier-section">
+
+        <p>
+            <b>Delivery Location:</b>
+            <span id="grnLocation">- <!-- static sample removed --> </span>
+        </p>
+
+        <p>
+            <b>Receiving Date:</b>
+            <span id="grnReceivingDate">- <!-- static sample removed --> </span>
+        </p>
+
+    </div>
+
+    <!-- ITEMS -->
+    <h3>Received Items</h3>
+
+    <table class="items-table" id="grnItemsTable">
+
+        <thead>
+
+        <tr>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Balance</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="grnItemsBody">
+            <!-- GRN line items loaded from procurement_view backend -->
+        </tbody>
+
+    </table>
+
+    <!-- SUMMARY -->
+    <div class="info-section" style="margin-top:20px;">
+
+        <div class="box">
+
+            <p>
+                <b>Total Items Received:</b>
+                <span id="grnTotal">0 <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+
+        <p>
+            The above items were received
+            in good condition unless stated otherwise.
+        </p>
+
+        <!-- SIGNATURES -->
+        <div class="signature-section">
+
+            <div class="sig-box">
+
+                <p>Received By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Verified By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Supplier Representative</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+
+        <button class="btn print"
+                onclick="window.print()">
+            Print / Save PDF
+        </button>
+
+        <button class="btn whatsapp"
+                onclick="shareGRNWhatsApp()">
+            Share WhatsApp
+        </button>
+
+        <button class="btn email"
+                onclick="shareGRNEmail()">
+            Email Supplier
+        </button>
+
+    </div>
+
 </div>
 
-<h3>Items</h3>
-
-<table class="items-table">
-
-<tr>
-<th>Item</th>
-<th>Qty</th>
-<th>Unit Price</th>
-<th>Total</th>
-</tr>
-
-<tr>
-<td>Laptop</td>
-<td>2</td>
-<td>500</td>
-<td>1000</td>
-</tr>
-
-<tr>
-<td>Printer</td>
-<td>1</td>
-<td>200</td>
-<td>200</td>
-</tr>
-
-</table>
-
-<div class="signature">
-<div class="sig">Supplier</div>
-<div class="sig">Procurement</div>
-<div class="sig">Finance</div>
 </div>
-
-</div>
-
-</div>
+    </div>
 
 </div>
 
@@ -927,14 +1052,131 @@ tr:hover{
 
 
 
-<!-- ================= PAYMENT ================= -->
-<div id="payment" class="module">
-<h2>Payment Module</h2>
+
+
+
+
+
+<!-- ================= INVOICE MODULE ================= -->
+<div id="invoice" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Invoice Management</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
+                
+            </div>
+
+            <!-- TABLE -->
+            <table id="invoiceTable">
+
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>PRS No</th>
+                        <th>Invoice No</th>
+                        <th>GRN No</th>
+                        <th>Supplier</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>submission_date</th>
+                    </tr>
+                </thead>
+
+                <tbody id="invoiceBody">
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip" id="invoicePrintArea">
+
+                <h2>PURCHASE INVOICE</h2>
+
+                <!-- INFO -->
+                <div class="info">
+                    <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
+                    <p><b>GRN No:</b> <span id="i_grn">-</span></p>
+                    <p><b>Supplier:</b> <span id="i_supplier">-</span></p>
+                    <p><b>Amount:</b> <span id="i_amount">-</span></p>
+                    <p><b>Date:</b> <span id="i_date">-</span></p>
+                </div>
+
+                <h3>Items</h3>
+
+                <!-- ITEMS TABLE -->
+                <table class="items-table">
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Laptop</td>
+                            <td>2</td>
+                            <td>500</td>
+                            <td>1000</td>
+                        </tr>
+
+                        <tr>
+                            <td>Printer</td>
+                            <td>1</td>
+                            <td>200</td>
+                            <td>200</td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURES -->
+                <div class="signature">
+                    <div class="sig">Supplier</div>
+                    <div class="sig">Procurement</div>
+                    <div class="sig">Finance</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
 
 
 
+
+
+
+
+
 </div>
+
+
+
+
+
 
 <script >
 
@@ -1259,165 +1501,394 @@ function loadPOModule(){
         });
 }
 
-function searchGRN(){
-    let input = document.getElementById("grnSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#grnBody tr");
+
+
+
+
+
+// =======================================================
+// LOAD ALL GRN DATA
+// =======================================================
+async function loadGRNData() {
+
+    try {
+
+        const response = await fetch("/hod/grn_data");
+
+        const data = await response.json();
+
+        const tbody = document.getElementById("grnBody");
+
+        tbody.innerHTML = "";
+
+        data.forEach(grn => {
+
+            tbody.innerHTML += `
+
+                <tr onclick="loadGRNDetails(${grn.grn_id})">
+
+                    <td>
+                        <input 
+                            type="radio"
+                            name="selectedGRN"
+                            value="${grn.grn_id}"
+                        >
+                    </td>
+
+                    <td>${grn.grn_no || ''}</td>
+
+                    <td>${grn.prs_no || ''}</td>
+
+                    <td>${grn.supplier_name || ''}</td>
+
+                    <td>${grn.status || ''}</td>
+
+                    <td>${grn.department || ''}</td>
+
+                    <td>${formatDate(grn.received_date)}</td>
+
+                </tr>
+
+            `;
+        });
+
+    }
+    catch (error) {
+
+        console.error("Error loading GRN data:", error);
+    }
+}
+
+
+// =======================================================
+// LOAD SINGLE GRN DETAILS
+// =======================================================
+async function loadGRNDetails(grnId) {
+
+    try {
+
+        const response = await fetch(`/hod/grn_details/${grnId}`);
+
+        const data = await response.json();
+
+        // ===================================================
+        // HEADER
+        // ===================================================
+        document.getElementById("grnNumber").innerText =
+            data.grn_no || "-";
+
+        document.getElementById("grnDate").innerText =
+            formatDate(data.received_date);
+
+        document.getElementById("grnPO").innerText =
+            data.po_number || "-";
+
+        document.getElementById("grnSupplier").innerText =
+            data.supplier_name || "-";
+
+        document.getElementById("grnReceiver").innerText =
+            data.received_by || "-";
+
+        document.getElementById("grnStatus").innerText =
+            data.inspection_status || "-";
+
+        document.getElementById("grnLocation").innerText =
+            data.supplier_address || "-";
+
+        document.getElementById("grnReceivingDate").innerText =
+            formatDate(data.received_date);
+
+        document.getElementById("grnTotal").innerText =
+            data.total_received || 0;
+
+        // ===================================================
+        // ITEMS
+        // ===================================================
+        const tbody = document.getElementById("grnItemsBody");
+
+        tbody.innerHTML = "";
+
+        data.items.forEach(item => {
+
+            tbody.innerHTML += `
+
+                <tr>
+
+                    <td>${item.material_name || ''}</td>
+
+                    <td>${item.description || ''}</td>
+
+                    <td>${item.quantity_ordered || 0}</td>
+
+                    <td>${item.quantity_received || 0}</td>
+
+                    <td>${item.balance || 0}</td>
+
+                </tr>
+
+            `;
+        });
+
+    }
+    catch (error) {
+
+        console.error("Error loading GRN details:", error);
+    }
+}
+
+
+// =======================================================
+// SEARCH GRN
+// =======================================================
+function searchGRN() {
+
+    const input = document
+        .getElementById("grnSearch")
+        .value
+        .toLowerCase();
+
+    const rows = document.querySelectorAll("#grnTable tbody tr");
 
     rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+
+        const text = row.innerText.toLowerCase();
+
+        row.style.display =
+            text.includes(input)
+            ? ""
+            : "none";
     });
 }
 
-function printGRN(){
-    window.print();
-}
 
-function approveGRN(){
-    const selected = document.querySelector("input[name='grnSelect']:checked");
+// =======================================================
+// GET SELECTED GRN ID
+// =======================================================
+function getSelectedGRN() {
+
+    const selected = document.querySelector(
+        'input[name="selectedGRN"]:checked'
+    );
+
     if (!selected) {
-        alert("Please select a GRN first.");
-        return;
-    }
 
-    const grnId = selected.dataset.grnId;
-    fetch(`/hod/grn_approve/${grnId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) throw new Error(data.message || "Approval failed.");
-        alert(data.message || "GRN approved.");
-        loadGRNModule();
-        selectGRN(selected);
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to approve GRN.");
-    });
-}
-
-function rejectGRN(){
-    const selected = document.querySelector("input[name='grnSelect']:checked");
-    if (!selected) {
-        alert("Please select a GRN first.");
-        return;
-    }
-
-    const grnId = selected.dataset.grnId;
-    fetch(`/hod/grn_reject/${grnId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ remarks: "Rejected by HOD" })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) throw new Error(data.message || "Rejection failed.");
-        alert(data.message || "GRN rejected.");
-        loadGRNModule();
-        selectGRN(selected);
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to reject GRN.");
-    });
-}
-
-function selectGRN(radio){
-    if(!radio || !radio.dataset.grnId){
         alert("Please select a GRN");
-        return;
+
+        return null;
     }
 
-    let grnId = radio.dataset.grnId;
-    fetch(`/hod/grn_details/${grnId}`)
-        .then(res => {
-            if (!res.ok) throw new Error(`GRN details request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            if(data.error){
-                alert(data.error);
-                return;
-            }
-
-            document.getElementById("grnNumber").innerText = data.grn_no || "-";
-            document.getElementById("grnPO").innerText = data.po_number || "-";
-            document.getElementById("grnPRS").innerText = data.prs_no || "-";
-            document.getElementById("grnSupplier").innerText = data.supplier_name || "-";
-            document.getElementById("grnReceivedBy").innerText = data.received_by || "-";
-            document.getElementById("grnStatus").innerText = data.inspection_status || "-";
-
-            let itemsBody = document.getElementById("grnItemsBody");
-            itemsBody.innerHTML = "";
-
-            let totalItems = 0;
-            data.items.forEach(item => {
-                let itemRow = document.createElement("tr");
-                itemRow.innerHTML = `
-                    <td>${item.material_name || "-"}</td>
-                    <td>${item.description || "-"}</td>
-                    <td>${item.quantity_ordered || "-"}</td>
-                    <td>${item.quantity_received || "-"}</td>
-                    <td>${item.balance || "-"}</td>
-                `;
-                itemsBody.appendChild(itemRow);
-                totalItems += 1;
-            });
-
-            document.getElementById("grnTotal").innerText = totalItems;
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load GRN details.");
-        });
+    return selected.value;
 }
 
-function loadGRNModule(){
-    fetch("/hod/grn_data")
-        .then(res => {
-            if (!res.ok) throw new Error(`GRN list request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            let body = document.getElementById("grnBody");
-            body.innerHTML = "";
 
-            if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No GRN records found.</td></tr>`;
-                return;
+// =======================================================
+// APPROVE GRN
+// =======================================================
+async function approveGRN() {
+
+    const grnId = getSelectedGRN();
+
+    if (!grnId) return;
+
+    if (!confirm("Approve this GRN?")) return;
+
+    try {
+
+        const response = await fetch(
+            `/hod/approve_grn/${grnId}`,
+            {
+                method: "POST"
             }
+        );
 
-            data.forEach(item => {
-                let row = document.createElement("tr");
-                row.style.cursor = "pointer";
-                row.innerHTML = `
-                    <td><input type="radio" name="grnSelect" data-grn-id="${item.grn_id}"></td>
-                    <td>${item.grn_no || "-"}</td>
-                    <td>${item.po_number || "-"}</td>
-                    <td>${item.prs_no || "-"}</td>
-                    <td>${item.supplier_name || "-"}</td>
-                    <td>${item.status || "-"}</td>
-                    <td>${item.received_date || "-"}</td>
-                `;
-                row.addEventListener("click", () => {
-                    const radio = row.querySelector("input[name='grnSelect']");
-                    if (radio) {
-                        radio.checked = true;
-                        document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
-                        row.classList.add("selected");
-                        selectGRN(radio);
-                    }
-                });
-                body.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load GRN list.");
-        });
+        const result = await response.json();
+
+        alert(result.message);
+
+        loadGRNData();
+
+        loadGRNDetails(grnId);
+
+    }
+    catch (error) {
+
+        console.error("Approval error:", error);
+    }
 }
+
+
+// =======================================================
+// REJECT GRN
+// =======================================================
+async function rejectGRN() {
+
+    const grnId = getSelectedGRN();
+
+    if (!grnId) return;
+
+    if (!confirm("Reject this GRN?")) return;
+
+    try {
+
+        const response = await fetch(
+            `/hod/reject_grn/${grnId}`,
+            {
+                method: "POST"
+            }
+        );
+
+        const result = await response.json();
+
+        alert(result.message);
+
+        loadGRNData();
+
+        loadGRNDetails(grnId);
+
+    }
+    catch (error) {
+
+        console.error("Reject error:", error);
+    }
+}
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printGRN() {
+
+    const content = document.getElementById(
+        "grnPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print GRN</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+// =======================================================
+// SHARE WHATSAPP
+// =======================================================
+function shareGRNWhatsApp() {
+
+    const grnNo =
+        document.getElementById("grnNumber").innerText;
+
+    const supplier =
+        document.getElementById("grnSupplier").innerText;
+
+    const message = `
+
+GRN Number: ${grnNo}
+Supplier: ${supplier}
+
+Goods Received Successfully.
+
+    `;
+
+    const url =
+        "https://wa.me/?text=" +
+        encodeURIComponent(message);
+
+    window.open(url, "_blank");
+}
+
+
+// =======================================================
+// SHARE EMAIL
+// =======================================================
+function shareGRNEmail() {
+
+    const grnNo =
+        document.getElementById("grnNumber").innerText;
+
+    const supplier =
+        document.getElementById("grnSupplier").innerText;
+
+    const body = `
+
+GRN Number: ${grnNo}
+Supplier: ${supplier}
+
+Goods Received Successfully.
+
+    `;
+
+    window.location.href =
+        `mailto:?subject=GRN ${grnNo}&body=${encodeURIComponent(body)}`;
+}
+
+
+// =======================================================
+// FORMAT DATE
+// =======================================================
+function formatDate(dateString) {
+
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString();
+}
+
+
+// =======================================================
+// LOAD ON PAGE OPEN
+// =======================================================
+document.addEventListener(
+    "DOMContentLoaded",
+    loadGRNData
+);
+
+
+
 
 function approveQuotation(){
     const selected = document.querySelector("input[name='quotationSelect']:checked");
