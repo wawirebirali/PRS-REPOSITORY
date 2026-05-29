@@ -1,11 +1,17 @@
-/* GLOBAL */
+/* =========================================
+   GLOBAL
+========================================= */
+
 body{
     margin:0;
     font-family:Arial, Helvetica, sans-serif;
     background:#f4f6fb;
 }
 
-/* HEADER */
+/* =========================================
+   HEADER
+========================================= */
+
 .header{
     background:#2C7A7B;
     color:white;
@@ -18,12 +24,18 @@ body{
     font-size:22px;
 }
 
-/* LAYOUT */
+/* =========================================
+   LAYOUT
+========================================= */
+
 .container{
     display:flex;
 }
 
-/* SIDEBAR */
+/* =========================================
+   SIDEBAR
+========================================= */
+
 .sidebar{
     width:240px;
     background:#111827;
@@ -41,6 +53,7 @@ body{
     border-radius:6px;
     text-decoration:none;
     cursor:pointer;
+    border:none;
 }
 
 .btn:hover,
@@ -48,13 +61,19 @@ body{
     background:#1f5f61;
 }
 
-/* CONTENT */
+/* =========================================
+   CONTENT
+========================================= */
+
 .content{
     flex:1;
     padding:20px;
 }
 
-/* SECTIONS */
+/* =========================================
+   SECTIONS
+========================================= */
+
 .section{
     display:none;
     background:white;
@@ -67,7 +86,10 @@ body{
     display:block;
 }
 
-/* ACTION BAR */
+/* =========================================
+   ACTION BAR
+========================================= */
+
 .action-bar{
     display:flex;
     gap:10px;
@@ -87,7 +109,10 @@ body{
     background:#1f5f61;
 }
 
-/* TABLE */
+/* =========================================
+   TABLE
+========================================= */
+
 table{
     width:100%;
     border-collapse:collapse;
@@ -111,3 +136,302 @@ tbody tr{
 tbody tr.selected{
     background:#cfeeee;
 }
+
+/* =========================================
+   REPORT SECTION
+========================================= */
+
+.report-card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-top:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.report-header{
+    margin-bottom:20px;
+}
+
+.report-header h2{
+    margin:0;
+    color:#2C7A7B;
+    font-size:24px;
+}
+
+/* FORM */
+
+.form-section{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group label{
+    margin-bottom:8px;
+    font-weight:bold;
+    color:#374151;
+}
+
+.form-group input,
+.form-group select{
+    padding:12px;
+    border:1px solid #d1d5db;
+    border-radius:6px;
+    font-size:14px;
+    outline:none;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    border-color:#2C7A7B;
+    box-shadow:0 0 5px rgba(44,122,123,0.3);
+}
+
+/* FORM BUTTONS */
+
+.form-group button{
+    margin-top:28px;
+    padding:12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+    background:#2C7A7B;
+    color:white;
+}
+
+.form-group button:hover{
+    background:#1f5f61;
+}
+
+/* DOWNLOAD BUTTON */
+
+.download-btn{
+    background:#16a34a !important;
+    color:white;
+}
+
+.download-btn:hover{
+    background:#15803d !important;
+}
+
+/* =========================================
+   REPORT OUTPUT
+========================================= */
+
+#reportContainer{
+    margin-top:25px;
+    overflow-x:auto;
+}
+
+#reportContainer table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    background:white;
+}
+
+#reportContainer table thead{
+    background:#2C7A7B;
+    color:white;
+}
+
+#reportContainer table th,
+#reportContainer table td{
+    border:1px solid #ddd;
+    padding:12px;
+    text-align:left;
+    font-size:14px;
+}
+
+#reportContainer table tbody tr:nth-child(even){
+    background:#f9fafb;
+}
+
+#reportContainer table tbody tr:hover{
+    background:#eef7f7;
+}
+
+/* SUMMARY */
+
+.summary{
+    margin-top:20px;
+    background:#dcfce7;
+    color:#166534;
+    padding:15px;
+    border-radius:8px;
+    font-weight:bold;
+}
+
+/* TEXT */
+
+#reportContainer h2{
+    color:#111827;
+    margin-bottom:10px;
+}
+
+#reportContainer p{
+    margin-top:10px;
+    margin-bottom:15px;
+    color:#374151;
+}
+
+/* =========================================
+   USER BUTTON GROUP (FIXED)
+========================================= */
+
+.button-group{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:nowrap;
+}
+
+.button-group .btn{
+    width:auto;
+    flex:0 0 auto;
+    white-space:nowrap;
+}
+/* BUTTON COLORS */
+
+.primary{
+    background:#2C7A7B;
+}
+
+.primary:hover{
+    background:#1f5f61;
+}
+
+.danger{
+    background:#dc2626;
+}
+
+.danger:hover{
+    background:#b91c1c;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media(max-width:768px){
+
+    .container{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        width:100%;
+        min-height:auto;
+    }
+
+    .content{
+        width:100%;
+    }
+
+    .form-section{
+        grid-template-columns:1fr;
+    }
+
+    .action-bar{
+        flex-direction:column;
+    }
+
+    .form-group button{
+        width:100%;
+    }
+
+    table{
+        display:block;
+        overflow-x:auto;
+    }
+
+    
+}
+
+/* =========================================
+   NOTIFICATIONS */
+
+.notif-bar{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.notif-bar input{
+    flex:1;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+}
+
+.notif-bar button{
+    padding:10px 15px;
+    border:none;
+    border-radius:6px;
+    background:#2C7A7B;
+    color:white;
+    cursor:pointer;
+}
+
+.notif-bar button:hover{
+    background:#1f5f61;
+}
+
+#notifContainer{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.notif{
+    background:#f9fafb;
+    border-left:5px solid #2C7A7B;
+    padding:15px;
+    border-radius:6px;
+    position:relative;
+}
+
+.notif h4{
+    margin:0;
+    color:#111827;
+}
+
+.notif p{
+    margin:5px 0;
+    color:#374151;
+}
+
+.notif span{
+    font-size:12px;
+    color:#6b7280;
+}
+
+.notif button{
+    margin-top:10px;
+    padding:5px 10px;
+    border:none;
+    border-radius:4px;
+    background:#16a34a;
+    color:white;
+    cursor:pointer;
+    font-size:12px;
+}
+
+.notif button:hover{
+    background:#15803d;
+}
+
+/* UNREAD STYLE */
+.notif.unread{
+    background:#e0f2fe;
+    border-left-color:#2563eb;
+}
+

@@ -5,220 +5,235 @@
 <title>PRS ERP Dashboard</title>
 
 <style>
-body{
-margin:0;
-font-family:Segoe UI, Arial;
-background:#eef2f7;
-display:flex;
+/* =========================
+   GLOBAL RESET
+========================= */
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI, Arial, sans-serif;
 }
 
-/* SIDEBAR */
+body{
+    background:#eef2f7;
+    display:flex;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
 .sidebar{
-width:230px;
-background:#2C7A7B;
-color:white;
-height:100vh;
-position:fixed;
-left:0;
-top:0;
+    width:230px;
+    background:#2C7A7B;
+    color:white;
+    height:100vh;
+    position:fixed;
+    left:0;
+    top:0;
 }
 
 .sidebar h2{
-text-align:center;
-padding:20px;
-border-bottom:1px solid rgba(255,255,255,0.1);
+    text-align:center;
+    padding:20px;
+    border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
 .sidebar button{
-width:100%;
-padding:14px 20px;
-border:none;
-background:none;
-color:white;
-text-align:left;
-cursor:pointer;
+    width:100%;
+    padding:14px;
+    border:none;
+    background:none;
+    color:white;
+    text-align:left;
+    cursor:pointer;
 }
 
 .sidebar button:hover{
-background:#1f5f61;
+    background:#1f5f61;
 }
 
 .sidebar button.active{
-background:#2C7A7B;
+    background:#1f5f61;
 }
 
-/* MAIN */
+/* =========================
+   MAIN
+========================= */
 .main{
-margin-left:230px;
-width:100%;
-padding:15px;
+    margin-left:230px;
+    width:100%;
+    padding:15px;
 }
 
-/* MODULES */
+/* =========================
+   MODULE SYSTEM (FIXED)
+========================= */
 .module{
-display:none;
+    display:none;
+    width:100%;
 }
 
 .module.active{
-display:flex;
-gap:15px;
+    display:block; /* IMPORTANT FIX: prevents layout break */
 }
 
-/* LEFT */
+/* =========================
+   REQUISITION ONLY FLEX LAYOUT
+========================= */
+#requisition.module.active{
+    display:flex;
+    gap:15px;
+}
+
+/* =========================
+   LEFT / RIGHT PANELS
+========================= */
 .left{
-width:65%;
+    flex:2;
+    min-width:0;
 }
 
-/* HEADER */
+.right{
+    flex:1;
+    min-width:300px;
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   CONTAINER (for invoice/payment)
+========================= */
+.container{
+    display:flex;
+    gap:15px;
+    width:100%;
+}
+
+/* =========================
+   HEADER
+========================= */
 .header{
-background:white;
-padding:15px;
-border-radius:10px;
-font-weight:bold;
-margin-bottom:15px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:10px;
+    font-weight:bold;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* SEARCH */
-.search input{
-padding:10px;
-width:60%;
-border-radius:6px;
-border:1px solid #ddd;
-}
-
-/* BUTTONS */
-.btn{
-padding:8px 12px;
-border:none;
-color:white;
-border-radius:6px;
-cursor:pointer;
-margin-right:5px;
-}
-
-.primary{background:#2C7A7B;}
-.success{background:#16a34a;}
-.danger{background:#dc2626;}
-
-/* TABLE */
+/* =========================
+   TABLES
+========================= */
 table{
-width:100%;
-border-collapse:collapse;
-background:white;
-border-radius:10px;
-overflow:hidden;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:8px;
+    overflow:hidden;
 }
 
-th{
-background:#f1f5f9;
-padding:12px;
-text-align:left;
-}
-
-td{
-padding:12px;
-border-bottom:1px solid #eee;
-cursor:pointer;
+th, td{
+    padding:10px;
+    border-bottom:1px solid #eee;
+    text-align:left;
 }
 
 tr:hover{
-background:#f9fafb;
+    background:#f9fafb;
+    cursor:pointer;
 }
 
 .selected{
-background:#dbeafe !important;
+    background:#dbeafe !important;
 }
 
-/* RIGHT */
-.right{
-width:35%;
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.08);
+/* =========================
+   BUTTONS
+========================= */
+.btn{
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    color:white;
+    display:inline-block;
 }
 
-/* SLIP */
+.primary{ background:#2C7A7B; }
+.success{ background:#16a34a; }
+.danger{ background:#dc2626; }
+
+/* =========================
+   ACTION BUTTON GROUPS
+========================= */
+.action-buttons{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:10px 0;
+}
+
+/* =========================
+   SEARCH INPUTS
+========================= */
+input[type="text"], input[type="date"], input[type="number"]{
+    padding:10px;
+    border:1px solid #ddd;
+    border-radius:6px;
+    outline:none;
+}
+
+/* =========================
+   SLIP PANEL
+========================= */
 .slip h2{
-background:#2C7A7B;
-color:white;
-padding:12px;
-border-radius:8px;
-text-align:center;
+    background:#2C7A7B;
+    color:white;
+    padding:10px;
+    text-align:center;
+    border-radius:6px;
 }
 
 .info{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-margin:15px 0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:10px;
 }
 
 .info p{
-background:#f3f4f6;
-padding:10px;
-border-radius:6px;
-font-size:13px;
+    background:#f3f4f6;
+    padding:8px;
+    border-radius:6px;
+    font-size:13px;
 }
 
-/* ITEMS */
-.items-table{
-width:100%;
-border-collapse:collapse;
-font-size:13px;
+/* =========================
+   PAYMENT FORM
+========================= */
+#createPaymentForm{
+    margin-top:15px;
+    background:white;
+    padding:15px;
+    border-radius:8px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
 }
 
-.items-table th,
-.items-table td{
-border:1px solid #ddd;
-padding:8px;
-}
+/* =========================
+   RESPONSIVE FIX
+========================= */
+@media(max-width:900px){
+    #requisition.module.active,
+    .container{
+        flex-direction:column;
+    }
 
-/* SIGNATURE */
-.signature{
-margin-top:25px;
-display:flex;
-justify-content:space-between;
-font-size:12px;
-}
-
-.sig{
-width:30%;
-border-top:1px solid #333;
-padding-top:5px;
-text-align:center;
-}
-
-/* PRINT ONLY SLIP */
-@media print{
-
-body *{
-visibility:hidden;
-}
-
-#printArea,
-#printArea *{
-visibility:visible;
-}
-
-#printArea{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-}
-
-}
-
-/* MODULE PLACEHOLDER */
-.placeholder{
-background:white;
-padding:20px;
-border-radius:10px;
-width:100%;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
+    .right{
+        min-width:100%;
+    }
 }
 </style>
 </head>
@@ -230,10 +245,8 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 <h2>PRS SYSTEM</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button onclick="openModule('supplier',this)">Supplier</button>
 <button onclick="openModule('invoice',this)">Invoice</button>
 <button onclick="openModule('payment',this)">Payment</button>
-<button onclick="openModule('grn',this)">GRN</button>
 </div>
 
 <!-- MAIN -->
@@ -246,40 +259,31 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
 <div class="header">Purchase Requisitions</div>
 
-<div class="search">
-<input type="text" onkeyup="searchPRS()" placeholder="Search PRS...">
-</div>
-
-<div style="margin:10px 0;">
-<button class="btn primary" onclick="printPRS()">Print</button>
-<form id="approveForm" method="POST" action="" style="display:inline;">
-    <button type="submit" class="btn success">Approve</button>
-</form>
-<form id="rejectForm" method="POST" action="" style="display:inline;">
-    <button type="submit" class="btn danger">Reject</button>
-</form>
-</div>
+<input type="text" id="searchBox" placeholder="Search PRS..."
+onkeyup="searchPRS()">
 
 <table id="prsTable">
-
+<thead>
 <tr>
 <th>Select</th>
 <th>PRS No</th>
 <th>Department</th>
 <th>Status</th>
-<th>Submission</th>
-<th>Approval</th>
+<th>Date</th>
 </tr>
+</thead>
+
+<tbody>
 {% for req in requisitions %}
 <tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
-<td><input type="radio" name="prs"></td>
+<td><input type="radio"></td>
 <td>{{ req.prs_no }}</td>
 <td>{{ req.department_name }}</td>
-<td>{{ req.status }}</td>
-<td>{{ req.submission_date.strftime('%Y-%m-%d') if req.submission_date else '-' }}</td>
-<td>-</td>
+<td>{{ req.hod_status }}</td>
+<td>{{ req.submission_date }}</td>
 </tr>
 {% endfor %}
+</tbody>
 </table>
 
 </div>
@@ -289,30 +293,13 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
 <div id="printArea" class="slip">
 
-<h2>PURCHASE REQUISITION SLIP</h2>
+<h2>PRS SLIP</h2>
 
 <div class="info">
-<p><b>PRS No:</b> <span id="d_prs">-</span></p>
-<p><b>Department:</b> <span id="d_dept">-</span></p>
-<p><b>Status:</b> <span id="d_status">-</span></p>
-<p><b>Submission:</b> <span id="d_submit">-</span></p>
-<p><b>Approval:</b> <span id="d_approve">-</span></p>
-</div>
-
-<h3>Items</h3>
-
-<table class="items-table">
-<tr>
-<th>No</th><th>Material</th><th>UOM</th><th>Qty</th>
-</tr>
-<tr><td>1</td><td>Laptop</td><td>pcs</td><td>2</td></tr>
-<tr><td>2</td><td>Printer</td><td>pcs</td><td>1</td></tr>
-</table>
-
-<div class="signature">
-<div class="sig">Prepared</div>
-<div class="sig">HOD</div>
-<div class="sig">CEO</div>
+<p><b>PRS No:</b> <span id="prs_no">-</span></p>
+<p><b>Department:</b> <span id="dept">-</span></p>
+<p><b>Status:</b> <span id="status">-</span></p>
+<p><b>Date:</b> <span id="date">-</span></p>
 </div>
 
 </div>
@@ -321,19 +308,244 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
 </div>
 
-<!-- OTHER MODULES -->
-<div id="supplier" class="module"><div class="placeholder">Supplier Module</div></div>
-<div id="invoice" class="module"><div class="placeholder">Invoice Module</div></div>
-<div id="payment" class="module"><div class="placeholder">Payment Module</div></div>
-<div id="grn" class="module"><div class="placeholder">GRN Module</div></div>
+
+
+
+<div id="invoice" class="module">
+
+    <div class="container">
+
+        <!-- LEFT -->
+        <div class="left">
+
+            <div class="header">Invoice Management</div>
+
+            <div style="display:flex; gap:10px; align-items:center;">
+                <button class="btn primary"
+                    onclick="window.location.href='/procurement/create_invoice'">
+                    Create Invoice
+                </button>
+
+                <input id="invoiceSearch"
+                    type="text"
+                    onkeyup="searchInvoice()"
+                    placeholder="Search Invoice..."
+                    style="padding:10px;width:250px;">
+            </div>
+
+            <button class="btn primary" onclick="printInvoice()">
+                Print Invoice
+            </button>
+
+            <table id="invoiceTable">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>PRS No</th>
+                        <th>Invoice No</th>
+                        <th>GRN No</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="invoiceBody">
+                    <!-- dynamic rows -->
+                </tbody>
+            </table>
+
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right">
+
+            <div class="slip" id="invoicePrintArea">
+                <h2>PURCHASE INVOICE</h2>
+
+                <div class="info">
+                    <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
+                    <p><b>GRN No:</b> <span id="i_grn">-</span></p>
+                    <p><b>Supplier:</b> <span id="i_supplier">-</span></p>
+                    <p><b>Amount:</b> <span id="i_amount">-</span></p>
+                    <p><b>Date:</b> <span id="i_date">-</span></p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+
+ <!-- =========================
+     PAYMENT MODULE
+========================= -->
+<div id="payment" class="module">
+
+<div class="container payment-container">
+
+    <!-- LEFT SIDE -->
+    <div class="left">
+
+        <!-- HEADER -->
+        <div class="header">Payment Module</div>
+
+        <!-- ACTION BUTTONS (TOP) -->
+        <div class="action-buttons">
+
+            <!-- CREATE PAYMENT BUTTON (AFTER SEARCH) -->
+        <button class="btn primary" onclick="showCreatePaymentForm()">
+            + Create Payment
+        </button>
+
+        </div>
+
+        <br>
+
+        <!-- SEARCH BAR -->
+        <input type="text" id="paymentSearch"
+               placeholder="Search payments..."
+               onkeyup="searchPayments()"
+               style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
+
+        <br><br>
+
+        
+
+        <button class="btn primary" onclick="window.print()">
+                Print
+            </button>
+
+            <button class="btn success" onclick="markPaid()">
+                Mark as Paid
+            </button>
+
+        <br><br>
+
+        <!-- PAYMENT TABLE -->
+        <table id="paymentTable">
+
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Payment No</th>
+                    <th>Supplier</th>
+                    <th>Invoice</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr data-id="1" onclick="selectPayment(this)">
+                    <td><input type="radio" name="pay"></td>
+                    <td>PAY001</td>
+                    <td>ABC Ltd</td>
+                    <td>INV-001</td>
+                    <td>7500</td>
+                    <td>Pending</td>
+                    <td>2026-05-20</td>
+                </tr>
+
+                <tr data-id="2" onclick="selectPayment(this)">
+                    <td><input type="radio" name="pay"></td>
+                    <td>PAY002</td>
+                    <td>Mega Stores</td>
+                    <td>INV-002</td>
+                    <td>4100</td>
+                    <td>Paid</td>
+                    <td>2026-05-21</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        <!-- =========================
+             CREATE PAYMENT FORM
+        ========================= -->
+        <div id="createPaymentForm"
+             style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px;">
+
+            <h3>Create New Payment</h3>
+
+            <div class="form-group">
+                <label>Supplier</label>
+                <input type="text" id="cp_supplier">
+            </div>
+
+            <div class="form-group">
+                <label>Invoice No</label>
+                <input type="text" id="cp_invoice">
+            </div>
+
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="cp_amount">
+            </div>
+
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="cp_date">
+            </div>
+
+            <div class="form-group" style="margin-top:10px;">
+
+                <button class="btn success" onclick="savePayment()">
+                    Save Payment
+                </button>
+
+                <button class="btn danger" onclick="hideCreatePaymentForm()">
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE (SLIP) -->
+    <div class="right">
+
+        <div class="slip">
+
+            <h2>PAYMENT SLIP</h2>
+
+            <div class="info">
+                <p><b>Payment No:</b> <span id="p_no">-</span></p>
+                <p><b>Supplier:</b> <span id="p_supplier">-</span></p>
+                <p><b>Invoice:</b> <span id="p_invoice">-</span></p>
+                <p><b>Amount:</b> <span id="p_amount">-</span></p>
+                <p><b>Status:</b> <span id="p_status">-</span></p>
+                <p><b>Date:</b> <span id="p_date">-</span></p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+
+
+
+
+
+<!-- ================= PAYMENT MODULE ================= -->
 
 </div>
 
 <script>
 
-/* MODULE SWITCH */
+/* SWITCH MODULE */
 function openModule(id,btn){
-
 document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 
@@ -341,46 +553,161 @@ document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("acti
 btn.classList.add("active");
 }
 
-/* SELECT ONLY ONE */
+/* ROW SELECT */
 function selectRow(row){
 
 document.querySelectorAll("#prsTable tr").forEach(r=>{
 r.classList.remove("selected");
-let radio=r.querySelector("input");
-if(radio) radio.checked=false;
+r.querySelector("input").checked=false;
 });
 
 row.classList.add("selected");
 row.querySelector("input").checked=true;
 
 let c=row.getElementsByTagName("td");
-let id = row.getAttribute("data-id");
 
-document.getElementById("d_prs").innerText=c[1].innerText;
-document.getElementById("d_dept").innerText=c[2].innerText;
-document.getElementById("d_status").innerText=c[3].innerText;
-document.getElementById("d_submit").innerText=c[4].innerText;
-document.getElementById("d_approve").innerText=c[5].innerText;
-
-document.getElementById("approveForm").action = "/finance/approve/" + id;
-document.getElementById("rejectForm").action = "/finance/reject/" + id;
-}
-
-/* PRINT ONLY SLIP */
-function printPRS(){
-window.print();
+document.getElementById("prs_no").innerText=c[1].innerText;
+document.getElementById("dept").innerText=c[2].innerText;
+document.getElementById("status").innerText=c[3].innerText;
+document.getElementById("date").innerText=c[4].innerText;
 }
 
 /* SEARCH */
 function searchPRS(){
-let input=document.querySelector(".search input").value.toUpperCase();
-let rows=document.querySelectorAll("#prsTable tr");
+let val=document.getElementById("searchBox").value.toLowerCase();
+let rows=document.querySelectorAll("#prsTable tbody tr");
 
-for(let i=1;i<rows.length;i++){
-rows[i].style.display =
-rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+rows.forEach(r=>{
+r.style.display=r.innerText.toLowerCase().includes(val)?"":"none";
+});
 }
+
+
+function openModule(moduleId, btn){
+
+    // Hide all modules
+    document.querySelectorAll(".module").forEach(mod => {
+        mod.classList.remove("active");
+    });
+
+    // Show selected module
+    const target = document.getElementById(moduleId);
+    if(target){
+        target.classList.add("active");
+    } else {
+        console.error("Module not found: " + moduleId);
+        return;
+    }
+
+    // Update sidebar active state
+    document.querySelectorAll(".sidebar button").forEach(b => {
+        b.classList.remove("active");
+    });
+
+    if(btn){
+        btn.classList.add("active");
+    }
 }
+
+
+
+// =========================handle payment =========================
+let selectedPaymentId = null;
+
+/* SELECT PAYMENT */
+function selectPayment(row){
+
+    document.querySelectorAll("#paymentTable tr").forEach(r=>{
+        r.classList.remove("selected");
+        let radio = r.querySelector("input");
+        if(radio) radio.checked = false;
+    });
+
+    row.classList.add("selected");
+    row.querySelector("input").checked = true;
+
+    let c = row.getElementsByTagName("td");
+
+    selectedPaymentId = row.getAttribute("data-id");
+
+    document.getElementById("p_no").innerText = c[1].innerText;
+    document.getElementById("p_supplier").innerText = c[2].innerText;
+    document.getElementById("p_invoice").innerText = c[3].innerText;
+    document.getElementById("p_amount").innerText = c[4].innerText;
+    document.getElementById("p_status").innerText = c[5].innerText;
+    document.getElementById("p_date").innerText = c[6].innerText;
+}
+
+/* SHOW FORM */
+function showCreatePaymentForm(){
+    document.getElementById("createPaymentForm").style.display = "block";
+}
+
+/* HIDE FORM */
+function hideCreatePaymentForm(){
+    document.getElementById("createPaymentForm").style.display = "none";
+}
+
+/* SAVE PAYMENT */
+function savePayment(){
+
+    let supplier = document.getElementById("cp_supplier").value;
+    let invoice = document.getElementById("cp_invoice").value;
+    let amount = document.getElementById("cp_amount").value;
+    let date = document.getElementById("cp_date").value;
+
+    if(!supplier || !invoice || !amount || !date){
+        alert("Fill all fields");
+        return;
+    }
+
+    let table = document.querySelector("#paymentTable tbody");
+
+    let row = table.insertRow();
+
+    row.setAttribute("data-id", Date.now());
+    row.onclick = function(){ selectPayment(this); };
+
+    row.innerHTML = `
+        <td><input type="radio" name="pay"></td>
+        <td>PAY${Date.now()}</td>
+        <td>${supplier}</td>
+        <td>${invoice}</td>
+        <td>${amount}</td>
+        <td>Pending</td>
+        <td>${date}</td>
+    `;
+
+    alert("Payment created successfully!");
+
+    hideCreatePaymentForm();
+
+    document.getElementById("cp_supplier").value = "";
+    document.getElementById("cp_invoice").value = "";
+    document.getElementById("cp_amount").value = "";
+    document.getElementById("cp_date").value = "";
+}
+
+/* SEARCH */
+function searchPayments(){
+    let input = document.getElementById("paymentSearch").value.toUpperCase();
+    let rows = document.querySelectorAll("#paymentTable tr");
+
+    for(let i=1;i<rows.length;i++){
+        rows[i].style.display =
+            rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+    }
+}
+
+/* MARK AS PAID */
+function markPaid(){
+    if(!selectedPaymentId){
+        alert("Select a payment first");
+        return;
+    }
+    alert("Payment marked as PAID (dummy)");
+}
+
 
 </script>
 

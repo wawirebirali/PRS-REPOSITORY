@@ -12,7 +12,6 @@
 
 <!-- HEADER -->
 <div class="header">
-    <!-- Main dashboard title -->
     <h1>Admin Dashboard - PRS System</h1>
 </div>
 
@@ -21,34 +20,71 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
 
-        <!-- Primary dashboard navigation -->
         <a class="btn" onclick="showSection('home')">Home</a>
-        <a href="javascript:void(0)" class="btn" onclick="showSection('users')">Add User</a>
+        <a class="btn" onclick="showSection('users')">Add User</a>
         <a class="btn" onclick="showSection('requisitions')">Requisitions</a>
+        
+       
 
-        <!-- Utility links for admin actions -->
-        <a href="/notification" class="role-btn">Notification</a>
-        <a href="{{ url_for('report') }}" class="role-btn">Report</a>
-        <a href="/audit" class="role-btn">Audit</a>
-        <a href="javascript:void(0)" class="role-btn" onclick="showSection('edit-user-password')">Edit User Password</a>
-        <a href="/edit-admin-password" class="role-btn">Edit Admin Password</a>
+
+
+        <a href="javascript:void(0)" class="role-btn"
+           onclick="showSection('reports')"> Reports
+           
+        </a>
+
+        <a href="javascript:void(0)" class="role-btn"
+           onclick="showSection('audit-trail')">
+           Audit
+        </a>
+        <a class="btn" onclick="showSection('notifications')">Notifications</a>
+
 
     </div>
 
     <!-- CONTENT -->
     <div class="content">
 
-        <!-- HOME SECTION: default visible section -->
+        <!-- HOME -->
         <div id="home" class="section active">
             <h2>Welcome Admin</h2>
         </div>
 
-        <!-- USERS SECTION: shows registered users -->
+        <!-- USERS -->
         <div id="users" class="section">
-            <h2>Users</h2>
-            <p>Below are the registered users and their details.</p>
 
-            <!-- User list table -->
+            <h2>Users</h2>
+               <div style="margin-top:15px;">
+        <a class="btn primary"
+           href="{{ url_for('auth.signup') }}">
+            + Add New User
+        </a>
+Report
+            <p>Below are registered users.</p>
+
+            <!-- ✅ FIXED BUTTON GROUP -->
+            <div class="button-group">
+
+                <button class="btn primary"
+                        onclick="window.location.href='/auth/signup'">
+                    Select User
+                </button>
+
+                <button class="btn primary"
+                        onclick="window.location.href='/auth/edit_user'">
+                    Edit User Account
+                </button>
+
+                <button class="btn danger"
+                        onclick="window.location.href='/auth/delete_user'">
+                    X
+                </button>
+
+            </div>
+        
+           
+    </div>
+
             <table class="user-table">
                 <thead>
                     <tr>
@@ -59,6 +95,7 @@
                         <th>Date Added</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {% for user in users %}
                     <tr>
@@ -76,40 +113,19 @@
                 </tbody>
             </table>
 
-            <!-- Link to signup page for adding a new user -->
-            <a class="btn" href="{{ url_for('auth.signup') }}"> + Add New User</a>
         </div>
 
-        <!-- EDIT USER PASSWORD SECTION: embedded forgot password form -->
-        <div id="edit-user-password" class="section">
-            <h2>Edit User Password</h2>
-            <p>Enter the user email below to send a reset password request.</p>
-
-            <form action="{{ url_for('auth.forgot_password') }}" method="post" class="password-form">
-                <div class="form-group">
-                    <label for="email">User Email</label>
-                    <input type="email" id="email" name="email" placeholder="Enter user email" required>
-                </div>
-                <button type="submit" class="btn">Send Reset Link</button>
-            </form>
-
-            <p>If you prefer, you can also use the full forgot password page.</p>
-            <a class="btn" href="{{ url_for('auth.forgot_password') }}">Open Forgot Password Page</a>
-        </div>
-
-        <!-- REQUISITIONS SECTION: shows PRS list -->
+        <!-- REQUISITIONS -->
         <div id="requisitions" class="section">
 
             <h2>Requisitions</h2>
 
-            <!-- Requisition actions -->
             <div class="action-bar">
-                <button class="action-btn" onclick="viewSelected()">View Requisition</button>
-                <button class="action-btn" onclick="printSelected()">Print</button>
+                <button class="action-btn">View</button>
+                <button class="action-btn">Print</button>
             </div>
 
-            <!-- PRS table -->
-            <table id="prsTable">
+            <table>
                 <thead>
                     <tr>
                         <th>PRS No</th>
@@ -118,12 +134,13 @@
                         <th>Status</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {% for req in requisitions %}
-                    <tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
+                    <tr>
                         <td>{{ req.prs_no }}</td>
                         <td>{{ req.department_name }}</td>
-                        <td>{{ req.submission_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ req.submission_date }}</td>
                         <td>{{ req.status }}</td>
                     </tr>
                     {% endfor %}
@@ -132,11 +149,140 @@
 
         </div>
 
+        <!-- AUDIT -->
+        <div id="audit-trail" class="section">
+
+            <h2>Audit Trail</h2>
+
+            <div class="action-bar">
+                <input type="text" placeholder="Search...">
+                <button class="action-btn">Refresh</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>John</td>
+                        <td>Create User</td>
+                        <td>2026-05-27</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <!-- REPORTS (FIXED STRUCTURE) -->
+        <div id="reports" class="section">
+
+            <h2>System Reports</h2>
+
+            <p>Generate and download PRS reports.</p>
+
+            <div class="report-card">
+
+                <div class="form-section">
+
+                    <div class="form-group">
+                        <label>Select Report</label>
+                        <select id="reportType">
+                            <option value="">-- Select --</option>
+                            <option value="users">Users</option>
+                            <option value="finance">Finance</option>
+                            <option value="audit">Audit</option>
+                            <option value="requisition">Requisition</option>
+                            <option value="grn">GRN</option>
+                            <option value="invoice">Invoice</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="endDate">
+                    </div>
+
+                    <div class="form-group">
+                        <button onclick="generateReport()">Generate</button>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="download-btn"
+                                onclick="downloadCSV()">
+                            Download CSV
+                        </button>
+                    </div>
+
+                </div>
+
+                <div id="reportContainer"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+<!-- NOTIFICATIONS -->
+        <div id="notifications" class="section">
+
+    <h2>System Notifications</h2>
+    <p>All system alerts, approvals, and updates appear here.</p>
+
+    <!-- ACTION BAR -->
+    <div class="notif-bar">
+
+        <input type="text"
+               id="notifSearch"
+               placeholder="Search notifications..."
+               onkeyup="filterNotifications()">
+
+        <button onclick="markAllRead()">Mark All as Read</button>
+        <button onclick="clearNotifications()">Clear All</button>
+
+    </div>
+
+    <!-- NOTIFICATION LIST -->
+    <div id="notifContainer">
+
+        <div class="notif unread">
+            <h4>New User Created</h4>
+            <p>Admin created user <b>John Doe</b></p>
+            <span>2026-05-27 09:15</span>
+            <button onclick="markRead(this)">Mark Read</button>
+        </div>
+
+        <div class="notif unread">
+            <h4>Requisition Approved</h4>
+            <p>PRS-2026-001 approved by HOD</p>
+            <span>2026-05-27 10:05</span>
+            <button onclick="markRead(this)">Mark Read</button>
+        </div>
+
+        <div class="notif">
+            <h4>Invoice Paid</h4>
+            <p>Invoice INV-2026-021 marked as paid</p>
+            <span>2026-05-27 11:20</span>
+        </div>
+
     </div>
 
 </div>
+</div>
 
-<!-- Load dashboard JavaScript behaviors -->
 <script src="{{ url_for('static', filename='admin_dashboard.js') }}"></script>
 
 </body>
