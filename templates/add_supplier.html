@@ -68,6 +68,11 @@
            name="supplier_name"
            placeholder="Enter Supplier Name">
 
+    <label>Contact Person</label>
+    <input type="text"
+           name="contact_person"
+           placeholder="Enter Contact Person">
+
     <label>Location</label>
     <input type="text"
            name="address"
@@ -88,13 +93,11 @@
            name="phone"
            placeholder="Enter Phone Number">
 
-    <button type="submit"
-            class="btn primary">
+    <button type="submit" class="btn primary">
         Add Supplier
     </button>
 
 </form>
-
 </div>
 
 <script>
@@ -106,6 +109,8 @@ function addSupplier(){
 
     let location =
         document.getElementById("s_location").value;
+    let contact =
+        document.getElementById("s_contact").value;
 
     let item =
         document.getElementById("s_item").value;
@@ -118,6 +123,7 @@ function addSupplier(){
 
     console.log({
         supplier_name:name,
+        contact_person:contact,
         location:location,
         supplied_item:item,
         email:email,

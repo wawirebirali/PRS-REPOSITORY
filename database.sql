@@ -6,6 +6,8 @@ CREATE TABLE users (
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+  
+
     user_role ENUM('admin','finance','ceo','hod','procurement','employee') NOT NULL,
      department ENUM(
         'IT',
@@ -77,6 +79,7 @@ CREATE TABLE requisition_items (
     item_id INT AUTO_INCREMENT PRIMARY KEY,
     requisition_id INT NOT NULL,
     material_name VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
     uom VARCHAR(50) NOT NULL,
     qty_stock INT NOT NULL,
     qty_required INT NOT NULL,

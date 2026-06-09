@@ -104,7 +104,9 @@
     <input type="date" id="submission_date">
 
     <!-- PRS -->
-    <label>PRS Number</label>
+    <!-- QRF NUMBER -->
+    <label>QRF Number</label>
+    <input type="text" id="qrf_no" readonly>
 
     <select id="prs_no">
 
@@ -187,7 +189,31 @@ window.onload = function(){
 
     // DEFAULT ONE ROW
     addRow();
+
+    // GENERATE QRF NUMBER
+    generateQRF();
 };
+
+function generateQRF() {
+
+    let now = new Date();
+    let year = now.getFullYear();
+
+    let number = localStorage.getItem("qrf_counter");
+
+    if (!number) {
+        number = 1;
+    } else {
+        number = parseInt(number) + 1;
+    }
+
+    localStorage.setItem("qrf_counter", number);
+
+    let formattedNumber = String(number).padStart(4, '0');
+
+    document.getElementById("qrf_no").value =
+        `QRF/${year}/${formattedNumber}`;
+}
 
 
 // =======================================

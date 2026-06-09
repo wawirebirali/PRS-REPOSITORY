@@ -434,3 +434,110 @@ def invoice_details(invoice_id):
     invoice["items"] = items
     return jsonify(invoice)
 
+
+
+
+# QUOTATION REQUESTS DETAILS
+
+from flask import jsonify
+
+# ==========================================
+# QUOTATION REQUEST DETAILS
+# ==========================================
+@procurement_view_bp.route("/quotation_request_details/<int:qrf_id>")
+def quotation_request_details(qrf_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ===============================
+        # QRF HEADER
+        # ===============================
+        cursor.execute("""
+            SELECT
+                qr.qrf_id,
+                qr.qrf_no,
+                qr.request_date,
+                qr.status,
+
+                r.prs_no,
+                r.department,
+
+                s.supplier_name,
+                s.phone,
+                s.address
+
+            FROM quotation_requests qr
+
+            LEFT JOIN requisitions r
+                ON qr.requisition_id = r.requisition_id
+
+            LEFT JOIN suppliers s
+                ON qr.supplier_id = s.supplier_id
+
+            WHERE qr.qrf_id = %s
+        """, (qrf_id,))
+
+        qrf = cursor.fetchone()
+
+        if not qrf:
+            return jsonify({
+                "error": "Quotation Request not found"
+            }), 404
+
+        # ===============================
+        # QRF ITEMS
+        # ===============================
+        cursor.execute("""
+            SELECT
+                material_name,
+                description,
+                quantity
+            FROM quotation_request_items
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+        items = cursor.fetchall()
+
+        # ===============================
+        # RESPONSE
+        # ===============================
+        return jsonify({
+
+            "qrf_id": qrf["qrf_id"],
+
+            "qrf_no": qrf["qrf_no"],
+
+            "prs_no": qrf["prs_no"],
+
+            "request_date": str(qrf["request_date"])
+            if qrf["request_date"] else "",
+
+            "department": qrf["department"],
+
+            "supplier_name": qrf["supplier_name"],
+
+            "supplier_phone": qrf["phone"],
+
+            "supplier_address": qrf["address"],
+
+            "status": qrf["status"],
+
+            "items": items
+
+        })
+
+    except Exception as e:
+
+        print("QRF DETAILS ERROR:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        cursor.close()
+        conn.close()

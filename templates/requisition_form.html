@@ -5,17 +5,12 @@
 <title>Purchase Requisition Slip</title>
 
 <style>
-
-/* PAGE */
-
 body{
 font-family:Arial, Helvetica, sans-serif;
 background:#f4f6fb;
 margin:0;
 padding:30px;
 }
-
-/* CONTAINER */
 
 .container{
 max-width:1100px;
@@ -26,15 +21,11 @@ border-radius:8px;
 box-shadow:0 5px 15px rgba(0,0,0,0.1);
 }
 
-/* TITLE */
-
 h1{
 text-align:center;
 margin-bottom:30px;
 color:#333;
 }
-
-/* TOP SECTION */
 
 .top-section{
 display:flex;
@@ -59,8 +50,6 @@ border:1px solid #ccc;
 border-radius:5px;
 }
 
-/* CONTROLS */
-
 .controls{
 margin-bottom:15px;
 }
@@ -78,8 +67,6 @@ margin-right:10px;
 .controls button:hover{
 background:#1f5f61;
 }
-
-/* TABLE */
 
 table{
 width:100%;
@@ -106,8 +93,6 @@ border:1px solid #ccc;
 border-radius:4px;
 }
 
-/* SUBMIT BUTTON */
-
 .submit-btn{
 background:#2C7A7B;
 color:white;
@@ -123,7 +108,6 @@ margin:auto;
 .submit-btn:hover{
 background:#1f5f61;
 }
-
 </style>
 
 </head>
@@ -135,80 +119,67 @@ background:#1f5f61;
 <h1>Purchase Requisition Slip</h1>
 
 <!-- TOP SECTION -->
-
 <div class="top-section">
 
 <div class="field-row">
-
 <label>Department</label>
 
-<select name="department" required>
-
+<select name="department_id" required>
 <option value="">-- Select Department --</option>
-<option value="IT">IT</option>
-<option value="Finance">Finance</option>
-<option value="HR">HR</option>
-<option value="Procurement">Procurement</option>
-<option value="Administration">Administration</option>
-<option value="Operations">Operations</option>
-<option value="Engineering">Engineering</option>
-<option value="Security">Security</option>
-<option value="QA">QA</option>
-<option value="QC">QC</option>
-<option value="Safety">Safety</option>
-<option value="Warehouse">Warehouse</option>
-<option value="Production">Production</option>
-<option value="Regulatory">Regulatory</option>
+
+{% for dept in departments %}
+<option value="{{ dept.department_id }}">
+{{ dept.department_name }}
+</option>
+{% endfor %}
 
 </select>
-
-
 </div>
 
 <div class="field-row">
+    <label>Created By</label>
 
+    <select name="user_id" required>
+        <option value="">-- Select User --</option>
+
+        {% for user in users %}
+        <option value="{{ user.user_id }}">
+            {{ user.username }}
+        </option>
+        {% endfor %}
+
+    </select>
+</div>
+
+<div class="field-row">
 <label>Date</label>
-
-<input type="date"
-id="submission_date"
-name="submission_date"
-readonly>
-
+<input type="date" id="submission_date" name="submission_date" required>
 </div>
 
 </div>
 
 <!-- CONTROLS -->
-
 <div class="controls">
-
 <button type="button" onclick="addRow()">+ Add Row</button>
-
 <button type="button" onclick="removeRow()">- Remove Row</button>
-
 </div>
 
-<!-- ITEMS TABLE -->
-
+<!-- TABLE -->
 <table id="reqTable">
-
 <thead>
-
 <tr>
 <th>No</th>
 <th>Material Name</th>
+<th>Description</th>
 <th>UOM</th>
-<th>Qty in Stock</th>
+<th>Qty Stock</th>
 <th>Qty Required</th>
 <th>Required Date</th>
 <th>Remark</th>
 </tr>
-
 </thead>
 
-<tbody>
-</tbody>
-
+<tbody></tbody>
 </table>
 
 <button type="submit" class="submit-btn">
@@ -219,77 +190,49 @@ Submit Requisition
 
 <script>
 
-/* AUTO SET TODAY DATE */
+let rowIndex = 0;
 
-document.getElementById("submission_date").value =
-new Date().toISOString().split("T")[0];
+/* SET DATE AUTOMATICALLY */
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("submission_date").value =
+    new Date().toISOString().split("T")[0];
 
-/* ADD DEFAULT ROW ON LOAD */
-document.addEventListener('DOMContentLoaded', function() {
     addRow();
 });
 
+/* ADD ROW */
+function addRow() {
 
-/* ADD ROW FUNCTION */
-
-function addRow(){
-
-const tableBody =
-document.querySelector("#reqTable tbody");
-
-const rowCount = tableBody.rows.length;
+const tableBody = document.querySelector("#reqTable tbody");
 
 const row = tableBody.insertRow();
 
 row.innerHTML = `
+<td>${rowIndex + 1}</td>
 
-<td>${rowCount + 1}</td>
-
-<td>
-<input type="text" name="material_name_${rowCount}" required>
-</td>
-
-<td>
-<input type="text" name="uom_${rowCount}" required>
-</td>
-
-<td>
-<input type="number" name="qty_stock_${rowCount}" min="0">
-</td>
-
-<td>
-<input type="number" name="qty_required_${rowCount}" min="1" required>
-</td>
-
-<td>
-<input type="date" name="required_date_${rowCount}" required>
-</td>
-
-<td>
-<input type="text" name="remark_${rowCount}">
-</td>
-
+<td><input type="text" name="material_name_${rowIndex}" required></td>
+<td><input type="text" name="description_${rowIndex}"></td>
+<td><input type="text" name="uom_${rowIndex}" required></td>
+<td><input type="number" name="qty_stock_${rowIndex}" min="0"></td>
+<td><input type="number" name="qty_required_${rowIndex}" min="1" required></td>
+<td><input type="date" name="required_date_${rowIndex}" required></td>
+<td><input type="text" name="remark_${rowIndex}"></td>
 `;
 
+rowIndex++;
 }
 
+/* REMOVE ROW */
+function removeRow() {
 
-/* REMOVE ROW FUNCTION */
+const tableBody = document.querySelector("#reqTable tbody");
 
-function removeRow(){
-
-const tableBody =
-document.querySelector("#reqTable tbody");
-
-if(tableBody.rows.length > 1){
-
+if (tableBody.rows.length > 1) {
 tableBody.deleteRow(-1);
-
+rowIndex--;
 }
 
 }
-
-
 </script>
 
 </body>

@@ -1,101 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <title>Quotation Entry</title>
 
     <style>
 
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
-
         body{
-            font-family:Arial,sans-serif;
-            background:#eef2f7;
-            padding:30px;
+            font-family:Arial;
+            background:#f2f6fa;
+            padding:20px;
         }
 
         .container{
-            max-width:1200px;
+            max-width:1100px;
             margin:auto;
             background:white;
-            padding:30px;
-            border-radius:12px;
-            box-shadow:0 4px 15px rgba(0,0,0,0.1);
+            padding:20px;
+            border-radius:10px;
         }
 
-        h2{
-            color:#2c7a7b;
-            margin-bottom:20px;
-            text-align:center;
-        }
-
-        h3{
-            color:#2c7a7b;
-            margin-top:20px;
-        }
-
-        .grid{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:20px;
-        }
-
-        label{
-            font-weight:bold;
-            display:block;
-            margin-bottom:5px;
-            color:#333;
-        }
-
-        input,
-        select,
-        textarea{
+        input,select{
             width:100%;
-            padding:10px;
-            border:1px solid #ccc;
-            border-radius:6px;
-            margin-bottom:15px;
-            font-size:14px;
-        }
-
-        input:focus,
-        select:focus,
-        textarea:focus{
-            outline:none;
-            border:1px solid #2c7a7b;
+            padding:8px;
+            margin:5px 0 15px 0;
         }
 
         table{
             width:100%;
             border-collapse:collapse;
-            margin-top:20px;
+            margin-top:15px;
         }
 
         th,td{
             border:1px solid #ddd;
-            padding:10px;
+            padding:8px;
             text-align:center;
         }
 
-        th{
-            background:#2c7a7b;
-            color:white;
-        }
-
-        tr:nth-child(even){
-            background:#f9f9f9;
-        }
-
         button{
-            padding:10px 15px;
-            border:none;
-            border-radius:6px;
+            padding:8px 12px;
+            margin-top:10px;
             cursor:pointer;
-            font-weight:bold;
+            border:none;
+            border-radius:5px;
         }
 
         .add{
@@ -104,7 +51,7 @@
         }
 
         .submit{
-            background:#2c7a7b;
+            background:blue;
             color:white;
         }
 
@@ -113,33 +60,7 @@
             color:white;
         }
 
-        .top-space{
-            margin-top:20px;
-        }
-
-        .note{
-            color:#666;
-            font-size:13px;
-            margin-top:-10px;
-            margin-bottom:15px;
-        }
-
-        .btn-group{
-            margin-top:20px;
-            display:flex;
-            gap:10px;
-        }
-
-        @media(max-width:768px){
-
-            .grid{
-                grid-template-columns:1fr;
-            }
-
-        }
-
     </style>
-
 </head>
 
 <body>
@@ -148,195 +69,136 @@
 
     <h2>Quotation Entry Form</h2>
 
-    <div class="grid">
+    <!-- PRS -->
+    <label>PRS Number</label>
 
-        <!-- PRS -->
-        <div>
+    <select id="prs_no" required>
 
-            <label>PRS Number</label>
+        <option value="">-- Select PRS --</option>
 
-            <select id="prs_no">
+        {% for r in requisitions %}
 
-                <option value="">
-                    -- Select PRS --
-                </option>
+            <option value="{{ r.requisition_id }}">
+                {{ r.prs_no }}
+            </option>
 
-                {% for r in requisitions %}
+        {% endfor %}
 
-                <option value="{{ r.requisition_id }}">
-                    {{ r.prs_no }}
-                </option>
+    </select>
 
-                {% endfor %}
+    <!-- SUPPLIER -->
+    <label>Supplier</label>
 
-            </select>
+    <select id="supplier_id" required>
 
-        </div>
+        <option value="">-- Select Supplier --</option>
 
-        <!-- SUPPLIER -->
-        <div>
+        {% for s in suppliers %}
 
-            <label>Supplier</label>
+            <option value="{{ s.supplier_id }}">
+                {{ s.supplier_name }}
+            </option>
 
-            <select id="supplier_id">
+        {% endfor %}
 
-                <option value="">
-                    -- Select Supplier --
-                </option>
+    </select>
 
-                {% for s in suppliers %}
+    <!-- QUOTATION NUMBER -->
+    <label>Quotation Number</label>
 
-                <option value="{{ s.supplier_id }}">
-                    {{ s.supplier_name }}
-                </option>
+    <input type="text"
+           id="quotation_no"
+           readonly>
 
-                {% endfor %}
+    <!-- QUOTATION DATE -->
+    <label>Quotation Date</label>
 
-            </select>
+    <input type="date" id="quotation_date">
 
-        </div>
+    <!-- DELIVERY DATE -->
+    <label>Delivery Date</label>
 
-        <!-- QUOTATION NUMBER -->
-        <div>
+    <input type="date" id="delivery_date">
 
-            <label>Quotation Number</label>
+    <!-- PAYMENT METHOD -->
+    <label>Payment Method</label>
 
-            <input type="text"
-                   id="quotation_no"
-                   readonly>
+    <select id="payment_terms">
 
-        </div>
+        <option value="">-- Select Payment Method --</option>
 
-        <!-- QUOTATION DATE -->
-        <div>
+        <option value="Cash">
+            Cash
+        </option>
 
-            <label>Quotation Date & Time</label>
+        <option value="Bank Transfer">
+            Bank Transfer
+        </option>
 
-            <input type="datetime-local"
-                   id="quotation_date"
-                   readonly>
+        <option value="Mobile Money">
+            Mobile Money
+        </option>
 
-        </div>
+        <option value="Cheque">
+            Cheque
+        </option>
 
-        <!-- DELIVERY DATE -->
-        <div>
+    </select>
 
-            <label>Delivery Date</label>
+    <!-- WARRANTY -->
+    <label>Warranty</label>
 
-            <input type="date"
-                   id="delivery_date">
+    <input type="text" id="warranty">
 
-        </div>
+    <!-- REMARKS -->
+    <label>Remarks</label>
 
-        <!-- PAYMENT TERMS -->
-        <div>
-
-            <label>Payment Method</label>
-
-            <select id="payment_terms">
-
-                <option value="">
-                    -- Select Payment Method --
-                </option>
-
-                <option value="Cash">
-                    Cash
-                </option>
-
-                <option value="Bank Transfer">
-                    Bank Transfer
-                </option>
-
-                <option value="Mobile Money">
-                    Mobile Money
-                </option>
-
-                <option value="Cheque">
-                    Cheque
-                </option>
-
-            </select>
-
-        </div>
-
-        <!-- WARRANTY -->
-        <div>
-
-            <label>Warranty Period</label>
-
-            <input type="number"
-                   id="warranty"
-                   placeholder="Enter warranty period">
-
-            <div class="note">
-                Example: 12 Months
-            </div>
-
-        </div>
-
-        <!-- REMARKS -->
-        <div>
-
-            <label>Remarks</label>
-
-            <textarea id="remarks"
-                      rows="3"
-                      placeholder="Enter remarks"></textarea>
-
-        </div>
-
-    </div>
+    <input type="text" id="remarks">
 
     <!-- ITEMS -->
-    <div class="top-space">
+    <h3>Items</h3>
 
-        <h3>Quotation Items</h3>
+    <table id="itemsTable">
 
-        <table id="itemsTable">
+        <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Amount</th>
+            <th>Action</th>
+        </tr>
 
-            <tr>
-                <th>Item</th>
-                <th>Description</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>Amount</th>
-                <th>Action</th>
-            </tr>
+    </table>
 
-        </table>
+    <button type="button"
+            class="add"
+            onclick="addRow()">
 
-        <div class="btn-group">
+        Add Item
 
-            <button type="button"
-                    class="add"
-                    onclick="addRow()">
+    </button>
 
-                + Add Item
+    <button type="button"
+            class="submit"
+            onclick="submitForm()">
 
-            </button>
+        Save Quotation
 
-            <button type="button"
-                    class="submit"
-                    onclick="submitForm()">
-
-                Save Quotation
-
-            </button>
-
-        </div>
-
-    </div>
+    </button>
 
 </div>
 
 <script>
 
-// =====================================
-// PAGE LOAD
-// =====================================
+// ===========================
+// AUTO GENERATE QUOTATION NO
+// ===========================
 window.onload = function(){
 
-    // CURRENT DATE TIME
+    // ===============================
+    // SET CURRENT DATE & TIME
+    // ===============================
     let now = new Date();
 
     let formatted =
@@ -346,50 +208,63 @@ window.onload = function(){
         "quotation_date"
     ).value = formatted;
 
-    // QUOTATION NUMBER
-    let year = now.getFullYear();
+    // ===============================
+    // GENERATE QUOTATION NUMBER
+    // ===============================
+    generateQuotationNo();
 
-    let random =
-        Math.floor(Math.random() * 9000) + 1000;
-
-    document.getElementById(
-        "quotation_no"
-    ).value =
-        "QT/" + year + "/" + random;
-
-    // DEFAULT ONE ROW
+    // ===============================
+    // ADD DEFAULT ROW
+    // ===============================
     addRow();
-
 };
 
 
-// =====================================
-// ADD ROW
-// =====================================
+function generateQuotationNo() {
+
+    let now = new Date();
+    let year = now.getFullYear();
+
+    let number = localStorage.getItem("quotation_counter");
+
+    if (!number) {
+        number = 1;
+    } else {
+        number = parseInt(number) + 1;
+    }
+
+    localStorage.setItem("quotation_counter", number);
+
+    let formattedNumber = String(number).padStart(4, '0');
+
+    document.getElementById("quotation_no").value =
+        `QT/${year}/${formattedNumber}`;
+}
+
+
+// ===========================
+// ADD ITEM ROW
+// ===========================
 function addRow(){
 
     let table =
         document.getElementById("itemsTable");
 
-    let row =
-        table.insertRow();
+    let row = table.insertRow();
 
     row.innerHTML = `
 
         <td>
-            <input class="item"
-                   placeholder="Item name">
+            <input class="item">
         </td>
 
         <td>
-            <input class="desc"
-                   placeholder="Description">
+            <input class="desc">
         </td>
 
         <td>
             <input type="number"
                    class="qty"
-                   min="1"
                    oninput="calc(this)">
         </td>
 
@@ -401,54 +276,34 @@ function addRow(){
         </td>
 
         <td>
-            <input class="amount"
-                   readonly>
+            <input class="amount" readonly>
         </td>
 
         <td>
-
             <button type="button"
                     class="remove"
                     onclick="removeRow(this)">
-
                 X
-
             </button>
-
         </td>
 
     `;
 }
 
 
-// =====================================
+// ===========================
 // REMOVE ROW
-// =====================================
+// ===========================
 function removeRow(btn){
-
-    let rows =
-        document.querySelectorAll(
-            "#itemsTable tr"
-        );
-
-    // KEEP AT LEAST ONE ROW
-    if(rows.length <= 2){
-
-        alert(
-            "At least one row is required"
-        );
-
-        return;
-    }
 
     btn.parentElement.parentElement.remove();
 
 }
 
 
-// =====================================
+// ===========================
 // CALCULATE AMOUNT
-// =====================================
+// ===========================
 function calc(input){
 
     let row =
@@ -464,17 +319,15 @@ function calc(input){
             row.querySelector(".price").value
         ) || 0;
 
-    let total = qty * price;
-
     row.querySelector(".amount").value =
-        total.toFixed(2);
+        (qty * price).toFixed(2);
 
 }
 
 
-// =====================================
+// ===========================
 // SUBMIT FORM
-// =====================================
+// ===========================
 function submitForm(){
 
     let qrf_id =
@@ -489,22 +342,22 @@ function submitForm(){
     let quotation_date =
         document.getElementById("quotation_date").value;
 
-    let delivery_date =
-        document.getElementById("delivery_date").value;
+    let delivery_days =
+        document.getElementById("delivery_days").value;
 
     let payment_terms =
         document.getElementById("payment_terms").value;
 
     let warranty =
-        document.getElementById("warranty").value + " Months";
+        document.getElementById("warranty").value;
 
     let remarks =
         document.getElementById("remarks").value;
 
 
-    // =====================================
+    // ===========================
     // GET ITEMS
-    // =====================================
+    // ===========================
     let rows =
         document.querySelectorAll(
             "#itemsTable tr:not(:first-child)"
@@ -531,11 +384,8 @@ function submitForm(){
             items.push({
 
                 item_name:item_name,
-
                 description:description,
-
                 quantity:quantity,
-
                 unit_price:unit_price
 
             });
@@ -545,37 +395,33 @@ function submitForm(){
     });
 
 
-    // =====================================
+    // ===========================
     // VALIDATION
-    // =====================================
+    // ===========================
     if(
         !qrf_id ||
         !supplier_id ||
         !quotation_date ||
-        !delivery_date ||
+        !delivery_days ||
         !payment_terms
     ){
 
-        alert(
-            "Please fill all required fields"
-        );
+        alert("Please fill all required fields");
 
         return;
     }
 
     if(items.length === 0){
 
-        alert(
-            "Please add at least one item"
-        );
+        alert("Please add at least one item");
 
         return;
     }
 
 
-    // =====================================
+    // ===========================
     // SEND TO FLASK
-    // =====================================
+    // ===========================
     fetch("/procurement/Quotation_entry", {
 
         method:"POST",
@@ -587,19 +433,16 @@ function submitForm(){
         body:JSON.stringify({
 
             qrf_id:qrf_id,
-
             supplier_id:supplier_id,
 
             quotation_no:quotation_no,
-
             quotation_date:quotation_date,
 
-            delivery_date:delivery_date,
+            delivery_date:delivery_days,
 
             payment_terms:payment_terms,
 
             warranty:warranty,
-
             remarks:remarks,
 
             items:items

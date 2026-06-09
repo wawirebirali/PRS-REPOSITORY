@@ -1,4 +1,5 @@
 from db_connect import get_db_connection
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # ==================================================
@@ -132,7 +133,7 @@ def get_all_requisitions():
             SELECT 
                 r.requisition_id,
                 r.prs_no,
-                d.department_name,
+                d.department_id,
                 r.status,
                 r.submission_date,
                 a.hod_approval_date
@@ -159,7 +160,7 @@ def get_requisition_items(requisition_id):
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT material_name, uom, qty_required
+        SELECT material_name, description, uom, qty_required
         FROM requisition_items
         WHERE requisition_id = %s
     """, (requisition_id,))
@@ -175,73 +176,84 @@ def get_requisition_items(requisition_id):
 # ==================================================
 # CREATE REQUISITION
 # ==================================================
-def create_requisition(user_id, department_name, submission_date, items):
+
+
+def create_requisition(user_id, department_id, submission_date, items):
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Get department_id from department name
-        cursor.execute("""
-            SELECT department_id FROM departments
-            WHERE department_name = %s
-        """, (department_name,))
-        department_result = cursor.fetchone()
-        if not department_result:
-            return {"success": False, "message": "Department not found"}
-
-        department_id = department_result[0]
-
-        # Generate PRS number (format: PRS-YYYY-NNNN)
-        from datetime import datetime
+        # =========================
+        # 1. GENERATE PRS NUMBER
+        # =========================
         year = datetime.now().year
+
         cursor.execute("""
             SELECT COUNT(*) FROM requisitions
             WHERE YEAR(created_at) = %s
         """, (year,))
+
         count = cursor.fetchone()[0] + 1
         prs_no = f"PRS-{year}-{count:04d}"
 
-        # Insert requisition
+        # =========================
+        # 2. INSERT REQUISITION
+        # =========================
         cursor.execute("""
-            INSERT INTO requisitions (prs_no, user_id, department_id, submission_date, current_stage, status)
+            INSERT INTO requisitions
+            (prs_no, user_id, department_id, submission_date, current_stage, status)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, (prs_no, user_id, department_id, submission_date, "HOD", "Pending"))
+        """, (
+            prs_no,
+            user_id,
+            department_id,
+            submission_date,
+            "HOD",
+            "Pending"
+        ))
 
         requisition_id = cursor.lastrowid
 
-        # Insert items
+        # =========================
+        # 3. INSERT ITEMS
+        # =========================
         for item in items:
             cursor.execute("""
-                INSERT INTO requisition_items (requisition_id, material_name, uom, qty_stock, qty_required, required_date, remark)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (requisition_id, item['material_name'], item['uom'], item['qty_stock'],
-                  item['qty_required'], item['required_date'], item['remark']))
-
-        # Create initial approval record for HOD
-        cursor.execute("""
-            SELECT user_id FROM users
-            WHERE user_role = 'hod' AND department = %s AND status = 'active'
-            LIMIT 1
-        """, (department_name,))
-        hod_result = cursor.fetchone()
-        if hod_result:
-            cursor.execute("""
-                INSERT INTO approvals (requisition_id, approver_id, role, hod_status)
-                VALUES (%s, %s, %s, %s)
-            """, (requisition_id, hod_result[0], "HOD", "Pending"))
+                INSERT INTO requisition_items
+                (requisition_id, material_name, description, uom, qty_stock, qty_required, required_date, remark)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                requisition_id,
+                item["material_name"],
+                item["description"],
+                item["uom"],
+                item["qty_stock"],
+                item["qty_required"],
+                item["required_date"],
+                item["remark"]
+            ))
 
         conn.commit()
-        return {"success": True, "prs_no": prs_no, "requisition_id": requisition_id}
+
+        return {
+            "success": True,
+            "prs_no": prs_no,
+            "requisition_id": requisition_id
+        }
 
     except Exception as e:
         conn.rollback()
-        print("Create requisition error:", e)
-        return {"success": False, "message": "Failed to create requisition"}
+        print("CREATE REQUISITION ERROR:", e)
+
+        return {
+            "success": False,
+            "message": str(e)
+        }
 
     finally:
         cursor.close()
         conn.close()
-
 
 # ==================================================
 # APPROVE REQUISITION

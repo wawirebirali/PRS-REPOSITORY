@@ -502,10 +502,11 @@ tr:hover{
 <h2>PRS SYSTEM</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button onclick="openModule('supplier',this)">Suppliers</button>
-<button onclick="openModule('quotation',this)">Quotations</button>
-<button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
 
+<button onclick="openModule('quotationRequest',this)">Quotation Requests</button>
+<button onclick="openModule('quotation',this)">Quotations</button>
+<button onclick="openModule('supplier',this)">Suppliers</button>
+<button onclick="openModule('purchaseOrder',this)">Purchase Order</button>
 <button onclick="openModule('grn',this)">GRN</button>
 <button onclick="openModule('invoice',this)">Invoice</button>
 
@@ -674,21 +675,31 @@ tr:hover{
     Add Supplier
 </button>
 
+<button class="btn primary"
+        onclick="window.location.href='/procurement/compare_suppliers'">
+    compare suppliers
+</button>
+
 <div class="search" style="margin-top:12px;">
     <input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search suppliers by name, phone, or location...">
 </div>
 
-<table id="supplierTable">
+<table id="quotationRequestTable">
+
 <thead>
 <tr>
-    <th>Supplier</th>
-    <th>Contact</th>
-    <th>Phone</th>
-    <th>Location</th>
-    <th>Email</th>
+<th>Select</th>
+<th>QRF No</th>
+<th>PRS No</th>
+<th>Supplier Name</th>
+<th>Status</th>
+<th>Department</th>
+<th>Creation Date</th>
 </tr>
 </thead>
-<tbody id="supplierBody"></tbody>
+
+<tbody id="quotationBody"></tbody>
+
 </table>
 
 </div>
@@ -725,19 +736,175 @@ tr:hover{
         <p><b>Account #:</b> <span id="supAccount">-</span></p>
     </div>
 
-    <div class="buttons">
-        <button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
-            Add Supplier
-        </button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- ================= QUOTATION REQUEST MODULE ================= -->
+<div id="quotationRequest" class="module">
+
+<div class="container">
+
+    <!-- ================= LEFT PANEL ================= -->
+    <div class="left">
+
+        <div class="header">QUOTATION REQUEST FORM</div>
+
+        <!-- SEARCH -->
+        <div class="search">
+
+            <button class="btn primary"
+                onclick="window.location.href='/procurement/create_rfq'">
+                Create RFQ
+            </button>
+
+            <input id="quotationSearch"
+                   type="text"
+                   onkeyup="searchQuotation()"
+                   placeholder="Search by name, location, or item...">
+
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div style="margin:10px 0;">
+
+            <button class="btn primary" onclick="shareQuotation()">
+                Share RFQ
+            </button>
+
+            <button class="btn primary" onclick="window.print()">
+                Print
+            </button>
+
+        </div>
+
+        <!-- ================= TABLE (FIXED STRUCTURE) ================= -->
+        <table id="quotationRequestTable">
+
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>QRF No</th>
+                    <th>PRS No</th>
+                    <th>Supplier Name</th>
+                    <th>Status</th>
+                    <th>Department</th>
+                    <th>Creation Date</th>
+                </tr>
+            </thead>
+
+            <tbody id="quotationRequestBody">
+                <!-- Loaded dynamically from backend -->
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- ================= RIGHT PANEL ================= -->
+    <div class="right">
+
+        <div class="slip">
+
+            <!-- HEADER -->
+            <div class="header">
+
+                <h2>QUOTATION REQUEST SLIP (QRF)</h2>
+
+                <p><b>Official Procurement Document</b></p>
+
+            </div>
+
+            <!-- INFO -->
+            <div class="info-section">
+
+                <div class="box">
+                    <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
+                    <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
+                    <p><b>Date:</b> <span id="qrfDate">-</span></p>
+                </div>
+
+                <div class="box">
+                    <p><b>Requester:</b> <span id="qr_requester">-</span></p>
+                    <p><b>Department:</b> <span id="qr_department">-</span></p>
+                    <p><b>Contact:</b> <span id="qr_contact">-</span></p>
+                </div>
+
+            </div>
+
+            <!-- SUPPLIER -->
+            <div class="supplier-section">
+
+                <p><b>To:</b> <span id="sp_to">Supplier</span></p>
+
+                <p><b>Company:</b> <span id="sp_name">-</span></p>
+
+                <p><b>Location:</b> <span id="sp_location">-</span></p>
+
+                <p><b>Item:</b> <span id="sp_item">-</span></p>
+
+            </div>
+
+            <!-- ITEMS TABLE -->
+            <table class="items-table">
+
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+
+                <tbody id="sharedPRS">
+                    <!-- Filled dynamically -->
+                </tbody>
+
+            </table>
+
+            <!-- FOOTER -->
+            <div class="footer">
+
+                <p>
+                    Kindly submit your quotation within
+                    <b>3–5 working days</b>.
+                </p>
+
+                <p>
+                    Ensure all requested items are available
+                    and include delivery details.
+                </p>
+
+                <br>
+
+                <p>
+                    Authorized By:
+                    ________________________
+                </p>
+
+                <p>
+                    Procurement Department
+                </p>
+
+            </div>
+
+        </div>
+
     </div>
 
 </div>
 
 </div>
 
-</div>
 
-</div>
+
+
+
 
 
 
@@ -755,8 +922,9 @@ tr:hover{
 
 <!-- SEARCH -->
 <div class="search">
-<button class="btn primary" onclick="window.location.href='/procurement/create_rfq'">
-    Create RFQ
+<button class="btn primary"
+        onclick="window.location.href='/procurement/Quotation_entry'">
+    Quotation Entry
 </button>
 <input id="quotationSearch" type="text" onkeyup="searchQuotation()" placeholder="Search by name, location, or item...">
 </div>
@@ -913,6 +1081,16 @@ tr:hover{
 
 
 
+
+
+
+
+
+
+
+
+
+
 <!-- PURCHASE ORDER MODULE -->
 <div id="purchaseOrder" class="module">
 
@@ -923,14 +1101,6 @@ tr:hover{
 
 <div class="header">Purchase Order Management</div>
 
-<button class="btn primary"
-        onclick="window.location.href='/procurement/Quotation_entry'">
-    Quotation Entry
-</button>
-<button class="btn primary"
-        onclick="window.location.href='/procurement/compare_suppliers'">
-    compare suppliers
-</button>
 <button class="btn primary"
         onclick="window.location.href='/procurement/create_po'">
     create PO
@@ -2147,8 +2317,114 @@ alert("Quotation request sent to "+supplier)
 
 }
 
+// ==============================
+// LOAD QUOTATION REQUEST LIST
+// ==============================
+function loadQuotationRequestModule() {
+
+    fetch("/procurement/quotation_request_data")
+        .then(res => res.json())
+        .then(data => {
+
+            let body = document.getElementById("quotationRequestBody");
+
+            body.innerHTML = "";
+
+            data.forEach(item => {
+
+                body.innerHTML += `
+                    <tr>
+                        <td>
+                            <input
+                                type="radio"
+                                name="qrfSelect"
+                                data-qrf-id="${item.qrf_id}"
+                                onchange="selectQuotationRequestDetails(this)">
+                        </td>
+
+                        <td>${item.qrf_no || "-"}</td>
+                        <td>${item.prs_no || "-"}</td>
+                        <td>${item.supplier_name || "-"}</td>
+                        <td>${item.status || "-"}</td>
+                        <td>${item.department || "-"}</td>
+                        <td>${item.request_date || "-"}</td>
+                    </tr>
+                `;
+
+            });
+
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation request list");
+        });
+}
 
 
+// ==============================
+// SELECT QUOTATION REQUEST DETAILS
+// ==============================
+function selectQuotationRequestDetails(radio) {
+
+    let qrfId = radio.dataset.qrfId;
+
+    fetch("/procurement/quotation_request_details/" + qrfId)
+        .then(res => res.json())
+        .then(data => {
+
+            // ================= HEADER INFO =================
+            document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
+            document.getElementById("qrfPrs").innerText = data.prs_no || "-";
+            document.getElementById("qrfDate").innerText = data.request_date || "-";
+
+            document.getElementById("qr_requester").innerText = "Procurement Department";
+            document.getElementById("qr_department").innerText = data.department || "-";
+            document.getElementById("qr_contact").innerText = data.supplier_phone || "-";
+
+            // ================= SUPPLIER INFO =================
+            document.getElementById("sp_to").innerText = data.supplier_name || "-";
+            document.getElementById("sp_name").innerText = data.supplier_name || "-";
+            document.getElementById("sp_location").innerText = data.supplier_address || "-";
+
+            document.getElementById("sp_item").innerText =
+                data.items && data.items.length > 0
+                    ? data.items[0].material_name
+                    : "-";
+
+            // ================= ITEMS TABLE =================
+            let itemsBody = document.getElementById("sharedPRS");
+            itemsBody.innerHTML = "";
+
+            if (data.items && data.items.length > 0) {
+
+                data.items.forEach(item => {
+
+                    itemsBody.innerHTML += `
+                        <tr>
+                            <td>${item.material_name || "-"}</td>
+                            <td>${item.description || "-"}</td>
+                            <td>${item.quantity || "-"}</td>
+                        </tr>
+                    `;
+
+                });
+
+            } else {
+                itemsBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center;">
+                            No items found
+                        </td>
+                    </tr>
+                `;
+            }
+
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation request details");
+        });
+}
 </script>
 
 </body>
