@@ -1,412 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<title>Quotation Request Form</title>
 
-    <title>Quotation Request Form</title>
+<style>
+body{
+    font-family:Arial;
+    background:#eef2f7;
+    padding:20px;
+}
 
-    <style>
+.container{
+    background:#fff;
+    max-width:1000px;
+    margin:auto;
+    padding:25px;
+    border-radius:10px;
+}
 
-        body{
-            font-family:Arial;
-            background:#eef2f7;
-            padding:20px;
-        }
+label{font-weight:bold; display:block; margin-top:10px;}
 
-        .container{
-            background:white;
-            padding:20px;
-            max-width:950px;
-            margin:auto;
-            border-radius:10px;
-        }
+input, select{
+    width:100%;
+    padding:10px;
+    margin:5px 0 15px;
+    box-sizing:border-box;
+}
 
-        h2,h3{
-            color:#2C3E50;
-        }
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
 
-        label{
-            font-weight:bold;
-        }
+th,td{
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
 
-        select,input{
-            width:100%;
-            padding:10px;
-            margin:6px 0 15px 0;
-            box-sizing:border-box;
-        }
+th{
+    background:#2c7a7b;
+    color:white;
+}
 
-        table{
-            width:100%;
-            border-collapse:collapse;
-            margin-top:15px;
-        }
+button{
+    padding:10px;
+    border:none;
+    cursor:pointer;
+}
 
-        th,td{
-            border:1px solid #ddd;
-            padding:10px;
-            text-align:center;
-        }
-
-        th{
-            background:#2c7a7b;
-            color:white;
-        }
-
-        button{
-            padding:10px 15px;
-            border:none;
-            border-radius:5px;
-            cursor:pointer;
-        }
-
-        .add-btn{
-            background:green;
-            color:white;
-        }
-
-        .submit-btn{
-            background:blue;
-            color:white;
-        }
-
-        .remove-btn{
-            background:red;
-            color:white;
-        }
-
-    </style>
-
+.add-btn{background:green;color:white;}
+.submit-btn{background:blue;color:white;}
+.remove-btn{background:red;color:white;}
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <h2>Quotation Request Form</h2>
+<h2>Quotation Request Form</h2>
 
-    <!-- REQUESTER -->
-    <label>Requester</label>
+<!-- CREATED BY -->
+<label>Created By</label>
+<input type="text" id="created_by" value="{{ created_by }}" readonly>
 
-    <select id="requester_name">
+<!-- DATE -->
+<label>Submission Date</label>
+<input type="date" id="submission_date">
 
-        <option value="">-- Select User --</option>
+<!-- QRF -->
+<label>QRF Number</label>
+<input type="text" id="qrf_no" readonly>
 
-        {% for user in users %}
-        <option value="{{ user.user_id }}">
-            {{ user.username }}
-        </option>
-        {% endfor %}
+<!-- PRS -->
+<label>PRS</label>
+<select id="requisition_id">
+    <option value="">-- Select PRS --</option>
+    {% for prs in requisitions %}
+        <option value="{{ prs.requisition_id }}">{{ prs.prs_no }}</option>
+    {% endfor %}
+</select>
 
-    </select>
+<!-- SUPPLIER -->
+<label>Supplier</label>
+<select id="supplier_id">
+    <option value="">-- Select Supplier --</option>
+    {% for supplier in suppliers %}
+        <option value="{{ supplier.supplier_id }}">{{ supplier.supplier_name }}</option>
+    {% endfor %}
+</select>
 
-    <!-- DATE -->
-    <label>Submission Date</label>
-    <input type="date" id="submission_date">
+<h3>Items</h3>
 
-    <!-- PRS -->
-    <!-- QRF NUMBER -->
-    <label>QRF Number</label>
-    <input type="text" id="qrf_no" readonly>
+<table>
+<thead>
+<tr>
+    <th>Material</th>
+    <th>Description</th>
+    <th>Qty</th>
+    <th>UOM</th>
+    <th>Action</th>
+</tr>
+</thead>
 
-    <select id="prs_no">
+<tbody id="itemsBody"></tbody>
+</table>
 
-        <option value="">-- Select PRS --</option>
+<br>
 
-        {% for prs in requisitions %}
-        <option value="{{ prs.requisition_id }}">
-            {{ prs.prs_no }}
-        </option>
-        {% endfor %}
-
-    </select>
-
-    <!-- SUPPLIER -->
-    <label>Supplier</label>
-
-    <select id="supplier">
-
-        <option value="">-- Select Supplier --</option>
-
-        {% for supplier in suppliers %}
-        <option value="{{ supplier.supplier_id }}">
-            {{ supplier.supplier_name }}
-        </option>
-        {% endfor %}
-
-    </select>
-
-    <h3>Items</h3>
-
-    <table id="itemsTable">
-
-        <thead>
-
-            <tr>
-                <th>Item</th>
-                <th>Description</th>
-                <th>Qty</th>
-                <th>Action</th>
-            </tr>
-
-        </thead>
-
-        <tbody id="itemsBody"></tbody>
-
-    </table>
-
-    <br>
-
-    <button
-        type="button"
-        class="add-btn"
-        onclick="addRow()">
-
-        Add Item
-
-    </button>
-
-    <button
-        type="button"
-        class="submit-btn"
-        onclick="submitForm()">
-
-        Submit
-
-    </button>
+<button type="button" class="add-btn" onclick="addRow()">Add Item</button>
+<button type="button" class="submit-btn" onclick="submitForm()">Save QRF</button>
 
 </div>
 
 <script>
 
-// =======================================
+// ===============================
+// UOM LIST (20 OPTIONS)
+// ===============================
+const uoms = [
+    "pcs","kg","g","mg","ltr","ml","box","pack","bag","bottle",
+    "roll","ream","sheet","pair","set","dozen","bundle","meter","cm","sqm"
+];
+
+// ===============================
 // PAGE LOAD
-// =======================================
+// ===============================
 window.onload = function(){
-
-    // AUTO DATE
     document.getElementById("submission_date").value =
-        new Date().toISOString().split('T')[0];
+        new Date().toISOString().split("T")[0];
 
-    // DEFAULT ONE ROW
-    addRow();
-
-    // GENERATE QRF NUMBER
     generateQRF();
+    addRow();
 };
 
-function generateQRF() {
+// ===============================
+// QRF GENERATOR
+// ===============================
+function generateQRF(){
 
-    let now = new Date();
-    let year = now.getFullYear();
+    let year = new Date().getFullYear();
+    let counter = localStorage.getItem("qrf_counter") || 0;
 
-    let number = localStorage.getItem("qrf_counter");
-
-    if (!number) {
-        number = 1;
-    } else {
-        number = parseInt(number) + 1;
-    }
-
-    localStorage.setItem("qrf_counter", number);
-
-    let formattedNumber = String(number).padStart(4, '0');
+    counter = parseInt(counter) + 1;
+    localStorage.setItem("qrf_counter", counter);
 
     document.getElementById("qrf_no").value =
-        `QRF/${year}/${formattedNumber}`;
+        `QRF/${year}/${String(counter).padStart(4,"0")}`;
 }
 
-
-// =======================================
+// ===============================
 // ADD ROW
-// =======================================
+// ===============================
 function addRow(){
 
-    let tbody =
-        document.getElementById("itemsBody");
+    let tbody = document.getElementById("itemsBody");
 
-    let row =
-        document.createElement("tr");
+    let uomOptions = uoms.map(u =>
+        `<option value="${u}">${u.toUpperCase()}</option>`
+    ).join("");
+
+    let row = document.createElement("tr");
 
     row.innerHTML = `
+        <td><input class="material" placeholder="Material"></td>
+        <td><input class="desc" placeholder="Description"></td>
+        <td><input type="number" class="qty" value="1" min="1"></td>
 
         <td>
-            <input
-                type="text"
-                placeholder="Item name">
+            <select class="uom">
+                ${uomOptions}
+            </select>
         </td>
 
         <td>
-            <input
-                type="text"
-                placeholder="Description">
-        </td>
-
-        <td>
-            <input
-                type="number"
-                min="1"
-                placeholder="Qty">
-        </td>
-
-        <td>
-
-            <button
-                type="button"
-                class="remove-btn"
-                onclick="removeRow(this)">
-
+            <button type="button" class="remove-btn" onclick="removeRow(this)">
                 X
-
             </button>
-
         </td>
     `;
 
     tbody.appendChild(row);
 }
 
-
-// =======================================
+// ===============================
 // REMOVE ROW
-// =======================================
+// ===============================
 function removeRow(btn){
-
     btn.closest("tr").remove();
 
-    // KEEP AT LEAST ONE ROW
-    let rows =
-        document.querySelectorAll("#itemsBody tr");
-
-    if(rows.length === 0){
-
+    if(document.querySelectorAll("#itemsBody tr").length === 0){
         addRow();
     }
 }
 
-
-// =======================================
+// ===============================
 // SUBMIT FORM
-// =======================================
+// ===============================
 function submitForm(){
-
-    // ===================================
-    // GET FORM VALUES
-    // ===================================
-    let requester =
-        document.getElementById("requester_name").value;
-
-    let submission_date =
-        document.getElementById("submission_date").value;
-
-    let prs =
-        document.getElementById("prs_no").value;
-
-    let supplier =
-        document.getElementById("supplier").value;
-
-    // ===================================
-    // ITEMS
-    // ===================================
-    let rows =
-        document.querySelectorAll("#itemsBody tr");
 
     let items = [];
 
-    rows.forEach(row => {
+    document.querySelectorAll("#itemsBody tr").forEach(row => {
 
-        let inputs =
-            row.querySelectorAll("input");
+        let material = row.querySelector(".material").value;
+        let desc = row.querySelector(".desc").value;
+        let qty = row.querySelector(".qty").value;
+        let uom = row.querySelector(".uom").value;
 
-        let item =
-            inputs[0]?.value?.trim();
-
-        let desc =
-            inputs[1]?.value?.trim();
-
-        let qty =
-            inputs[2]?.value;
-
-        if(item && qty){
-
+        if(material){
             items.push({
-
-                item: item,
+                item: material,
                 description: desc,
-                qty: qty
+                qty: qty,
+                uom: uom
             });
         }
     });
 
-    // ===================================
-    // VALIDATION
-    // ===================================
-    if(
-        !requester ||
-        !submission_date ||
-        !prs ||
-        !supplier
-    ){
-        alert("Please fill all required fields");
-        return;
-    }
-
-    if(items.length === 0){
-
-        alert("Please add at least one item");
-
-        return;
-    }
-
-    // ===================================
-    // SEND TO FLASK
-    // ===================================
     fetch("/procurement/save_qrf", {
-
-        method:"POST",
-
-        headers:{
-            "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-
-            requester_name: requester,
-
-            submission_date: submission_date,
-
-            prs_no: prs,
-
-            supplier: supplier,
-
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            qrf_no: document.getElementById("qrf_no").value,
+            requested_by: document.getElementById("created_by").value,
+            submission_date: document.getElementById("submission_date").value,
+            requisition_id: document.getElementById("requisition_id").value,
+            supplier_id: document.getElementById("supplier_id").value,
             items: items
         })
     })
-
-    .then(res => res.json())
-
+    .then(r => r.json())
     .then(data => {
-
         if(data.success){
-
             alert(data.message);
-
-            if(data.redirect){
-
-                window.location.href =
-                    data.redirect;
-            }
-
-        }else{
-
+            window.location.href = data.redirect;
+        } else {
             alert(data.message);
         }
     })
-
-    .catch(error => {
-
-        console.log(error);
-
-        alert("Something went wrong while saving QRF");
+    .catch(err => {
+        console.log(err);
+        alert("Server error");
     });
 }
 

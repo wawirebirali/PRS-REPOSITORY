@@ -235,119 +235,136 @@ def add_supplier():
     return render_template("add_supplier.html")
 
 
+# quotation request form page
+
 
 @procurement_dashboard_bp.route("/create_rfq")
 def create_rfq():
 
     conn = get_db_connection()
-
     cursor = conn.cursor(dictionary=True)
 
-    # ====================================
-    # GET REQUISITIONS
-    # ====================================
     cursor.execute("""
         SELECT requisition_id, prs_no
         FROM requisitions
     """)
-
     requisitions = cursor.fetchall()
 
-    # ====================================
-    # GET SUPPLIERS
-    # ====================================
     cursor.execute("""
         SELECT supplier_id, supplier_name
         FROM suppliers
     """)
-
     suppliers = cursor.fetchall()
 
-    # ====================================
-    # GET USERS
-    # ====================================
     cursor.execute("""
         SELECT user_id, username
         FROM users
     """)
-
     users = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
     return render_template(
-
         "create_quotation_form.html",
-
         requisitions=requisitions,
-
         suppliers=suppliers,
-
-        users=users
+        users=users,
+        created_by=session.get("username")
     )
-
-
-from flask import request, jsonify, url_for
-from model import get_db_connection
-
 @procurement_dashboard_bp.route("/save_qrf", methods=["POST"])
 def save_qrf():
 
+    conn = None
+    cursor = None
+
     try:
-        # =========================
-        # GET JSON DATA
-        # =========================
+
+        # ==========================
+        # RECEIVE JSON
+        # ==========================
         data = request.get_json()
 
-        requester_name = data.get("requester_name")
-        submission_date = data.get("submission_date")
-        prs_no = data.get("prs_no")
-        supplier_id = data.get("supplier")
-        items = data.get("items") or []
+        if not data:
+            return jsonify({
+                "success": False,
+                "message": "No JSON data received"
+            }), 400
 
-        # =========================
+        qrf_no = data.get("qrf_no")
+
+        # FORCE logged-in user (correct approach)
+        requested_by = session.get("user_id")
+
+        submission_date = data.get("submission_date")
+        requisition_id = data.get("requisition_id")
+        supplier_id = data.get("supplier_id")
+        items = data.get("items", [])
+
+        # ==========================
+        # VALIDATION
+        # ==========================
+        if not qrf_no:
+            return jsonify({"success": False, "message": "QRF Number required"}), 400
+
+        if not requested_by:
+            return jsonify({"success": False, "message": "User not logged in"}), 400
+
+        if not requisition_id:
+            return jsonify({"success": False, "message": "Requisition required"}), 400
+
+        if not supplier_id:
+            return jsonify({"success": False, "message": "Supplier required"}), 400
+
+        if len(items) == 0:
+            return jsonify({"success": False, "message": "No items added"}), 400
+
+        # ==========================
         # DB CONNECTION
-        # =========================
+        # ==========================
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # =========================
-        # SAFE COUNT FOR QRF NO
-        # =========================
-        cursor.execute("SELECT COUNT(*) FROM quotation_requests")
-        count = cursor.fetchone()[0]
+        # ==========================
+        # CHECK DUPLICATE QRF
+        # ==========================
+        cursor.execute("""
+            SELECT qrf_id
+            FROM quotation_requests
+            WHERE qrf_no = %s
+        """, (qrf_no,))
 
-        qrf_no = f"QRF-{count + 1:03d}"
+        if cursor.fetchone():
+            return jsonify({
+                "success": False,
+                "message": "QRF already exists"
+            }), 400
 
-        # =========================
-        # INSERT QRF HEADER
-        # =========================
+        # ==========================
+        # INSERT HEADER
+        # ==========================
         cursor.execute("""
             INSERT INTO quotation_requests (
                 qrf_no,
                 requisition_id,
                 requested_by,
                 request_date,
-                status,
-                remarks
+                status
             )
-            VALUES (%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s)
         """, (
             qrf_no,
-            prs_no,
-            1,
+            requisition_id,
+            requested_by,
             submission_date,
-            "PENDING",
-            requester_name
+            "PENDING"
         ))
 
-        # GET INSERTED ID
         qrf_id = cursor.lastrowid
 
-        # =========================
+        # ==========================
         # INSERT SUPPLIER
-        # =========================
+        # ==========================
         cursor.execute("""
             INSERT INTO quotation_request_suppliers (
                 qrf_id,
@@ -363,147 +380,233 @@ def save_qrf():
             "PENDING"
         ))
 
-        # =========================
-        # INSERT ITEMS
-        # =========================
+        # ==========================
+        # INSERT ITEMS (WITH UOM FIX)
+        # ==========================
         for item in items:
+
             cursor.execute("""
-                INSERT INTO quotation_items (
+                INSERT INTO quotation_request_items (
                     qrf_id,
                     material_name,
                     description,
-                    brand,
-                    qty
+                    quantity,
+                    uom
                 )
                 VALUES (%s,%s,%s,%s,%s)
             """, (
                 qrf_id,
                 item.get("item"),
                 item.get("description", ""),
-                "N/A",
-                item.get("qty")
+                item.get("qty", 0),
+                item.get("uom", "")   # ✅ IMPORTANT FIX
             ))
 
-        # =========================
-        # COMMIT + CLOSE
-        # =========================
         conn.commit()
-        cursor.close()
-        conn.close()
 
-        # =========================
-        # SUCCESS RESPONSE
-        # =========================
         return jsonify({
+            "success": True,
             "message": "QRF created successfully",
+            "qrf_id": qrf_id,
+            "qrf_no": qrf_no,
             "redirect": url_for("procurement_dashboard.procurement_dashboard")
         })
 
     except Exception as e:
-        print("ERROR IN SAVE_QRF:", str(e))
+
+        if conn:
+            conn.rollback()
+
+        print("ERROR:", str(e))
 
         return jsonify({
-            "error": str(e),
-            "message": "Something went wrong while saving QRF"
+            "success": False,
+            "message": str(e)
         }), 500
-    
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+from flask import jsonify, render_template, request, url_for
+from datetime import datetime
+
+# =========================
+# QUOTATION PAGE (GET)
+# =========================
 
 
+# =========================
+# GET QRF DETAILS
+# =========================
+from flask import jsonify, render_template, request, url_for
+from datetime import datetime
 
+# =========================
+# QUOTATION PAGE (GET)
+# =========================
 @procurement_dashboard_bp.route("/Quotation_entry", methods=["GET"])
 def enterQuotation():
 
     conn = get_db_connection()
-
     cursor = conn.cursor(dictionary=True)
 
-    # =========================
-    # GET REQUISITIONS
-    # =========================
     cursor.execute("""
-        SELECT
-            requisition_id,
-            prs_no
-        FROM requisitions
-        ORDER BY requisition_id DESC
+        SELECT qrf_id, qrf_no
+        FROM quotation_requests
+        ORDER BY qrf_id DESC
     """)
 
-    requisitions = cursor.fetchall()
-
-    # =========================
-    # GET SUPPLIERS
-    # =========================
-    cursor.execute("""
-        SELECT
-            supplier_id,
-            supplier_name
-        FROM suppliers
-        ORDER BY supplier_name ASC
-    """)
-
-    suppliers = cursor.fetchall()
+    qrfs = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return render_template(
-        "quotations_entry.html",
-        requisitions=requisitions,
-        suppliers=suppliers
-    )
+    return render_template("quotations_entry.html", qrfs=qrfs)
 
 
+# =========================
+# GET QRF DETAILS
+# =========================
+@procurement_dashboard_bp.route("/get_qrf_details/<int:qrf_id>")
+def get_qrf_details(qrf_id):
 
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+            s.supplier_id,
+            s.supplier_name
+        FROM quotation_request_suppliers qrs
+        INNER JOIN suppliers s
+            ON qrs.supplier_id = s.supplier_id
+        WHERE qrs.qrf_id = %s
+        LIMIT 1
+    """, (qrf_id,))
+
+    supplier = cursor.fetchone()
+
+    cursor.execute("""
+        SELECT
+            material_name,
+            description,
+            quantity
+        FROM quotation_request_items
+        WHERE qrf_id = %s
+    """, (qrf_id,))
+
+    items = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "supplier_id": supplier["supplier_id"] if supplier else "",
+        "supplier_name": supplier["supplier_name"] if supplier else "",
+        "items": items
+    })
+
+
+# =========================
+# SAVE QUOTATION (POST)
+# =========================
 @procurement_dashboard_bp.route("/Quotation_entry", methods=["POST"])
 def save_quotation():
+
+    conn = None
+    cursor = None
 
     try:
         data = request.get_json()
 
         qrf_id = data.get("qrf_id")
         supplier_id = data.get("supplier_id")
-        quotation_no = data.get("quotation_no")
-        quotation_date = data.get("quotation_date")
-
-        delivery_days = data.get("delivery_days")
         payment_terms = data.get("payment_terms")
         warranty = data.get("warranty")
-        remarks = data.get("remarks")
+        items = data.get("items", [])
+        delivery_date = data.get("delivery_date")
 
-        items = data.get("items") or []
+        # =========================
+        # VALIDATION
+        # =========================
+        if not qrf_id:
+            return jsonify({"success": False, "message": "QRF is required"}), 400
+
+        if not supplier_id:
+            return jsonify({"success": False, "message": "Supplier is required"}), 400
+
+        if not delivery_date:
+            return jsonify({"success": False, "message": "Delivery date is required"}), 400
+
+        if not items:
+            return jsonify({"success": False, "message": "Add at least one item"}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         # =========================
-        # CALCULATE TOTAL
+        # GENERATE QUOTATION NO
+        # =========================
+        cursor.execute("""
+            SELECT quotation_no
+            FROM quotations
+            ORDER BY quotation_id DESC
+            LIMIT 1
+        """)
+
+        last_record = cursor.fetchone()
+
+        if last_record and last_record[0]:
+            try:
+                last_no = last_record[0]
+                number = int(last_no.split("/")[-1]) + 1
+            except:
+                number = 1
+        else:
+            number = 1
+
+        quotation_no = f"QT/{datetime.now().year}/{number:04d}"
+
+        # =========================
+        # TOTAL AMOUNT
         # =========================
         total_amount = sum(
             float(i.get("quantity", 0)) * float(i.get("unit_price", 0))
             for i in items
         )
 
+        quotation_date = datetime.now()
+
         # =========================
-        # INSERT INTO quotations
+        # INSERT QUOTATION HEADER
         # =========================
         cursor.execute("""
             INSERT INTO quotations (
-                qrf_id, supplier_id, quotation_no, quotation_date,
-                total_amount, delivery_days, payment_terms,
-                warranty, status, remarks
+                qrf_id,
+                supplier_id,
+                quotation_no,
+                quotation_date,
+                total_amount,
+                delivery_date,
+                payment_terms,
+                warranty,
+                status
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
             qrf_id,
             supplier_id,
             quotation_no,
             quotation_date,
             total_amount,
-            delivery_days,
+            delivery_date,
             payment_terms,
             warranty,
-            "PENDING",
-            remarks
+            "PENDING"
         ))
 
         quotation_id = cursor.lastrowid
@@ -513,8 +616,8 @@ def save_quotation():
         # =========================
         for item in items:
             cursor.execute("""
-                INSERT INTO quotation_record_items (
-                    qrf_id,
+                INSERT INTO quotation_records_items (
+                    quotation_id,
                     item_name,
                     description,
                     quantity,
@@ -522,33 +625,54 @@ def save_quotation():
                 )
                 VALUES (%s,%s,%s,%s,%s)
             """, (
-                qrf_id,
+                quotation_id,
                 item.get("item_name"),
                 item.get("description"),
                 item.get("quantity"),
                 item.get("unit_price")
             ))
 
+        # =========================
+        # UPDATE QRF SUPPLIER STATUS
+        # =========================
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+            SET supplier_response = 'RESPONDED',
+                quotation_id = %s
+            WHERE qrf_id = %s
+            AND supplier_id = %s
+        """, (
+            quotation_id,
+            qrf_id,
+            supplier_id
+        ))
+
         conn.commit()
-        cursor.close()
-        conn.close()
 
         return jsonify({
+            "success": True,
             "message": "Quotation saved successfully",
+            "quotation_no": quotation_no,
+            "quotation_id": quotation_id,
             "redirect": url_for("procurement_dashboard.procurement_dashboard")
         })
 
     except Exception as e:
-        print("ERROR:", str(e))
+        if conn:
+            conn.rollback()
+
         return jsonify({
-            "error": str(e),
-            "message": "Failed to save quotation"
+            "success": False,
+            "message": str(e)
         }), 500
 
-
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 # =========================
 # COMPARE SUPPLIERS PAGE
-
 
 @procurement_dashboard_bp.route("/compare_suppliers")
 def compare_suppliers():
@@ -556,21 +680,20 @@ def compare_suppliers():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # GET PRS LIST (better than quotations)
     cursor.execute("""
         SELECT requisition_id, prs_no
         FROM requisitions
         ORDER BY requisition_id DESC
     """)
+
     requisitions = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return render_template(
-        "compare_supplier.html",
-        requisitions=requisitions
-    )
+    return render_template("compare_supplier.html", requisitions=requisitions)
+
+
 
 @procurement_dashboard_bp.route("/get_prs_quotations/<int:prs_id>")
 def get_prs_quotations(prs_id):
@@ -578,24 +701,40 @@ def get_prs_quotations(prs_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            quotation_id,
-            quotation_no
-        FROM quotations
-        WHERE qrf_id = %s
-        ORDER BY quotation_id DESC
-    """, (prs_id,))
+    try:
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.quotation_no,
+                q.total_amount,
+                q.delivery_date,
+                q.warranty,
+                s.supplier_name
+            FROM quotations q
+            JOIN quotation_requests qr
+                ON q.qrf_id = qr.qrf_id
+            JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+            WHERE qr.requisition_id = %s
+            ORDER BY q.total_amount ASC
+        """, (prs_id,))
 
-    data = cursor.fetchall()
+        data = cursor.fetchall()
 
-    cursor.close()
-    conn.close()
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
 
-    return jsonify(data)
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
-
-
+    finally:
+        cursor.close()
+        conn.close()
 @procurement_dashboard_bp.route("/get_quotation/<int:quotation_id>")
 def get_quotation(quotation_id):
 
@@ -626,15 +765,13 @@ def get_quotation(quotation_id):
 
     return jsonify({
         "quotation_id": q["quotation_id"],
-        "prs_id": q["qrf_id"],
+        "qrf_id": q["qrf_id"],
         "quotation_no": q["quotation_no"],
         "supplier_name": q["supplier_name"],
         "total_amount": q["total_amount"],
         "delivery_days": q["delivery_days"],
         "warranty": q["warranty"]
     })
-
-
 @procurement_dashboard_bp.route("/get_quotation_items/<int:qrf_id>")
 def get_quotation_items(qrf_id):
 
@@ -646,9 +783,8 @@ def get_quotation_items(qrf_id):
             item_name,
             description,
             quantity,
-            unit_price,
-            (quantity * unit_price) AS total
-        FROM quotation_record_items
+            unit_price
+        FROM quotation_request_items
         WHERE qrf_id = %s
     """, (qrf_id,))
 
@@ -660,17 +796,99 @@ def get_quotation_items(qrf_id):
     return jsonify(items)
 
 
-@procurement_dashboard_bp.route("/validate_quotation_prs/<int:quotation_id>/<int:prs_id>")
-def validate_quotation_prs(quotation_id, prs_id):
+@procurement_dashboard_bp.route("/save_best_supplier", methods=["POST"])
+def save_best_supplier():
+
+    data = request.get_json()
+
+    quotation_id = data.get("quotation_id")
+
+    if not quotation_id:
+        return jsonify({
+            "success": False,
+            "message": "Quotation ID is required."
+        }), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # Get QRF ID of the selected quotation
+        cursor.execute("""
+            SELECT qrf_id
+            FROM quotations
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        quotation = cursor.fetchone()
+
+        if not quotation:
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found."
+            }), 404
+
+        qrf_id = quotation["qrf_id"]
+
+        # Reset all suppliers to NO
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+            SET selected_supplier = 'NO'
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+        # Set the selected supplier to YES
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+            SET selected_supplier = 'YES'
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        # Update quotation statuses
+        cursor.execute("""
+            UPDATE quotations
+            SET status = 'REJECTED'
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+        cursor.execute("""
+            UPDATE quotations
+            SET status = 'SELECTED'
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Best supplier saved successfully."
+        })
+
+    except Exception as e:
+        conn.rollback()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@procurement_dashboard_bp.route("/validate_quotation/<int:quotation_id>/<int:prs_id>")
+def validate_quotation(quotation_id, prs_id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
         SELECT COUNT(*)
-        FROM quotations
-        WHERE quotation_id = %s
-        AND qrf_id = %s
+        FROM quotations q
+        JOIN quotation_requests qr ON q.qrf_id = qr.qrf_id
+        WHERE q.quotation_id = %s
+        AND qr.requisition_id = %s
     """, (quotation_id, prs_id))
 
     valid = cursor.fetchone()[0] > 0
@@ -680,18 +898,21 @@ def validate_quotation_prs(quotation_id, prs_id):
 
     return jsonify({"valid": valid})
 
-
-
 # PO STARTS HERE
-
-from flask import Blueprint, request, jsonify, render_template
-from model import get_db_connection
+from flask import Blueprint, render_template, jsonify, request
 from datetime import datetime
 
+procurement_dashboard_bp = Blueprint("procurement_dashboard_bp", __name__)
 
 
 # =========================
-# PAGE LOAD
+# CREATE PO PAGE
+# =========================
+from flask import request, jsonify, render_template
+from datetime import datetime
+
+# =========================
+# CREATE PO PAGE
 # =========================
 @procurement_dashboard_bp.route("/create_po", methods=["GET"])
 def create_po_page():
@@ -707,133 +928,236 @@ def get_prs_list():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT requisition_id, prs_no
-        FROM requisitions
-        ORDER BY requisition_id DESC
-    """)
+    try:
+        cursor.execute("""
+            SELECT requisition_id, prs_no
+            FROM requisitions
+            ORDER BY requisition_id DESC
+        """)
+        return jsonify(cursor.fetchall())
 
-    data = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(data)
+    finally:
+        cursor.close()
+        conn.close()
 
 
+# =========================
 # GET USERS
-# ====================================================
+# =========================
 @procurement_dashboard_bp.route("/get_users")
 def get_users():
 
     conn = get_db_connection()
-
     cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-
-        SELECT user_id, username
-        FROM users
-
-    """)
-
-    users = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(users)
-
-
-# =========================
-# GET SUPPLIERS LIST
-# =========================
-@procurement_dashboard_bp.route("/get_suppliers")
-def get_suppliers():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-
-        SELECT supplier_id, supplier_name
-        FROM suppliers
-
-    """)
-
-    suppliers = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(suppliers)
-
-
-# =========================
-# CREATE PURCHASE ORDER (POST)
-# =========================
-@procurement_dashboard_bp.route("/create_po", methods=["POST"])
-def create_po_post():
-
-    data = request.get_json()
-
-    po_number = data.get("po_number")
-    order_date = data.get("order_date")
-    created_by = data.get("created_by")
-
-    requisition_id = data.get("requisition_id")
-    supplier_id = data.get("supplier_id")
-
-    items = data.get("items", [])
-
-    # VALIDATION
-    if not requisition_id:
-        return jsonify({"success": False, "message": "PRS is required"}), 400
-
-    if not supplier_id:
-        return jsonify({"success": False, "message": "Supplier is required"}), 400
-
-    if len(items) == 0:
-        return jsonify({"success": False, "message": "No items provided"}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
 
     try:
-        # TOTAL CALCULATION
-        total_amount = sum(
-            float(i.get("quantity", 0)) * float(i.get("unit_price", 0))
-            for i in items
-        )
-
-        # INSERT PURCHASE ORDER
         cursor.execute("""
-            INSERT INTO purchase_orders
-            (requisition_id, po_number, supplier_id, order_date, total_amount)
-            VALUES (%s, %s, %s, %s, %s)
+            SELECT user_id, username
+            FROM users
+        """)
+        return jsonify(cursor.fetchall())
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# =========================
+# GET SELECTED SUPPLIER
+# =========================
+@procurement_dashboard_bp.route("/get_selected_supplier/<int:prs_id>")
+def get_selected_supplier(prs_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT 
+                s.supplier_id,
+                s.supplier_name,
+                qrs.quotation_id,
+                q.quotation_no
+            FROM quotation_request_suppliers qrs
+            JOIN suppliers s ON s.supplier_id = qrs.supplier_id
+            JOIN quotations q ON q.quotation_id = qrs.quotation_id
+            JOIN quotation_requests qr ON qr.qrf_id = qrs.qrf_id
+            WHERE qr.qrf_id = %s
+              AND LOWER(qrs.selected_supplier) = 'yes'
+            LIMIT 1
+        """, (prs_id,))
+
+        return jsonify(cursor.fetchone())
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# =========================
+# CREATE PO FROM SELECTED QUOTATION
+# =========================
+from flask import request, jsonify
+from datetime import datetime
+
+from flask import request, jsonify
+from datetime import datetime
+
+from flask import request, jsonify
+from datetime import datetime
+
+from flask import request, jsonify
+from datetime import datetime
+
+from datetime import datetime
+from flask import request, jsonify
+
+
+@procurement_dashboard_bp.route("/create_po_from_selected", methods=["POST"])
+def create_po_from_selected():
+
+    data = request.get_json()
+    quotation_id = data.get("quotation_id")
+
+    if not quotation_id:
+        return jsonify({
+            "success": False,
+            "message": "Quotation ID is required"
+        }), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ==========================================
+        # CHECK WHETHER PO ALREADY EXISTS
+        # ==========================================
+        cursor.execute("""
+            SELECT purchase_order_id
+            FROM purchase_orders
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        existing_po = cursor.fetchone()
+
+        if existing_po:
+            return jsonify({
+                "success": False,
+                "message": "Purchase Order already exists for this quotation"
+            }), 409
+
+        # ==========================================
+        # GET SELECTED SUPPLIER + QUOTATION DETAILS
+        # ==========================================
+        cursor.execute("""
+            SELECT
+                qrs.supplier_id,
+                s.supplier_name,
+                qrs.quotation_id,
+                q.quotation_no
+            FROM quotation_request_suppliers qrs
+            JOIN quotations q
+                ON q.quotation_id = qrs.quotation_id
+            JOIN suppliers s
+                ON s.supplier_id = qrs.supplier_id
+            WHERE qrs.quotation_id = %s
+            LIMIT 1
+        """, (quotation_id,))
+
+        selected = cursor.fetchone()
+
+        if not selected:
+            return jsonify({
+                "success": False,
+                "message": "No selected supplier found for this quotation"
+            }), 404
+
+        supplier_id = selected["supplier_id"]
+        supplier_name = selected["supplier_name"]
+        quotation_no = selected["quotation_no"]
+
+        # ==========================================
+        # GET QUOTATION ITEMS
+        # ==========================================
+        cursor.execute("""
+            SELECT
+                item_name,
+                description,
+                quantity,
+                unit_price
+            FROM quotation_records_items
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        items = cursor.fetchall()
+
+        if not items:
+            return jsonify({
+                "success": False,
+                "message": "No items found for this quotation"
+            }), 404
+
+        # ==========================================
+        # CALCULATE TOTAL AMOUNT
+        # ==========================================
+        total_amount = 0
+
+        for item in items:
+            qty = float(item["quantity"] or 0)
+            price = float(item["unit_price"] or 0)
+
+            total_amount += qty * price
+
+        # ==========================================
+        # GENERATE PO NUMBER
+        # ==========================================
+        po_number = f"PO/{datetime.now().year}/{int(datetime.now().timestamp())}"
+
+        # ==========================================
+        # INSERT PURCHASE ORDER HEADER
+        # ==========================================
+        cursor.execute("""
+            INSERT INTO purchase_orders (
+                quotation_id,
+                supplier_id,
+                po_number,
+                order_date,
+                total_amount,
+                status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, (
-            requisition_id,
-            po_number,
+            quotation_id,
             supplier_id,
-            order_date,
-            total_amount
+            po_number,
+            datetime.now(),
+            total_amount,
+            "PENDING"
         ))
 
         po_id = cursor.lastrowid
 
-        # INSERT ITEMS
-        for i in items:
+        # ==========================================
+        # INSERT PURCHASE ORDER ITEMS
+        # ==========================================
+        for item in items:
+
             cursor.execute("""
-                INSERT INTO purchase_order_items
-                (purchase_order_id, item_name, description, quantity, unit_price)
+                INSERT INTO purchase_order_items (
+                    purchase_order_id,
+                    item_name,
+                    description,
+                    quantity,
+                    unit_price
+                )
                 VALUES (%s, %s, %s, %s, %s)
             """, (
                 po_id,
-                i.get("item_name"),
-                i.get("description"),
-                i.get("quantity"),
-                i.get("unit_price")
+                item["item_name"],
+                item["description"],
+                item["quantity"],
+                item["unit_price"]
             ))
 
         conn.commit()
@@ -842,11 +1166,15 @@ def create_po_post():
             "success": True,
             "message": "Purchase Order created successfully",
             "po_id": po_id,
-            "redirect": url_for("procurement_dashboard.procurement_dashboard")
+            "po_number": po_number,
+            "quotation_no": quotation_no,
+            "supplier_name": supplier_name
         })
 
     except Exception as e:
+
         conn.rollback()
+
         return jsonify({
             "success": False,
             "message": str(e)
@@ -856,9 +1184,120 @@ def create_po_post():
         cursor.close()
         conn.close()
 
+@procurement_dashboard_bp.route("/get_prs_quotations/<int:prs_id>")
+def get_prs_quotations(prs_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT 
+                q.quotation_id,
+                q.quotation_no,
+                s.supplier_name,
+                q.total_amount,
+                q.delivery_days AS delivery_date,
+                q.warranty
+            FROM quotation_request_suppliers qrs
+            JOIN quotation_requests qr 
+                ON qr.qrf_id = qrs.qrf_id
+            JOIN quotations q 
+                ON q.quotation_id = qrs.quotation_id
+            JOIN suppliers s 
+                ON s.supplier_id = qrs.supplier_id
+            WHERE qr.requisition_id = %s
+        """, (prs_id,))
+
+        data = cursor.fetchall()
+
+        return jsonify({
+            "status": "success",
+            "data": data
+        })
+
+    finally:
+        cursor.close()
+        conn.close() 
 
 
 
+# =========================
+# GET QUOTATION LIST (FIXED)
+# =========================
+@procurement_dashboard_bp.route("/get_quotation_list")
+def get_quotation_list():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT 
+                q.quotation_id,
+                q.quotation_no,
+                s.supplier_name
+            FROM quotations q
+            JOIN suppliers s ON s.supplier_id = q.supplier_id
+            ORDER BY q.quotation_id DESC
+        """)
+
+        return jsonify(cursor.fetchall())
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# =========================
+# GET QUOTATION DETAILS (FIXED)
+# =========================
+@procurement_dashboard_bp.route("/get_quotation_details/<int:quotation_id>")
+def get_quotation_details(quotation_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # HEADER
+        cursor.execute("""
+            SELECT 
+                q.quotation_id,
+                q.quotation_no,
+                q.supplier_id,
+                s.supplier_name
+            FROM quotations q
+            JOIN suppliers s ON s.supplier_id = q.supplier_id
+            WHERE q.quotation_id = %s
+        """, (quotation_id,))
+
+        header = cursor.fetchone()
+
+        if not header:
+            return jsonify({"error": "Quotation not found"}), 404
+
+        # ITEMS
+        cursor.execute("""
+            SELECT 
+                item_name,
+                description,
+                quantity,
+                unit_price
+            FROM quotation_records_items
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        items = cursor.fetchall()
+
+        return jsonify({
+            "supplier_id": header["supplier_id"],
+            "supplier_name": header["supplier_name"],
+            "items": items
+        })
+
+    finally:
+        cursor.close()
+        conn.close()               
 
 # GRN STARTS HERE
 

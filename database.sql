@@ -383,12 +383,12 @@ CREATE TABLE quotation_requests (
 );
 
 
-
 CREATE TABLE quotation_request_suppliers (
     id INT AUTO_INCREMENT PRIMARY KEY,
 
     qrf_id INT NOT NULL,
     supplier_id INT NOT NULL,
+    quotation_id INT NULL,
 
     sent_date DATE,
 
@@ -402,67 +402,14 @@ CREATE TABLE quotation_request_suppliers (
         REFERENCES quotation_requests(qrf_id),
 
     FOREIGN KEY (supplier_id)
-        REFERENCES suppliers(supplier_id)
-);
-
-
-CREATE TABLE quotations (
-    quotation_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    qrf_id INT NOT NULL,
-
-    supplier_id INT NOT NULL,
-
-    quotation_no VARCHAR(100),
-
-    quotation_date DATE,
-
-    total_amount DECIMAL(15,2),
-
-    delivery_days INT,
-
-    payment_terms VARCHAR(255),
-
-    warranty VARCHAR(255),
-
-    status ENUM(
-        'PENDING',
-        'SELECTED',
-        'REJECTED'
-    ) DEFAULT 'PENDING',
-
-    attachment VARCHAR(255),
-
-    remarks TEXT,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (qrf_id)
-        REFERENCES quotation_requests(qrf_id),
-
-    FOREIGN KEY (supplier_id)
-        REFERENCES suppliers(supplier_id)
-);
-
-
-
-
-
-CREATE TABLE quotation_items (
-    quotation_item_id INT AUTO_INCREMENT PRIMARY KEY,
-
-    quotation_id INT NOT NULL,
-
-    material_name VARCHAR(255) NOT NULL,
-
-    quantity DECIMAL(10,2),
-
-    description TEXT,
-    brand VARCHAR(100),
+        REFERENCES suppliers(supplier_id),
 
     FOREIGN KEY (quotation_id)
         REFERENCES quotations(quotation_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 );
+
 
 
 
@@ -530,9 +477,79 @@ CREATE TABLE grn_items (
 );
 
 
-CREATE TABLE quotation_record_items (
-    record_id INT AUTO_INCREMENT PRIMARY KEY,
+
+
+
+
+-- ==========================================
+-- CREATE QUOTATION REQUEST ITEMS TABLE
+-- ==========================================
+
+CREATE TABLE quotation_request_items (
+
+    quotation_request_item_id INT AUTO_INCREMENT PRIMARY KEY,
+
     qrf_id INT NOT NULL,
+
+    material_name VARCHAR(255) NOT NULL,
+
+    description TEXT,
+
+    quantity INT NOT NULL DEFAULT 1,
+
+    unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+
+    amount DECIMAL(12,2)
+        GENERATED ALWAYS AS (quantity * unit_price) STORED,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (qrf_id)
+        REFERENCES quotation_requests(qrf_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+
+
+CREATE TABLE quotations (
+    quotation_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    qrf_id INT NOT NULL,
+    supplier_id INT NOT NULL,
+
+    quotation_no VARCHAR(100),
+    quotation_date DATE,
+
+    total_amount DECIMAL(15,2),
+
+    delivery_days INT,
+    warranty VARCHAR(255),
+    payment_terms VARCHAR(255),
+
+    status ENUM('PENDING','SELECTED','REJECTED') DEFAULT 'PENDING',
+
+    attachment VARCHAR(255),
+    remarks TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (qrf_id)
+        REFERENCES quotation_requests(qrf_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    FOREIGN KEY (supplier_id)
+        REFERENCES suppliers(supplier_id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+
+CREATE TABLE quotation_records_items (
+    item_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    quotation_id INT NOT NULL,
 
     item_name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -540,11 +557,14 @@ CREATE TABLE quotation_record_items (
     quantity INT NOT NULL DEFAULT 1,
     unit_price DECIMAL(12,2) NOT NULL DEFAULT 0.00,
 
-    amount DECIMAL(12,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+    amount DECIMAL(12,2)
+        GENERATED ALWAYS AS (quantity * unit_price) STORED,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (qrf_id) REFERENCES quotation_requests(qrf_id)
+    FOREIGN KEY (quotation_id)
+        REFERENCES quotations(quotation_id)
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
