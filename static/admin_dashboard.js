@@ -762,3 +762,8 @@ function filterNotifications(){
         item.style.display = text.includes(input) ? "block" : "none";
     });
 }
+
+
+function logoutUser() {
+    window.location.href = "/logout";
+}

@@ -339,3 +339,11 @@ def forgot_password():
 
     return render_template('forgot_password.html')
 
+
+
+@auth_bp.route("/logout")
+def logout():
+    session.clear()  # destroys all user session data
+    flash("You have been logged out successfully", "success")
+    return redirect(url_for("maindashboard.home"))
+    

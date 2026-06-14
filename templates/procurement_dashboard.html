@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<button class="logout-btn" onclick="logoutUser()">
+    Logout
+</button>
 <meta charset="UTF-8">
 <title>PRS ERP Dashboard</title>
 
@@ -490,12 +493,40 @@ tr:hover{
     }
 
 }
+.top-bar{
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.logout-btn {
+    padding: 10px 18px;
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background: #c53030;
+}
 
 </style>
 </head>
 
 <body>
+<body>
 
+<!-- LOGOUT BUTTON -->
+<div class="top-bar">
+    <button class="logout-btn" onclick="logoutUser()">
+        Logout
+    </button>
+</div>
 
 
 <!-- SIDEBAR -->
@@ -2137,6 +2168,9 @@ function downloadPDF(elementId, filename) {
     html2pdf().set(options).from(element).save();
 }
 
+function logoutUser() {
+    window.location.href = "/logout";
+}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>

@@ -319,10 +319,42 @@ tr:hover{
     box-shadow:0 2px 6px rgba(0,0,0,0.05);
     transition:0.2s ease;
 }
+
+
+.top-bar{
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.logout-btn {
+    padding: 10px 18px;
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background: #c53030;
+}
 </style>
 </head>
 
 <body>
+
+<body>
+
+<!-- LOGOUT BUTTON -->
+<div class="top-bar">
+    <button class="logout-btn" onclick="logoutUser()">
+        Logout
+    </button>
+</div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -2281,6 +2313,11 @@ function loadSupplierModule(){
             console.error(error);
             alert("Failed to load suppliers.");
         });
+}
+
+
+function logoutUser() {
+    window.location.href = "/logout";
 }
 
 </script>
