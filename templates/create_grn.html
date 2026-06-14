@@ -2,6 +2,10 @@
 <html>
 <head>
 
+<button class="back-btn" onclick="goToDashboard()">
+    ⬅ Back to Dashboard
+</button>
+
 <title>Goods Received Note (GRN)</title>
 
 <style>
@@ -122,6 +126,29 @@ button:hover{
 
 }
 
+.back-btn {
+    padding: 10px 18px;
+    background-color: #2C7A7B;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.back-btn:hover {
+    background-color: #1f5e5f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.back-btn:active {
+    transform: scale(0.97);
+}
+
 </style>
 
 </head>
@@ -163,26 +190,15 @@ button:hover{
 
     <!-- SUPPLIER -->
     <div>
+    <label>Created By</label>
+    <input type="text" value="{{ session.username }}" readonly>
+    </div>
 
-        <label>Supplier</label>
-
-        <select name="supplier_id"
-                id="supplier_id"
-                required>
-
-            <option value="">
-                -- Select Supplier --
-            </option>
-
-            {% for s in suppliers %}
-
-            <option value="{{ s.supplier_id }}">
-                {{ s.supplier_name }}
-            </option>
-
-            {% endfor %}
-
-        </select>
+    <div>
+    <label>Supplier</label>
+    <input type="text" id="supplier_name" readonly>
+    <input type="hidden" id="supplier_id">
+    </div>
 
     </div>
 
@@ -214,32 +230,8 @@ button:hover{
 
     </div>
 
-    <!-- CREATED BY -->
-    <div>
-
-        <label>Created By</label>
-
-        <select name="received_by"
-                id="created_by"
-                required>
-
-            <option value="">
-                -- Select User --
-            </option>
-
-            {% for u in users %}
-
-            <option value="{{ u.user_id }}">
-                {{ u.username }}
-            </option>
-
-            {% endfor %}
-
-        </select>
-
-    </div>
-
-</div>
+    
+    
 
 <!-- ITEMS TABLE -->
 <table id="grnTable">
@@ -432,6 +424,9 @@ document.getElementById("po_id")
 
     .then(data => {
 
+        document.getElementById("supplier_id").value = data.supplier_id || "";
+        document.getElementById("supplier_name").value = data.supplier_name || "";
+
         let body =
             document.getElementById(
                 "itemsBody"
@@ -439,7 +434,7 @@ document.getElementById("po_id")
 
         body.innerHTML = "";
 
-        data.forEach(item => {
+        data.items.forEach(item => {
 
             let row = `
 
@@ -623,6 +618,10 @@ function calculateRow(input){
             "REJECTED";
     }
 
+}
+
+function goToDashboard() {
+    window.location.href = "{{ url_for('procurement_dashboard.procurement_dashboard') }}";
 }
 
 </script>

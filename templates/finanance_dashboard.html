@@ -311,33 +311,35 @@ onkeyup="searchPRS()">
 
 
 
+
+<!-- ================= INVOICE MODULE ================= -->
 <div id="invoice" class="module">
 
     <div class="container">
 
-        <!-- LEFT -->
+        <!-- ================= LEFT PANEL ================= -->
         <div class="left">
 
             <div class="header">Invoice Management</div>
 
-            <div style="display:flex; gap:10px; align-items:center;">
+            <!-- SEARCH -->
+            <div class="search">
                 <button class="btn primary"
-                    onclick="window.location.href='/procurement/create_invoice'">
-                    Create Invoice
+                 onclick="window.location.href='/procurement/create_invoice'">
+                     Create Invoice
                 </button>
-
-                <input id="invoiceSearch"
-                    type="text"
-                    onkeyup="searchInvoice()"
-                    placeholder="Search Invoice..."
-                    style="padding:10px;width:250px;">
+                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
             </div>
 
-            <button class="btn primary" onclick="printInvoice()">
-                Print Invoice
-            </button>
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
+                
+            </div>
 
+            <!-- TABLE -->
             <table id="invoiceTable">
+
                 <thead>
                     <tr>
                         <th>Select</th>
@@ -345,23 +347,27 @@ onkeyup="searchPRS()">
                         <th>Invoice No</th>
                         <th>GRN No</th>
                         <th>Supplier</th>
+                        <th>Department</th>
                         <th>Status</th>
+                        <th>submission_date</th>
                     </tr>
                 </thead>
 
                 <tbody id="invoiceBody">
-                    <!-- dynamic rows -->
                 </tbody>
+
             </table>
 
         </div>
 
-        <!-- RIGHT -->
+        <!-- ================= RIGHT PANEL ================= -->
         <div class="right">
 
             <div class="slip" id="invoicePrintArea">
+
                 <h2>PURCHASE INVOICE</h2>
 
+                <!-- INFO -->
                 <div class="info">
                     <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
                     <p><b>GRN No:</b> <span id="i_grn">-</span></p>
@@ -370,12 +376,53 @@ onkeyup="searchPRS()">
                     <p><b>Date:</b> <span id="i_date">-</span></p>
                 </div>
 
+                <h3>Items</h3>
+
+                <!-- ITEMS TABLE -->
+                <table class="items-table">
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Laptop</td>
+                            <td>2</td>
+                            <td>500</td>
+                            <td>1000</td>
+                        </tr>
+
+                        <tr>
+                            <td>Printer</td>
+                            <td>1</td>
+                            <td>200</td>
+                            <td>200</td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURES -->
+                <div class="signature">
+                    <div class="sig">Supplier</div>
+                    <div class="sig">Procurement</div>
+                    <div class="sig">Finance</div>
+                </div>
+
             </div>
 
         </div>
 
     </div>
+
 </div>
+
 
 
 
@@ -608,6 +655,141 @@ function openModule(moduleId, btn){
         btn.classList.add("active");
     }
 }
+
+
+
+
+
+// ==============================
+// INVOICE LOADING
+// ==============================
+function searchInvoice(){
+    let input = document.getElementById("invoiceSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#invoiceTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+    });
+}
+
+function selectInvoice(radio){
+    if(!radio || !radio.dataset.invoiceId){
+        alert("Please select an invoice");
+        return;
+    }
+
+    let invoiceId = radio.dataset.invoiceId;
+
+    fetch(`/procurement/invoice_details/${invoiceId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("i_invoice").innerText = data.invoice_number || "-";
+            document.getElementById("i_grn").innerText = data.grn_no || "-";
+            document.getElementById("i_supplier").innerText = data.supplier_name || "-";
+            document.getElementById("i_amount").innerText = data.total_amount || "-";
+            document.getElementById("i_date").innerText = data.invoice_date || "-";
+
+            let itemsBody = document.querySelector("#invoicePrintArea .items-table tbody");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                    <td>${item.unit_price || "-"}</td>
+                    <td>${item.total_price || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load invoice details.");
+        });
+}
+
+function loadInvoiceModule(){
+    fetch("/procurement/invoice_data")
+        .then(res => res.json())
+        .then(data => {
+            let body = document.getElementById("invoiceBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;">No invoices found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td><input type="radio" name="invoiceSelect" data-invoice-id="${item.invoice_id}" onchange="selectInvoice(this)"></td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.invoice_number || "-"}</td>
+                    <td>${item.grn_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.invoice_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='invoiceSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#invoiceBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectInvoice(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load invoice records.");
+        });
+}
+
+function printInvoice(){
+    window.print();
+}
+
+
+// ==============================
+// SHARE QUOTATION REQUEST
+// ==============================
+function shareQuotation(){
+
+let supplier = document.getElementById("sp_name").innerText
+
+if(supplier=="-"){
+alert("Select a supplier first")
+return
+}
+
+let table = document.getElementById("sharedPRS")
+
+let row = table.insertRow()
+
+row.innerHTML = `
+<td>PRS-${Math.floor(Math.random()*1000)}</td>
+<td>Quotation Sent</td>
+<td>-</td>
+`
+
+alert("Quotation request sent to "+supplier)
+
+}
+
+
+
+
 
 
 

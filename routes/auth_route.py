@@ -36,7 +36,10 @@ def user_login():
         role = session["user_role"]
 
         if role == "procurement":
-            return redirect(url_for("procurement_dashboard.procurement_dashboard"))
+            return redirect(url_for(
+            "procurement_dashboard.procurement_dashboard"
+        ))
+            
 
         elif role == "ceo":
             return redirect(url_for("ceo.ceo_dashboard"))

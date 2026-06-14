@@ -38,6 +38,39 @@ def supplier_data():
     return jsonify(data)
 
 
+@procurement_view_bp.route("/quotation_request_data")
+def quotation_request_data():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT
+            q.qrf_id,
+            q.qrf_no,
+            r.prs_no,
+            s.supplier_name,
+            qrs.supplier_response,
+            d.department_name AS department,
+            q.request_date
+        FROM quotation_requests q
+        JOIN requisitions r ON q.requisition_id = r.requisition_id
+        JOIN departments d ON r.department_id = d.department_id
+        JOIN quotation_request_suppliers qrs ON q.qrf_id = qrs.qrf_id
+        JOIN suppliers s ON qrs.supplier_id = s.supplier_id
+        ORDER BY q.qrf_id DESC
+    """)
+
+    data = cursor.fetchall()
+    for item in data:
+        if item.get("request_date") is not None:
+            item["request_date"] = item["request_date"].isoformat()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(data)
+
+
 @procurement_view_bp.route("/supplier_details/<int:qrf_id>")
 def supplier_details(qrf_id):
     conn = get_db_connection()
@@ -64,6 +97,7 @@ def supplier_details(qrf_id):
         JOIN quotation_request_suppliers qrs ON q.qrf_id = qrs.qrf_id
         JOIN suppliers s ON qrs.supplier_id = s.supplier_id
         WHERE q.qrf_id = %s
+                    AND LOWER(qrs.selected_supplier) = 'yes'
         LIMIT 1
     """, (qrf_id,))
 
@@ -79,7 +113,7 @@ def supplier_details(qrf_id):
             material_name,
             description,
             quantity
-        FROM quotation_record_items
+        FROM quotation_request_items
         WHERE qrf_id = %s
     """, (qrf_id,))
 
@@ -167,7 +201,147 @@ def po_data():
     conn.close()
 
     return jsonify(rows)
+@procurement_view_bp.route("/quotation_data")
+def quotation_data():
 
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.quotation_no,
+                qr.qrf_no,
+                s.supplier_name,
+                q.status AS quotation_status,
+                d.department_name,
+                q.created_at,
+
+                i.item_name,
+                i.description,
+                i.quantity,
+                i.unit_price
+
+            FROM quotations q
+
+            JOIN quotation_request_suppliers qrs
+                ON qrs.quotation_id = q.quotation_id
+
+            JOIN suppliers s
+                ON s.supplier_id = qrs.supplier_id
+
+            JOIN quotation_requests qr
+                ON qr.qrf_id = qrs.qrf_id
+
+            JOIN requisitions r
+                ON r.requisition_id = qr.requisition_id
+
+            JOIN departments d
+                ON d.department_id = r.department_id
+
+            LEFT JOIN quotation_records_items i
+                ON i.quotation_id = q.quotation_id
+
+            ORDER BY q.created_at DESC
+        """)
+
+        rows = cursor.fetchall()
+
+        # If nothing found, return empty list safely
+        if not rows:
+            return jsonify([])
+
+        # ==================================================
+        # GROUP ITEMS BY QUOTATION
+        # ==================================================
+        grouped = {}
+
+        for row in rows:
+
+            qid = row["quotation_id"]
+
+            if qid not in grouped:
+                grouped[qid] = {
+                    "quotation_id": row["quotation_id"],
+                    "quotation_no": row["quotation_no"],
+                    "qrf_no": row["qrf_no"],
+                    "supplier_name": row["supplier_name"],
+                    "quotation_status": row["quotation_status"],
+                    "department_name": row["department_name"],
+                    "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                    "items": []
+                }
+
+            # Only add items if they exist (important fix)
+            if row["item_name"] is not None:
+                grouped[qid]["items"].append({
+                    "item_name": row["item_name"],
+                    "description": row["description"],
+                    "quantity": row["quantity"],
+                    "unit_price": row["unit_price"]
+                })
+
+        return jsonify(list(grouped.values()))
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# ==========================================
+# QUOTATION DETAILS
+# ==========================================
+
+
+@procurement_view_bp.route("/quotation_details/<int:id>")
+def quotation_details(id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # header
+    cursor.execute("""
+        SELECT
+            q.quotation_id,
+            q.quotation_no,
+            qr.qrf_no,
+            q.created_at,
+            s.supplier_name,
+            d.department_name AS department
+        FROM quotations q
+        JOIN quotation_request_suppliers qrs ON qrs.quotation_id = q.quotation_id
+        JOIN quotation_requests qr ON qr.qrf_id = qrs.qrf_id
+        JOIN requisitions r ON r.requisition_id = qr.requisition_id
+        JOIN departments d ON d.department_id = r.department_id
+        JOIN suppliers s ON s.supplier_id = qrs.supplier_id
+        WHERE q.quotation_id = %s
+    """, (id,))
+
+    header = cursor.fetchone()
+
+    # items
+    cursor.execute("""
+        SELECT item_name, description, quantity, unit_price
+        FROM quotation_records_items
+        WHERE quotation_id = %s
+    """, (id,))
+
+    items = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        "success": True,
+        "header": header,
+        "items": items
+    })
 
 @procurement_view_bp.route("/po_details/<int:po_id>")
 def po_details(po_id):
@@ -461,31 +635,42 @@ def quotation_request_details(qrf_id):
                 qr.qrf_no,
                 qr.request_date,
                 qr.status,
+                qr.remarks,
 
                 r.prs_no,
-                r.department,
+                d.department_name AS department,
 
                 s.supplier_name,
-                s.phone,
-                s.address
+                s.phone AS supplier_phone,
+                s.address AS supplier_address,
+                s.contact_person AS supplier_contact,
+                u.username AS requester_name
 
             FROM quotation_requests qr
 
             LEFT JOIN requisitions r
                 ON qr.requisition_id = r.requisition_id
 
-            LEFT JOIN suppliers s
-                ON qr.supplier_id = s.supplier_id
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            LEFT JOIN users u
+                ON qr.requested_by = u.user_id
+
+            JOIN quotation_request_suppliers qrs
+                ON qr.qrf_id = qrs.qrf_id
+
+            JOIN suppliers s
+                ON qrs.supplier_id = s.supplier_id
 
             WHERE qr.qrf_id = %s
+            LIMIT 1
         """, (qrf_id,))
 
         qrf = cursor.fetchone()
 
         if not qrf:
-            return jsonify({
-                "error": "Quotation Request not found"
-            }), 404
+            return jsonify({"error": "Quotation Request not found"}), 404
 
         # ===============================
         # QRF ITEMS
@@ -505,39 +690,24 @@ def quotation_request_details(qrf_id):
         # RESPONSE
         # ===============================
         return jsonify({
-
             "qrf_id": qrf["qrf_id"],
-
             "qrf_no": qrf["qrf_no"],
-
             "prs_no": qrf["prs_no"],
-
-            "request_date": str(qrf["request_date"])
-            if qrf["request_date"] else "",
-
+            "request_date": str(qrf["request_date"]) if qrf["request_date"] else "",
             "department": qrf["department"],
-
             "supplier_name": qrf["supplier_name"],
-
-            "supplier_phone": qrf["phone"],
-
-            "supplier_address": qrf["address"],
-
+            "supplier_phone": qrf["supplier_phone"],
+            "supplier_address": qrf["supplier_address"],
+            "supplier_contact": qrf["supplier_contact"],
+            "requester_name": qrf["requester_name"],
             "status": qrf["status"],
-
+            "remarks": qrf["remarks"],
             "items": items
-
         })
 
     except Exception as e:
-
-        print("QRF DETAILS ERROR:", e)
-
-        return jsonify({
-            "error": str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
     finally:
-
         cursor.close()
         conn.close()

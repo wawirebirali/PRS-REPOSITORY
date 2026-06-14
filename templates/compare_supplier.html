@@ -180,6 +180,8 @@ function loadPRSQuotations(){
         result.data.forEach(q => {
 
             let row = document.createElement("tr");
+            row.dataset.quotationId = q.quotation_id;
+            row.dataset.amount = q.total_amount;
 
             row.innerHTML = `
                 <td class="quotation_no">${q.quotation_no}</td>
@@ -187,10 +189,6 @@ function loadPRSQuotations(){
                 <td class="amount">${q.total_amount}</td>
                 <td class="delivery">${q.delivery_date || '-'}</td>
                 <td class="warranty">${q.warranty || '-'}</td>
-
-                <td class="quotation_id" style="display:none">
-                    ${q.quotation_id}
-                </td>
             `;
 
             tbody.appendChild(row);
@@ -222,11 +220,7 @@ function compareQuotes(){
 
         row.classList.remove("best");
 
-        let amountEl = row.querySelector(".amount");
-
-        if(!amountEl) return;
-
-        let amount = parseFloat(amountEl.innerText || 0);
+        let amount = parseFloat(row.dataset.amount || 0);
 
         if(amount < lowest){
             lowest = amount;
@@ -239,9 +233,6 @@ function compareQuotes(){
         showMsg("Best supplier selected", "success");
     }
 }
-
-
-// ================= SAVE =================
 function saveSelectedSupplier(){
 
     let bestRow = document.querySelector(".best");
@@ -251,8 +242,7 @@ function saveSelectedSupplier(){
         return;
     }
 
-    let quotation_id =
-        bestRow.querySelector(".quotation_id").innerText;
+    let quotation_id = bestRow.dataset.quotationId;
 
     let supplier_name =
         bestRow.querySelector(".supplier").innerText;
@@ -271,6 +261,10 @@ function saveSelectedSupplier(){
 
         if(data.success){
             showMsg(data.message, "success");
+
+            // redirect after success
+            window.location.href = "/procurement/create_po";
+
         } else {
             showMsg(data.message, "error");
         }
