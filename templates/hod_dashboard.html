@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>PRS ERP Dashboard</title>
 
+
+
 <style>
 /* =========================*/
  body{
@@ -16,38 +18,65 @@
 /* =========================
    SIDEBAR
 ========================= */
-.sidebar{
-    width:230px;
-    background:#2C7A7B;
-    color:white;
-    height:100vh;
-    position:fixed;
-    left:0;
-    top:0;
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
+    color: #ffffff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    /* 👇 modern look improvements */
+    border-right: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    padding-top: 10px;
 }
 
-.sidebar h2{
-    text-align:center;
-    padding:20px;
-    border-bottom:1px solid rgba(255,255,255,0.1);
+/* Sidebar title */
+.sidebar h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* nice bottom separation line */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar button{
-    width:100%;
-    padding:14px 20px;
-    border:none;
-    background:none;
-    color:white;
-    text-align:left;
-    cursor:pointer;
+/* Sidebar buttons */
+.sidebar button {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    border-left: 3px solid transparent;
 }
 
-.sidebar button:hover{
-    background:#1f5f61;
+/* Hover effect */
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #F97316; /* orange highlight */
+    padding-left: 18px;
 }
 
-.sidebar button.active{
-    background:black;
+/* Active button */
+.sidebar button.active {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #D4AF37; /* gold active indicator */
+    color: #ffffff;
 }
 
 /* =========================
@@ -358,10 +387,11 @@ tr:hover{
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-<h2>PRS SYSTEM</h2>
+<h2>PRS SYSTEM <br>CEO DASHBOARD</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
 <button class="active" onclick="openModule('supplier',this)">Supplier</button>
+<button class="active" onclick="openModule('quotationRequest',this)">Quotation Requests</button>
 <button class="active" onclick="openModule('quotation',this)">Quotations</button>
 <button class="active" onclick="openModule('purchaseOrder',this)">Purchase Order</button>
 <button class="active" onclick="openModule('grn',this)">GRN</button>
@@ -372,140 +402,149 @@ tr:hover{
 
 <div class="main">
 
-<!-- REQUISITION MODULE -->
 <div id="requisition" class="module active">
-
 <div class="container">
 
-<!-- LEFT -->
+<!-- ===================== LEFT ===================== -->
 <div class="left">
 
-<div class="header">Purchase Requisitions</div>
+    <div class="header">Purchase Requisitions</div>
 
+    <input type="text" id="prsSearch" placeholder="Search PRS..."
+           onkeyup="searchPRS()"
+           style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
 
-<input type="text" id="prsSearch" placeholder="Search PRS..."
-       onkeyup="searchPRS()"
-       style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;"> <br><br>
-<div class="action-buttons">
+    <br><br>
 
-    <form method="POST" action="/hod/approve" onsubmit="return validateApprove()">
-        <input type="hidden" name="requisition_id" id="selectedPRS">
-        <button type="submit" class="btn success">Approve</button>
-    </form>
+    <!-- ACTION BUTTONS -->
+    <div class="action-buttons">
 
-    <button class="btn danger">Reject</button>
+        <button class="btn success" onclick="confirmApproval('APPROVED')">
+       Approve
+        </button>
 
-    <button class="btn primary" onclick="window.print()">Print</button>
+        <button class="btn danger" onclick="confirmApproval('REJECTED')">
+            Reject
+        </button>
+
+        <button class="btn primary" onclick="window.print()">
+            Print
+        </button>
+
+    </div>
+
+    <br><br>
+
+    <!-- TABLE -->
+    <table id="prsTable">
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>PRS No</th>
+                <th>Department</th>
+                <th>HOD Status</th>
+                <th>Date</th>
+                <th>HOD Approval</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for req in requisitions %}
+        <tr data-id="{{ req.requisition_id }}"
+            onclick="loadSlipFromRow(this)">
+
+            <td>
+                <input type="radio"
+                       name="select"
+                       onchange="loadSlipFromRow(this.closest('tr'))">
+            </td>
+
+            <td>{{ req.prs_no }}</td>
+            <td>{{ req.department_name }}</td>
+            <td>{{ req.hod_status or 'PENDING' }}</td>
+            <td>{{ req.submission_date }}</td>
+            <td>{{ req.hod_approved_at or '-' }}</td>
+
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 
 </div>
 
-<br><br>
-
-<table id="prsTable">
-<thead>
-<tr>
-    <th>Select</th>
-    <th>PRS No</th>
-    <th>Department</th>
-    <th>HOD Status</th>
-    <th>Date</th>
-    <th>HOD Approval</th>
-</tr>
-</thead>
-
-<tbody>
-{% for req in requisitions %}
-<tr data-id="{{ req.requisition_id }}" onclick="loadSlipFromRow(this)">
-
-    <td><input type="radio" name="select"></td>
-    <td>{{ req.prs_no }}</td>
-    <td>{{ req.department_name }}</td>
-
-    <!-- ✅ CHANGED TO HOD STATUS -->
-    <td>{{ req.hod_status }}</td>
-
-    <td>{{ req.submission_date }}</td>
-    <td>{{ req.hod_approval_date or '-' }}</td>
-
-</tr>
-{% endfor %}
-</tbody>
-</table>
-
-</div>
-
-<!-- RIGHT SLIP -->
+<!-- ===================== RIGHT ===================== -->
 <div class="right">
 
 <div id="printArea" class="slip">
 
-<h2>PURCHASE REQUISITION SLIP</h2>
+    <h2>PURCHASE REQUISITION SLIP</h2>
 
-<div class="info">
-<p><b>PRS No:</b> <span id="prs_no">-</span></p>
-<p><b>Department:</b> <span id="dept">-</span></p>
-<p><b>Submission Date:</b> <span id="submission">-</span></p>
+    <!-- HEADER -->
+    <div class="info">
 
-<!-- ✅ CHANGED TO HOD STATUS -->
-<p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+        <p><b>PRS No:</b> <span id="prs_no">-</span></p>
+        <p><b>Department:</b> <span id="department_name">-</span></p>
+        <p><b>Submission:</b> <span id="submission">-</span></p>
 
-<p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+        <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+        <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
 
-<p><b>HOD Approval Date:</b> <span id="hod_approval_date">-</span></p>
-
-<p><b>CEO Approval Date:</b> <span id="ceo_approval_date">-</span></p>
-</div>
-
-<h3>Items</h3>
-
-<table>
-<thead>
-<tr>
-    <th>No</th>
-    <th>Material</th>
-    <th>UOM</th>
-    <th>Qty</th>
-</tr>
-</thead>
-
-<tbody id="items_body"></tbody>
-</table>
-
-<h3>Signatures</h3>
-
-<div class="signature-section">
-
-    <div class="sig-box">
-        <p>Prepared By</p>
-        <div class="sig">
-            <span id="sig_prepared">-</span>
-        </div>
     </div>
 
-    <div class="sig-box">
-        <p>HOD Approval</p>
-        <div class="sig">
-            <img id="sig_hod" src="" alt="HOD Signature" style="height:60px; display:none;">
+    <!-- ITEMS -->
+    <h3>Items</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Material</th>
+                <th>UOM</th>
+                <th>Qty</th>
+            </tr>
+        </thead>
+        <tbody id="items_body"></tbody>
+    </table>
+
+    <!-- SIGNATURES -->
+    <h3>Signatures</h3>
+
+    <div class="signature-section">
+
+        <!-- CREATED BY -->
+        <div class="sig-box">
+            <p>Prepared By</p>
+            <p><span id="created_by_name">-</span></p>
+            <img id="sig_created_by" style="height:60px; display:none;">
+            <p><b>Date:</b> <span id="created_date">-</span></p>
         </div>
+        
+
+        <!-- HOD -->
+        <div class="sig-box">
+            <p>HOD Approval</p>
+            <p><span id="hod_username">-</span></p>
+            <img id="sig_hod" style="height:60px; display:none;">
+            <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
+        </div>
+
+        <!-- CEO -->
+        <div class="sig-box">
+            <p>CEO Approval</p>
+            <p><span id="ceo_username">-</span></p>
+            <img id="sig_ceo" style="height:60px; display:none;">
+            <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
+        </div>
+
     </div>
 
-    <div class="sig-box">
-        <p>CEO Approval</p>
-        <div class="sig">
-            <span id="sig_ceo">-</span>
-        </div>
-    </div>
+</div>
 
+</div>
 </div>
 
 </div>
 
-</div>
-
-</div>
-
-</div>
-</div> <!-- END requisition module -->
 
 
 
@@ -591,6 +630,11 @@ tr:hover{
 </div>
 
 </div>
+
+
+
+
+
 
 <!-- QUOTATION MODULE -->
 <div id="quotation" class="module">
@@ -691,12 +735,18 @@ tr:hover{
 
 
 
+
+
+
+
 <!-- ================= PURCHASE ORDER MODULE ================= -->
 <div id="purchaseOrder" class="module">
 
     <div class="container">
 
-        <!-- LEFT PANEL -->
+        <!-- =====================================================
+             LEFT PANEL
+        ===================================================== -->
         <div class="left">
 
             <div class="header">
@@ -705,33 +755,44 @@ tr:hover{
 
             <!-- SEARCH -->
             <div class="search">
-
                 <input
                     id="poSearch"
                     type="text"
                     onkeyup="searchPO()"
                     placeholder="Search PO, Supplier, or Department..."
                 >
-
             </div>
 
             <!-- ACTION BUTTONS -->
             <div style="margin:10px 0;">
-
                 <button class="btn success"
-                        onclick="approvePO()">
-                    Verify PO
+                 onclick="confirmPoApproval('APPROVED')">
+                  Verify PO
                 </button>
 
                 <button class="btn danger"
-                        onclick="rejectPO()">
-                    Reject
+               onclick="confirmPoApproval('REJECTED')">
+               Reject
                 </button>
 
-                <button class="btn primary"
-                        onclick="printPO()">
-                    Print
-                </button>
+                
+                <button class="btn print"
+                onclick="window.print()">
+                 Print / Save PDF
+                 </button>
+
+                 <button class="btn whatsapp"
+                 onclick="sharePOWhatsApp()">
+                 Share WhatsApp
+                 </button>
+
+                 <button class="btn email"
+                onclick="sharePOEmail()">
+                 Email Supplier
+
+            
+        
+        
 
             </div>
 
@@ -739,9 +800,7 @@ tr:hover{
             <table id="poTable">
 
                 <thead>
-
                     <tr>
-
                         <th>Select</th>
                         <th>PO No</th>
                         <th>PRS No</th>
@@ -749,78 +808,99 @@ tr:hover{
                         <th>Status</th>
                         <th>Department</th>
                         <th>Creation Date</th>
-
                     </tr>
-
                 </thead>
 
                 <tbody id="poBody">
-                    <!-- PO rows loaded dynamically -->
+                    <!-- dynamic -->
                 </tbody>
 
             </table>
 
         </div>
 
-        <!-- RIGHT PANEL -->
+        <!-- =====================================================
+             RIGHT PANEL
+        ===================================================== -->
         <div class="right">
 
             <div class="slip" id="poPrintArea">
 
-                <!-- HEADER -->
                 <h2>Purchase Order</h2>
 
-                <!-- INFO -->
+                <!-- ================= INFO ================= -->
                 <div class="info">
 
-                    <p>
-                        <b>PO Number:</b>
-                        <span id="poNumber">-</span>
-                    </p>
-
-                    <p>
-                        <b>Supplier:</b>
-                        <span id="poSupplier">-</span>
-                    </p>
-
-                    <p>
-                        <b>Date:</b>
-                        <span id="poDate">-</span>
-                    </p>
+                    <p><b>PO Number:</b> <span id="poNumber">-</span></p>
+                    <p><b>Department:</b> <span id="poDepartment">-</span></p>
+                    <p><b>PRS Number:</b> <span id="poPRS">-</span></p>
+                    <p><b>Supplier:</b> <span id="poSupplier">-</span></p>
+                    <p><b>Date:</b> <span id="poDate">-</span></p>
+                    <p><b>HOD Status:</b> <span id="po_hod_Status">-</span></p>
+                    <p><b>CEO Status:</b> <span id="po_ceo_Status">-</span></p>
 
                 </div>
 
-                <!-- ITEMS -->
+                <!-- ================= ITEMS ================= -->
                 <h3>Items</h3>
 
                 <table class="items-table">
 
                     <thead>
-
                         <tr>
-
                             <th>Material</th>
                             <th>Qty</th>
                             <th>Price</th>
                             <th>Total</th>
-
                         </tr>
-
                     </thead>
 
-                    <tbody id="poItemsBody">
-                        <!-- PO items loaded dynamically -->
-                    </tbody>
+                    <tbody id="poItemsBody"></tbody>
 
                 </table>
 
-                <!-- TOTAL -->
+                <!-- ================= TOTAL ================= -->
                 <div class="info">
+                    <p><b>Total:</b> <span id="poTotal">0</span></p>
+                </div>
 
-                    <p>
-                        <b>Total:</b>
-                        <span id="poTotal">0</span>
-                    </p>
+                <!-- ================= SIGNATURES ================= -->
+                <div class="signature-section">
+
+                    <!-- PREPARED BY -->
+                    <div class="sig-box">
+                        <p><b>Prepared By</b></p>
+
+                        <div class="sig-frame">
+                            <img id="poPreparedBySig" src="" alt="Signature">
+                        </div>
+
+                        <p id="poPreparedBy">-</p>
+                    </div>
+
+                    <!-- HOD -->
+                    <div class="sig-box">
+                        <p><b>HOD Approval</b></p>
+
+                        <div class="sig-frame">
+                            <img id="poHodSig" src="" alt="HOD Signature">
+                        </div>
+
+                        <p id="po_hod_Approval">-</p>
+                        <small id="po_hod_ApprovalDate">-</small>
+                    </div>
+
+                    <!-- CEO -->
+                    <div class="sig-box">
+                        <p><b>CEO Approval</b></p>
+
+                        <div class="sig-frame">
+                            <img id="poCeoSig" src="" alt="CEO Signature">
+                        </div>
+
+                        <p id="po_ceo_Approval">-</p>
+                        <small id="po_ceo_ApprovalDate">-</small>
+                    </div>
 
                 </div>
 
@@ -831,8 +911,6 @@ tr:hover{
     </div>
 
 </div>
-
-
 
 
 
@@ -863,9 +941,10 @@ tr:hover{
 
             <!-- ACTION BUTTONS -->
             <div style="margin:10px 0;">
+
                 <button class="btn primary" onclick="printGRN()">Print GRN</button>
-                <button class="btn primary" onclick="approveGRN()">Verify GRN</button>
-                <button class="btn danger" onclick="rejectGRN()">Reject GRN</button>
+                <button class="btn primary" onclick="confirmGRNApproval('APPROVED')">Approve GRN</button>
+                <button class="btn danger" onclick="confirmGRNApproval('REJECTED')">Reject GRN</button>
             </div>
 
             <!-- TABLE -->
@@ -926,6 +1005,9 @@ tr:hover{
             </p>
 
         </div>
+
+
+        
 
         <div class="box">
 
@@ -1013,31 +1095,56 @@ tr:hover{
 
             <div class="sig-box">
 
-                <p>Received By</p>
+                <p><b>Received By</b></p>
+
+                        <div class="sig-frame">
+                            <img id="grnReceivedBySig" src="" alt="Receiver Signature">
+                        </div>
+
+                        <p id="grnReceiverNameSigText">-</p>
+
 
                 <br><br>
 
-                ____________________
+
+            </div>
+
+
+            
+
+            <div class="sig-box">
+                <p><b>Verified By (HOD)</b></p>
+
+                        <div class="sig-frame">
+                            <img id="grnHodSig" src="" alt="HOD Signature">
+                        </div>
+
+                        <p id="grnHodName">-</p>
+                        <small id="grnHodDate">-</small>
+
+                
+                
+
+                <br><br>
+
 
             </div>
 
             <div class="sig-box">
 
-                <p>Verified By</p>
+                <p><b>CEO Approval</b></p>
+
+                        <div class="sig-frame">
+                            <img id="grnCeoSig" src="" alt="CEO Signature">
+                        </div>
+
+                        <p id="grnCeoName">-</p>
+                        <small id="grnCeoDate">-</small>
+
+                
 
                 <br><br>
 
-                ____________________
-
-            </div>
-
-            <div class="sig-box">
-
-                <p>Supplier Representative</p>
-
-                <br><br>
-
-                ____________________
 
             </div>
 
@@ -1046,22 +1153,7 @@ tr:hover{
     </div>
 
     <!-- BUTTONS -->
-    <div class="buttons">
-
-        <button class="btn print"
-                onclick="window.print()">
-            Print / Save PDF
-        </button>
-
-        <button class="btn whatsapp"
-                onclick="shareGRNWhatsApp()">
-            Share WhatsApp
-        </button>
-
-        <button class="btn email"
-                onclick="shareGRNEmail()">
-            Email Supplier
-        </button>
+    
 
     </div>
 
@@ -1356,8 +1448,6 @@ tr:hover{
 
                         <br><br>
 
-                        ___________________
-
                     </div>
 
                     <div class="sig-box">
@@ -1366,7 +1456,6 @@ tr:hover{
 
                         <br><br>
 
-                        ___________________
 
                     </div>
 
@@ -1376,7 +1465,6 @@ tr:hover{
 
                         <br><br>
 
-                        ___________________
 
                     </div>
 
@@ -1389,8 +1477,33 @@ tr:hover{
     </div>
 
 
+
+
+    
 </div>
 
+
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+
+        <h3>Confirmation</h3>
+
+        <p id="confirmMessage"></p>
+
+        <div class="modal-buttons">
+            <button class="btn success" onclick="executeApproval()">
+                Confirm
+            </button>
+
+            <button class="btn danger" onclick="closeModal()">
+                Cancel
+            </button>
+        </div>
+
+    </div>
+</div>
 
 
 
@@ -1422,128 +1535,210 @@ if(id === "grn"){
 }
 }
 
+// ================= REQUISITION MODULE =================
 
-let selectedRow = null;
+let selectedDocumentId = null;
+let selectedAction = null;
+
+// ================= ACTION =================
+function setAction(action) {
+    selectedAction = action;
+}
 
 // ================= LOAD SLIP =================
-function loadSlipFromRow(row){
+function loadSlipFromRow(row) {
 
-    let id = row.getAttribute("data-id");
+    const id = row.getAttribute("data-id");
 
-    if(!id){
-        alert("Invalid requisition ID");
+    if (!id) {
+        alert("Invalid selection");
         return;
     }
 
-    // highlight row
-    document.querySelectorAll("#prsTable tr").forEach(r => {
-        r.classList.remove("selected");
-    });
+    selectedDocumentId = id;
+
+    document.querySelectorAll("#prsTable tbody tr")
+        .forEach(r => r.classList.remove("selected"));
 
     row.classList.add("selected");
 
-    document.getElementById("selectedPRS").value = id;
-
     fetch("/hod/requisition/api/" + id)
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.success) {
+                alert("Failed to load requisition");
+                return;
+            }
+
+            const r = data.requisition;
+
+            // ================= HEADER =================
+            document.getElementById("prs_no").innerText = r.prs_no || "-";
+            document.getElementById("department_name").innerText = r.department_name || "-";
+            document.getElementById("submission").innerText = r.submission_date || "-";
+
+            document.getElementById("hod_status").innerText = r.hod_status || "PENDING";
+            document.getElementById("ceo_status").innerText = r.ceo_status || "PENDING";
+            
+
+            // ================= ITEMS =================
+            const body = document.getElementById("items_body");
+            body.innerHTML = "";
+
+            data.items.forEach((item, i) => {
+                body.innerHTML += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${item.material_name}</td>
+                        <td>${item.uom}</td>
+                        <td>${item.qty_required}</td>
+                    </tr>
+                `;
+            });
+
+            // ================= SIGNATURES =================
+
+            // CREATED BY
+            document.getElementById("created_by_name").innerText =
+                r.creator_name || data.created_by?.name || "-";
+            document.getElementById("created_date").innerText =
+    r.submission_date || "-";
+
+            if (data.created_by?.signature) {
+                const img = document.getElementById("sig_created_by");
+                img.src = "/static/" + data.created_by.signature;
+                img.style.display = "block";
+            }
+
+            // HOD
+            document.getElementById("hod_username").innerText =
+                data.hod_signature?.username || "-";
+
+            document.getElementById("hod_approval_date").innerText =
+                data.hod_signature?.hod_approved_at || "-";
+
+            if (data.hod_signature?.signature) {
+                const img = document.getElementById("sig_hod");
+                img.src = "/static/" + data.hod_signature.signature;
+                img.style.display = "block";
+            }
+
+            // CEO
+            document.getElementById("ceo_username").innerText =
+                data.ceo_signature?.username || "-";
+
+            document.getElementById("ceo_approval_date").innerText =
+                data.ceo_signature?.ceo_approved_at || "-";
+
+            if (data.ceo_signature?.signature) {
+                const img = document.getElementById("sig_ceo");
+                img.src = "/static/" + data.ceo_signature.signature;
+                img.style.display = "block";
+            }
+
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Server error while loading requisition");
+        });
+}
+
+// ================= APPROVAL =================
+function submitApproval() {
+
+    if (!selectedDocumentId || !selectedAction) {
+        alert("Select document and action first");
+        return;
+    }
+
+    // Get current status from the slip
+    const hodStatus = document.getElementById("hod_status").innerText.trim();
+
+    // Prevent approving twice
+    if (hodStatus === "APPROVED") {
+        alert("This requisition has already been approved.");
+        return;
+    }
+
+    // Prevent rejecting after approval
+    if (hodStatus === "REJECTED") {
+        alert("This requisition has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            document_id: selectedDocumentId,
+            module_name: "PRS",
+            action: selectedAction
+        })
+    })
     .then(res => res.json())
     .then(data => {
 
-        let r = data.requisition;
-        let items = data.items || [];
+        if (!data.success) {
+            alert(data.message);
+            return;
+        }
 
-        // ================= HEADER INFO =================
-        document.getElementById("prs_no").innerText = r.prs_no || "-";
-        document.getElementById("dept").innerText = r.department_name || "-";
-        document.getElementById("submission").innerText = r.submission_date || "-";
-
-        document.getElementById("hod_status").innerText = r.hod_status || "Pending";
-        document.getElementById("ceo_status").innerText = r.ceo_status || "Pending";
-
-        // ================= APPROVAL DATES =================
-        document.getElementById("hod_approval_date").innerText =
-            r.hod_approval_date || "-";
-
-        document.getElementById("ceo_approval_date").innerText =
-            r.ceo_approval_date || "-";
-
-        // ================= ITEMS TABLE =================
-        let tbody = document.getElementById("items_body");
-        tbody.innerHTML = "";
-
-        items.forEach((item, i) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${i+1}</td>
-                    <td>${item.material_name}</td>
-                    <td>${item.uom}</td>
-                    <td>${item.qty_required}</td>
-                </tr>
-            `;
-        });
-
-        // ================= SIGNATURES =================
-
-        document.getElementById("sig_prepared").innerText =
-            r.prepared_by || "Not signed";
-
-        document.getElementById("sig_ceo").innerText =
-            r.ceo_signature || "Pending";
-
-        // ================= HOD SIGNATURE IMAGE =================
-        let sig = document.getElementById("sig_hod");
-
-if (r.hod_signature) {
-
-    // ensure no double /static/
-    let path = r.hod_signature.replace("/static/", "");
-
-    sig.src = "/static/" + path;
-    sig.style.display = "block";
-
-} else {
-    sig.src = "";
-    sig.style.display = "none";
-}
+        alert("Success");
+        location.reload();
 
     })
     .catch(err => {
-        console.error("Error fetching requisition details:", err);
-        alert("Failed to load requisition details");
+        console.error(err);
+        alert("Server error");
     });
 }
 
-function validateApprove(){
-    let id = document.getElementById("selectedPRS").value;
+let pendingAction = null;
 
-    if(!id){
-        alert("Please select a requisition first");
-        return false;
+function confirmPoApproval(action){
+
+    pendingAction = action;
+
+    const prsNo = document.getElementById("prs_no").innerText;
+
+    if(action === "APPROVED"){
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to approve <b>${prsNo}</b>?`;
     }
-    return true;
+    else{
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to reject <b>${prsNo}</b>?`;
+    }
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+function closeModal(){
+    document.getElementById("confirmModal").style.display = "none";
+}
+
+function executeApproval(){
+
+    setAction(pendingAction);
+    submitApproval();
+
+    closeModal();
+}
+
+function autoLoadFirstRequisition() {
+
+    const firstRow = document.querySelector("#prsTable tbody tr");
+
+    if (firstRow) {
+        loadSlipFromRow(firstRow);
+    }
 }
 
 
 
-
-function searchPRS() {
-
-    let input = document.getElementById("prsSearch");
-    let filter = input.value.toLowerCase();
-
-    let table = document.getElementById("prsTable");
-    let rows = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < rows.length; i++) { // skip header row
-
-        let rowText = rows[i].innerText.toLowerCase();
-
-        if (rowText.includes(filter)) {
-            rows[i].style.display = "";
-        } else {
-            rows[i].style.display = "none";
-        }
-    }
-}
 
 function searchQuotation(){
     let input = document.getElementById("quotationSearch");
@@ -1565,6 +1760,10 @@ function searchSupplier(){
     });
 }
 
+
+
+
+
 function searchPO(){
     let input = document.getElementById("poSearch");
     let filter = input.value.toLowerCase();
@@ -1579,93 +1778,279 @@ function printPO(){
     window.print();
 }
 
-function approvePO(){
-    const selected = document.querySelector("input[name='poSelect']:checked");
-    if (!selected) {
-        alert("Please select a purchase order first.");
+// =======================================================
+// PURCHASE ORDER APPROVAL SYSTEM
+// =======================================================
+
+// GLOBAL VARIABLES
+let selectedPOId = null;
+let pOpendingAction = null;
+
+
+// =======================================================
+// APPROVE / REJECT BUTTON CLICK
+// =======================================================
+function confirmPoApproval(action) {
+
+    // Ensure a PO is selected
+    if (!selectedPOId) {
+        alert("Please select a purchase order first");
         return;
     }
 
-    const poId = selected.dataset.poId;
-    fetch(`/hod/po_approve/${poId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) throw new Error(data.message || "Approval failed.");
-        alert(data.message || "Purchase order approved.");
-        loadPOModule();
-        selectPO(selected);
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to approve purchase order.");
-    });
+    pOpendingAction = action;
+
+    const poNumber =
+        document.getElementById("poNumber").innerText || "-";
+
+    if (action === "APPROVED") {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to approve <b>${poNumber}</b>?`;
+
+    } else {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to reject <b>${poNumber}</b>?`;
+
+    }
+
+    document.getElementById("confirmModal").style.display = "block";
 }
 
-function rejectPO(){
-    const selected = document.querySelector("input[name='poSelect']:checked");
-    if (!selected) {
-        alert("Please select a purchase order first.");
+
+// =======================================================
+// CLOSE MODAL
+// =======================================================
+function closeModal() {
+    document.getElementById("confirmModal").style.display = "none";
+}
+
+
+// =======================================================
+// CONFIRM BUTTON IN MODAL
+// =======================================================
+
+
+
+// =======================================================
+// SEND APPROVAL TO SERVER
+// =======================================================
+function approvePO() {
+
+    // Ensure PO selected
+    if (!selectedPOId) {
+        alert("Please select a purchase order first");
         return;
     }
 
-    const poId = selected.dataset.poId;
-    fetch(`/hod/po_reject/${poId}`, {
+    // Ensure action selected
+    if (!pOpendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const hodStatus =
+        document.getElementById("po_hod_Status")
+            .innerText
+            .trim()
+            .toUpperCase();
+
+    // Prevent double approval
+    if (hodStatus === "APPROVED") {
+        alert("This purchase order has already been approved.");
+        return;
+    }
+
+    // Prevent double rejection
+    if (hodStatus === "REJECTED") {
+        alert("This purchase order has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ remarks: "Rejected by HOD" })
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            document_id: selectedPOId,
+            module_name: "PO",
+            action: pOpendingAction
+        })
     })
     .then(res => res.json())
     .then(data => {
-        if (!data.success) throw new Error(data.message || "Rejection failed.");
-        alert(data.message || "Purchase order rejected.");
+
+        if (!data.success) {
+            alert(data.message || "Approval failed");
+            return;
+        }
+
+        alert("Purchase Order updated successfully.");
+
+        // Refresh PO details
         loadPOModule();
-        selectPO(selected);
+
+        if (selectedPOId) {
+            const radio = document.querySelector(
+                `input[data-po-id="${selectedPOId}"]`
+            );
+
+            if (radio) {
+                selectPO(radio);
+            }
+        }
     })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to reject purchase order.");
+    .catch(error => {
+        console.error(error);
+        alert("Server error while processing approval.");
     });
 }
 
-function selectPO(radio){
-    if(!radio || !radio.dataset.poId){
+function executeApproval() {
+
+    approvePO();
+
+    closeModal();
+}
+
+// =======================================================
+// LOAD PO DETAILS
+// =======================================================
+function selectPO(radio) {
+
+    if (!radio || !radio.dataset.poId) {
         alert("Please select a purchase order");
         return;
     }
 
-    let poId = radio.dataset.poId;
+    const poId = radio.dataset.poId;
+
+    // IMPORTANT
+    selectedPOId = poId;
+
     fetch(`/hod/po_details/${poId}`)
         .then(res => {
-            if (!res.ok) throw new Error(`PO details request failed: ${res.status}`);
+            if (!res.ok) {
+                throw new Error(
+                    `PO details request failed: ${res.status}`
+                );
+            }
             return res.json();
         })
         .then(data => {
-            if(data.error){
+
+            if (data.error) {
                 alert(data.error);
                 return;
             }
 
-            document.getElementById("poNumber").innerText = data.po_number || "-";
-            document.getElementById("poSupplier").innerText = data.supplier_name || "-";
-            document.getElementById("poDate").innerText = data.order_date || "-";
-            document.getElementById("poTotal").innerText = data.total_amount || "0";
+            // ================= BASIC INFO =================
+            document.getElementById("poNumber").innerText =
+                data.po_number || "-";
 
-            let itemsBody = document.getElementById("poItemsBody");
+            document.getElementById("poDepartment").innerText =
+                data.department_name || "-";
+
+            document.getElementById("poPRS").innerText =
+                data.prs_no || "-";
+
+            document.getElementById("poSupplier").innerText =
+                data.supplier_name || "-";
+
+            document.getElementById("poDate").innerText =
+                data.order_date || "-";
+
+            document.getElementById("poTotal").innerText =
+                data.total_amount || "0";
+
+            // ================= STATUS =================
+            document.getElementById("po_hod_Status").innerText =
+                data.hod_status || "PENDING";
+
+            document.getElementById("po_ceo_Status").innerText =
+                data.ceo_status || "PENDING";
+
+            // ================= ITEMS =================
+            let itemsBody =
+                document.getElementById("poItemsBody");
+
             itemsBody.innerHTML = "";
 
-            data.items.forEach(item => {
-                let itemRow = document.createElement("tr");
-                itemRow.innerHTML = `
-                    <td>${item.item_name || "-"}</td>
-                    <td>${item.quantity || "-"}</td>
-                    <td>${item.unit_price || "-"}</td>
-                    <td>${item.total_price || "-"}</td>
+            if (data.items && data.items.length > 0) {
+
+                data.items.forEach(item => {
+
+                    itemsBody.innerHTML += `
+                        <tr>
+                            <td>${item.item_name || "-"}</td>
+                            <td>${item.quantity || "-"}</td>
+                            <td>${item.unit_price || "-"}</td>
+                            <td>${item.total_price || "-"}</td>
+                        </tr>
+                    `;
+                });
+
+            } else {
+
+                itemsBody.innerHTML = `
+                    <tr>
+                        <td colspan="4">
+                            No items found
+                        </td>
+                    </tr>
                 `;
-                itemsBody.appendChild(itemRow);
-            });
+            }
+
+            // ================= PREPARED BY =================
+            document.getElementById("poPreparedBy").innerText =
+                data.created_by?.username || "-";
+
+            if (data.created_by?.signature) {
+
+                document.getElementById("poPreparedBySig").src =
+                    "/static/" + data.created_by.signature;
+
+            } else {
+
+                document.getElementById("poPreparedBySig").src = "";
+            }
+
+            // ================= HOD =================
+            document.getElementById("po_hod_Approval").innerText =
+                data.hod_name || "-";
+
+            document.getElementById("po_hod_ApprovalDate").innerText =
+                data.hod_approved_at || "-";
+
+            if (data.hod_signature) {
+
+                document.getElementById("poHodSig").src =
+                    "/static/" + data.hod_signature;
+
+            } else {
+
+                document.getElementById("poHodSig").src = "";
+            }
+
+            // ================= CEO =================
+            document.getElementById("po_ceo_Approval").innerText =
+                data.ceo_name || "-";
+
+            document.getElementById("po_ceo_ApprovalDate").innerText =
+                data.ceo_approved_at || "-";
+
+            if (data.ceo_signature) {
+
+                document.getElementById("poCeoSig").src =
+                    "/static/" + data.ceo_signature;
+
+            } else {
+
+                document.getElementById("poCeoSig").src = "";
+            }
+
         })
         .catch(error => {
             console.error(error);
@@ -1673,26 +2058,56 @@ function selectPO(radio){
         });
 }
 
-function loadPOModule(){
+
+// =======================================================
+// LOAD PO LIST
+// =======================================================
+function loadPOModule() {
+
     fetch("/hod/po_data")
         .then(res => {
-            if (!res.ok) throw new Error(`PO list request failed: ${res.status}`);
+            if (!res.ok) {
+                throw new Error(
+                    `PO list request failed: ${res.status}`
+                );
+            }
+
             return res.json();
         })
         .then(data => {
-            let body = document.getElementById("poBody");
+
+            const body =
+                document.getElementById("poBody");
+
             body.innerHTML = "";
 
             if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No purchase orders found.</td></tr>`;
+
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="7"
+                            style="text-align:center;">
+                            No purchase orders found.
+                        </td>
+                    </tr>
+                `;
+
                 return;
             }
 
-            data.forEach(item => {
-                let row = document.createElement("tr");
-                row.style.cursor = "pointer";
+            data.forEach((item, index) => {
+
+                const row =
+                    document.createElement("tr");
+
                 row.innerHTML = `
-                    <td><input type="radio" name="poSelect" data-po-id="${item.purchase_order_id}"></td>
+                    <td>
+                        <input
+                            type="radio"
+                            name="poSelect"
+                            data-po-id="${item.purchase_order_id}">
+                    </td>
+
                     <td>${item.po_number || "-"}</td>
                     <td>${item.prs_no || "-"}</td>
                     <td>${item.supplier_name || "-"}</td>
@@ -1700,25 +2115,113 @@ function loadPOModule(){
                     <td>${item.department || "-"}</td>
                     <td>${item.order_date || "-"}</td>
                 `;
+
                 row.addEventListener("click", () => {
-                    const radio = row.querySelector("input[name='poSelect']");
-                    if (radio) {
-                        radio.checked = true;
-                        document.querySelectorAll("#poBody tr").forEach(r => r.classList.remove("selected"));
-                        row.classList.add("selected");
-                        selectPO(radio);
-                    }
+
+                    const radio =
+                        row.querySelector(
+                            "input[name='poSelect']"
+                        );
+
+                    radio.checked = true;
+
+                    document
+                        .querySelectorAll("#poBody tr")
+                        .forEach(r =>
+                            r.classList.remove("selected")
+                        );
+
+                    row.classList.add("selected");
+
+                    selectPO(radio);
                 });
+
                 body.appendChild(row);
+
+                // Auto-load first PO
+                if (index === 0) {
+
+                    const radio =
+                        row.querySelector(
+                            "input[name='poSelect']"
+                        );
+
+                    radio.checked = true;
+
+                    row.classList.add("selected");
+
+                    selectPO(radio);
+                }
+
             });
         })
         .catch(error => {
             console.error(error);
-            alert("Failed to load purchase order list.");
+            alert("Failed to load purchase orders.");
         });
 }
+// =======================================================
+// SAFE HELPERS
+// =======================================================
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = value || "-";
+}
 
+function setImage(id, src) {
+    const el = document.getElementById(id);
 
+    if (!el) return;
+
+    if (src) {
+        el.src = "/static/" + src;
+        el.style.display = "block";
+    } else {
+        el.style.display = "none";
+    }
+}
+
+function sharePOWhatsAppPDF() {
+
+    const element = document.getElementById("poPrintArea");
+
+    if (!element) {
+        alert("PO slip not found");
+        return;
+    }
+
+    // ================= PDF OPTIONS =================
+    const opt = {
+        margin: 0.5,
+        filename: `PO_${document.getElementById("poNumber")?.innerText || "document"}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    // ================= CREATE PDF =================
+    html2pdf().set(opt).from(element).outputPdf('blob').then(function (pdfBlob) {
+
+        // Convert blob → file URL
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        // WhatsApp message (with link)
+        const message = `
+📦 Purchase Order Document
+
+PO Number: ${document.getElementById("poNumber").innerText}
+Supplier: ${document.getElementById("poSupplier").innerText}
+
+👉 View/Download PDF:
+${pdfUrl}
+        `;
+
+        const whatsappUrl =
+            "https://wa.me/?text=" + encodeURIComponent(message);
+
+        window.open(whatsappUrl, "_blank");
+    });
+}
 
 
 
@@ -1854,6 +2357,144 @@ async function loadGRNDetails(grnId) {
 }
 
 
+
+
+
+
+// GLOBAL VARIABLES
+let selectedGRNId = null;
+let grnPendingAction = null;
+
+
+// =======================================================
+// APPROVE / REJECT BUTTON CLICK
+// =======================================================
+function confirmGRNApproval(action) {
+
+    // Ensure a GRN is selected
+    if (!selectedGRNId) {
+        alert("Please select a goods receipt note first");
+        return;
+    }
+
+    grnPendingAction = action;
+
+    const grnNumber =
+        document.getElementById("grnNumber").innerText || "-";
+
+    if (action === "APPROVED") {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to approve <b>${grnNumber}</b>?`;
+
+    } else {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to reject <b>${grnNumber}</b>?`;
+
+    }
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+
+// =======================================================
+// CLOSE MODAL
+// =======================================================
+function closeModal() {
+    document.getElementById("confirmModal").style.display = "none";
+}
+
+
+// =======================================================
+// CONFIRM BUTTON IN MODAL
+// =======================================================
+
+
+
+// =======================================================
+// SEND APPROVAL TO SERVER
+// =======================================================
+function approveGRN() {
+
+    // Ensure GRN selected
+    if (!selectedGRNId) {
+        alert("Please select a goods receipt note first");
+        return;
+    }
+
+    // Ensure action selected
+    if (!grnPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const hodStatus =
+        document.getElementById("grn_hod_Status")
+            .innerText
+            .trim()
+            .toUpperCase();
+
+    // Prevent double approval
+    if (hodStatus === "APPROVED") {
+        alert("This goods receipt note has already been approved.");
+        return;
+    }
+
+    // Prevent double rejection
+    if (hodStatus === "REJECTED") {
+        alert("This goods receipt note has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            document_id: selectedGRNId,
+            module_name: "GRN",
+            action: grnPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) {
+            alert(data.message || "Approval failed");
+            return;
+        }
+
+        alert("Goods Receipt Note updated successfully.");
+
+        // Refresh GRN details
+        loadGRNModule();
+
+        if (selectedGRNId) {
+            const radio = document.querySelector(
+                `input[data-grn-id="${selectedGRNId}"]`
+            );
+
+            if (radio) {
+                selectGRN(radio);
+            }
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        alert("Server error while processing approval.");
+    });
+}
+
+function executeApproval() {
+
+    approveGRN();
+
+    closeModal();
+}
+
+
 // =======================================================
 // SEARCH GRN
 // =======================================================
@@ -1898,76 +2539,6 @@ function getSelectedGRN() {
 }
 
 
-// =======================================================
-// APPROVE GRN
-// =======================================================
-async function approveGRN() {
-
-    const grnId = getSelectedGRN();
-
-    if (!grnId) return;
-
-    if (!confirm("Approve this GRN?")) return;
-
-    try {
-
-        const response = await fetch(
-            `/hod/approve_grn/${grnId}`,
-            {
-                method: "POST"
-            }
-        );
-
-        const result = await response.json();
-
-        alert(result.message);
-
-        loadGRNData();
-
-        loadGRNDetails(grnId);
-
-    }
-    catch (error) {
-
-        console.error("Approval error:", error);
-    }
-}
-
-
-// =======================================================
-// REJECT GRN
-// =======================================================
-async function rejectGRN() {
-
-    const grnId = getSelectedGRN();
-
-    if (!grnId) return;
-
-    if (!confirm("Reject this GRN?")) return;
-
-    try {
-
-        const response = await fetch(
-            `/hod/reject_grn/${grnId}`,
-            {
-                method: "POST"
-            }
-        );
-
-        const result = await response.json();
-
-        alert(result.message);
-
-        loadGRNData();
-
-        loadGRNDetails(grnId);
-
-    }
-    catch (error) {
-
-        console.error("Reject error:", error);
-    }
-}
 
 
 // =======================================================
@@ -2030,32 +2601,6 @@ function printGRN() {
 }
 
 
-// =======================================================
-// SHARE WHATSAPP
-// =======================================================
-function shareGRNWhatsApp() {
-
-    const grnNo =
-        document.getElementById("grnNumber").innerText;
-
-    const supplier =
-        document.getElementById("grnSupplier").innerText;
-
-    const message = `
-
-GRN Number: ${grnNo}
-Supplier: ${supplier}
-
-Goods Received Successfully.
-
-    `;
-
-    const url =
-        "https://wa.me/?text=" +
-        encodeURIComponent(message);
-
-    window.open(url, "_blank");
-}
 
 
 // =======================================================
@@ -2321,7 +2866,7 @@ function logoutUser() {
 }
 
 </script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>
 

@@ -153,7 +153,7 @@ def ceo_login():
         session["user_role"] = "ceo"
 
         flash("Login successful", "success")
-        return redirect(url_for("ceo.dashboard"))
+        return redirect(url_for("ceo.ceo_dashboard"))
 
     return render_template("user_login.html", form_action=url_for("auth.ceo_login"), page_title="CEO Login")
 

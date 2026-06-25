@@ -4,249 +4,349 @@
 <meta charset="UTF-8">
 <title>PRS ERP Dashboard</title>
 
+
+
 <style>
-body{
-margin:0;
-font-family:Segoe UI, Arial;
-background:#eef2f7;
-display:flex;
+/* =========================*/
+ body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#eef2f7;
+    display:flex;
 }
 
-/* SIDEBAR */
-.sidebar{
-width:230px;
-background:#2C7A7B;
-color:white;
-height:100vh;
-position:fixed;
-left:0;
-top:0;
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
+    color: #ffffff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    /* 👇 modern look improvements */
+    border-right: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    padding-top: 10px;
 }
 
-.sidebar h2{
-text-align:center;
-padding:20px;
-border-bottom:1px solid rgba(255,255,255,0.1);
+/* Sidebar title */
+.sidebar h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* nice bottom separation line */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar button{
-width:100%;
-padding:14px 20px;
-border:none;
-background:none;
-color:white;
-text-align:left;
-cursor:pointer;
+/* Sidebar buttons */
+.sidebar button {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    border-left: 3px solid transparent;
 }
 
-.sidebar button:hover{
-background:#1f5f61;
+/* Hover effect */
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #F97316; /* orange highlight */
+    padding-left: 18px;
 }
 
-.sidebar button.active{
-background:#2C7A7B;
+/* Active button */
+.sidebar button.active {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #D4AF37; /* gold active indicator */
+    color: #ffffff;
 }
 
-/* MAIN */
+/* =========================
+   MAIN LAYOUT
+========================= */
 .main{
-margin-left:230px;
-width:100%;
-padding:15px;
+    margin-left:230px;
+    width:calc(100% - 230px);
+    padding:15px;
 }
 
-/* MODULES */
-.module{
-display:none;
+/* =========================
+   MODULES (FIXED)
+========================= */
+.module {
+    display: none;
 }
 
-.module.active{
-display:flex;
-gap:15px;
+.module.active {
+    display: block;
+}
+/* =========================
+   LAYOUT INSIDE MODULE
+========================= */
+.container{
+    display:flex;
+    gap:15px;
 }
 
-/* LEFT */
+/* LEFT PANEL */
 .left{
-width:65%;
+    width:65%;
+}
+
+/* RIGHT PANEL */
+.right{
+    width:35%;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
 
 /* HEADER */
 .header{
-background:white;
-padding:15px;
-border-radius:10px;
-font-weight:bold;
-margin-bottom:15px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    font-weight:bold;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
 
 /* SEARCH */
 .search input{
-padding:10px;
-width:60%;
-border-radius:6px;
-border:1px solid #ddd;
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
 }
 
 /* BUTTONS */
 .btn{
-padding:8px 12px;
-border:none;
-color:white;
-border-radius:6px;
-cursor:pointer;
-margin-right:5px;
+    padding:8px 12px;
+    border:none;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    margin-right:5px;
 }
 
-.primary{background:#2C7A7B;}
-.success{background:#16a34a;}
-.danger{background:#dc2626;}
+.primary{ background:#2C7A7B; }
+.success{ background:#16a34a; }
+.danger{ background:#dc2626; }
 
 /* TABLE */
 table{
-width:100%;
-border-collapse:collapse;
-background:white;
-border-radius:10px;
-overflow:hidden;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
 
 th{
-background:#f1f5f9;
-padding:12px;
-text-align:left;
+    background:#f1f5f9;
+    padding:12px;
+    text-align:left;
 }
 
 td{
-padding:12px;
-border-bottom:1px solid #eee;
-cursor:pointer;
+    padding:12px;
+    border-bottom:1px solid #eee;
+    cursor:pointer;
 }
 
 tr:hover{
-background:#f9fafb;
+    background:#f1f5f9;
 }
 
+/* PRS TABLE */
+#prsTable th,
+#prsTable td{
+    padding:6px 8px;
+    font-size:14px;
+    white-space:nowrap;
+}
+
+#prsTable tr{
+    height:35px;
+}
+
+#prsTable td:first-child,
+#prsTable th:first-child{
+    width:40px;
+    text-align:center;
+}
+
+/* SELECTED ROW */
 .selected{
-background:#dbeafe !important;
+    background:#dbeafe !important;
+    color:#000;
 }
 
-/* RIGHT */
-.right{
-width:35%;
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.08);
-}
-
-/* SLIP */
+/* SLIP HEADER */
 .slip h2{
-background:#2C7A7B;
-color:white;
-padding:12px;
-border-radius:8px;
-text-align:center;
+    background:#2C7A7B;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    text-align:center;
 }
 
+/* INFO */
 .info{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-margin:15px 0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:15px 0;
 }
 
 .info p{
-background:#f3f4f6;
-padding:10px;
-border-radius:6px;
-font-size:13px;
+    background:#f3f4f6;
+    padding:10px;
+    border-radius:6px;
+    font-size:13px;
 }
 
-/* ITEMS */
+.info-section{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.box{
+    flex:1;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    background:#fafafa;
+}
+
+.box p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.supplier-section{
+    margin-top:10px;
+    margin-bottom:20px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.supplier-section p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.buttons{
+    margin-top:20px;
+    text-align:center;
+}
+
+.buttons .btn{
+    margin:0 4px;
+}
+
+/* ITEMS TABLE */
 .items-table{
-width:100%;
-border-collapse:collapse;
-font-size:13px;
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
 }
 
 .items-table th,
 .items-table td{
-border:1px solid #ddd;
-padding:8px;
+    border:1px solid #ddd;
+    padding:8px;
 }
 
 /* SIGNATURE */
+.signature-section{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+}
+
+.sig-box{
+    text-align:center;
+    width:30%;
+}
+
 .signature{
-margin-top:25px;
-display:flex;
-justify-content:space-between;
-font-size:12px;
+    margin-top:25px;
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
 }
 
 .sig{
-width:30%;
-border-top:1px solid #333;
-padding-top:5px;
-text-align:center;
+    width:30%;
+    border-top:1px solid #333;
+    padding-top:5px;
+    text-align:center;
 }
 
-.notification-box{
-background:white;
-padding:14px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
-margin-bottom:15px;
+.action-buttons{
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
-.notification-box h3{
-margin-top:0;
-color:#2C7A7B;
+/* remove default form spacing */
+.action-buttons form{
+    margin: 0;
 }
 
-.notification-item{
-margin:8px 0;
-padding:10px;
-border:1px solid #e5f4f4;
-border-radius:8px;
-background:#f7fcfc;
-}
-
-.note-date{
-display:block;
-font-size:12px;
-color:#4b5563;
-margin-top:4px;
-}
-
-/* PRINT ONLY SLIP */
+/* PRINT */
 @media print{
+    body *{
+        visibility:hidden;
+    }
 
-body *{
-visibility:hidden;
+    #printArea, #printArea *{
+        visibility:visible;
+    }
+
+    #printArea{
+        position:absolute;
+        top:0;
+        left:0;
+        width:100%;
+    }
 }
 
-#printArea,
-#printArea *{
-visibility:visible;
-}
-
-#printArea{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-}
-
-}
-
-/* MODULE PLACEHOLDER */
-.placeholder{
-background:white;
-padding:20px;
-border-radius:10px;
-width:100%;
-box-shadow:0 2px 10px rgba(0,0,0,0.05);
+.search input{
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
+    background:white;
+    font-family:Segoe UI, Arial, sans-serif;
+    font-size:14px;
+    outline:none;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    transition:0.2s ease;
 }
 
 
@@ -287,70 +387,78 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-<h2>PRS SYSTEM</h2>
+<h2>PRS SYSTEM <br>CEO DASHBOARD</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button onclick="openModule('supplier',this)">Supplier</button>
-<button onclick="openModule('invoice',this)">Invoice</button>
-<button onclick="openModule('payment',this)">Payment</button>
-<button onclick="openModule('grn',this)">GRN</button>
+<button class="active" onclick="openModule('supplier',this)">Supplier</button>
+<button class="active" onclick="openModule('quotation',this)">Quotations</button>
+<button class="active" onclick="openModule('purchaseOrder',this)">Purchase Order</button>
+<button class="active" onclick="openModule('grn',this)">GRN</button>
+<button class="active" onclick="openModule('invoice',this)">Invoice</button>
+<button class="active" onclick="openModule('payment',this)">Payment</button>
 </div>
 
-<!-- MAIN -->
+
 <div class="main">
 
-<!-- REQUISITION -->
+<!-- REQUISITION MODULE -->
 <div id="requisition" class="module active">
 
+<div class="container">
+
+<!-- LEFT -->
 <div class="left">
 
 <div class="header">Purchase Requisitions</div>
 
-{% if notifications %}
-<div class="notification-box">
-    <h3>Notifications</h3>
-    <ul>
-        {% for note in notifications %}
-        <li class="notification-item">{{ note.message }} <span class="note-date">{{ note.created_at.strftime('%Y-%m-%d %H:%M') if note.created_at else '' }}</span></li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
 
-<div class="search">
-<input type="text" onkeyup="searchPRS()" placeholder="Search PRS...">
+<input type="text" id="prsSearch" placeholder="Search PRS..."
+       onkeyup="searchPRS()"
+       style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;"> <br><br>
+<div class="action-buttons">
+
+    <form method="POST" action="/hod/approve" onsubmit="return validateApprove()">
+        <input type="hidden" name="requisition_id" id="selectedPRS">
+        <button type="submit" class="btn success">Approve</button>
+    </form>
+
+    <button class="btn danger">Reject</button>
+
+    <button class="btn primary" onclick="window.print()">Print</button>
+
 </div>
 
-<div style="margin:10px 0;">
-<button class="btn primary" onclick="printPRS()">Print</button>
-<form id="approveForm" method="POST" action="" style="display:inline;">
-    <button type="submit" class="btn success">Approve</button>
-</form>
-<form id="rejectForm" method="POST" action="" style="display:inline;">
-    <button type="submit" class="btn danger">Reject</button>
-</form>
-</div>
+<br><br>
 
 <table id="prsTable">
-
+<thead>
 <tr>
-<th>Select</th>
-<th>PRS No</th>
-<th>Department</th>
-<th>Status</th>
-<th>Submission</th>
-<th>Approval</th>
+    <th>Select</th>
+    <th>PRS No</th>
+    <th>Department</th>
+    <th>HOD Status</th>
+    <th>Date</th>
+    <th>HOD Approval</th>
 </tr>
+</thead>
+
+<tbody>
 {% for req in requisitions %}
-<tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
-<td><input type="radio" name="prs"></td>
-<td>{{ req.prs_no }}</td>
-<td>{{ req.department_name }}</td>
-<td>{{ req.status }}</td>
-<td>{{ req.submission_date.strftime('%Y-%m-%d') if req.submission_date else '-' }}</td>
-<td>-</td>
+<tr data-id="{{ req.requisition_id }}" onclick="loadSlipFromRow(this)">
+
+    <td><input type="radio" name="select"></td>
+    <td>{{ req.prs_no }}</td>
+    <td>{{ req.department_name }}</td>
+
+    <!-- ✅ CHANGED TO HOD STATUS -->
+    <td>{{ req.hod_status }}</td>
+
+    <td>{{ req.submission_date }}</td>
+    <td>{{ req.hod_approval_date or '-' }}</td>
+
 </tr>
 {% endfor %}
+</tbody>
 </table>
 
 </div>
@@ -363,27 +471,146 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 <h2>PURCHASE REQUISITION SLIP</h2>
 
 <div class="info">
-<p><b>PRS No:</b> <span id="d_prs">-</span></p>
-<p><b>Department:</b> <span id="d_dept">-</span></p>
-<p><b>Status:</b> <span id="d_status">-</span></p>
-<p><b>Submission:</b> <span id="d_submit">-</span></p>
-<p><b>Approval:</b> <span id="d_approve">-</span></p>
+<p><b>PRS No:</b> <span id="prs_no">-</span></p>
+<p><b>Department:</b> <span id="dept">-</span></p>
+<p><b>Submission Date:</b> <span id="submission">-</span></p>
+
+<!-- ✅ CHANGED TO HOD STATUS -->
+<p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+
+<p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+
+<p><b>HOD Approval Date:</b> <span id="hod_approval_date">-</span></p>
+
+<p><b>CEO Approval Date:</b> <span id="ceo_approval_date">-</span></p>
 </div>
 
 <h3>Items</h3>
 
-<table class="items-table">
+<table>
+<thead>
 <tr>
-<th>No</th><th>Material</th><th>UOM</th><th>Qty</th>
+    <th>No</th>
+    <th>Material</th>
+    <th>UOM</th>
+    <th>Qty</th>
 </tr>
-<tr><td>1</td><td>Laptop</td><td>pcs</td><td>2</td></tr>
-<tr><td>2</td><td>Printer</td><td>pcs</td><td>1</td></tr>
+</thead>
+
+<tbody id="items_body"></tbody>
 </table>
 
-<div class="signature">
-<div class="sig">Prepared</div>
-<div class="sig">HOD</div>
-<div class="sig">CEO</div>
+<h3>Signatures</h3>
+
+<div class="signature-section">
+
+    <div class="sig-box">
+        <p>Prepared By</p>
+        <div class="sig">
+            <span id="sig_prepared">-</span>
+        </div>
+    </div>
+
+    <div class="sig-box">
+        <p>HOD Approval</p>
+        <div class="sig">
+            <img id="sig_hod" src="" alt="HOD Signature" style="height:60px; display:none;">
+        </div>
+    </div>
+
+    <div class="sig-box">
+        <p>CEO Approval</p>
+        <div class="sig">
+            <span id="sig_ceo">-</span>
+        </div>
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+</div> <!-- END requisition module -->
+
+
+
+
+</div>
+<!-- SUPPLIER MODULE -->
+<div id="supplier" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header">Supplier Management</div>
+
+<button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+    Add Supplier
+</button>
+
+<div class="search" style="margin-top:12px;">
+    <input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search suppliers by name, phone, or location...">
+</div>
+
+<table id="supplierTable">
+<thead>
+<tr>
+    <th>Supplier</th>
+    <th>Contact</th>
+    <th>Phone</th>
+    <th>Location</th>
+    <th>Email</th>
+</tr>
+</thead>
+<tbody id="supplierBody"></tbody>
+</table>
+
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip">
+
+    <div class="header">
+        <h2>Supplier Details</h2>
+        <p><b>Live supplier data loaded from backend</b></p>
+    </div>
+
+    <div class="info-section">
+
+        <div class="box">
+            <p><b>Name:</b> <span id="supName">-</span></p>
+            <p><b>Contact Person:</b> <span id="supContact">-</span></p>
+            <p><b>Phone:</b> <span id="supPhone">-</span></p>
+        </div>
+
+        <div class="box">
+            <p><b>Email:</b> <span id="supEmail">-</span></p>
+            <p><b>Location:</b> <span id="supAddress">-</span></p>
+            <p><b>TIN #:</b> <span id="supTin">-</span></p>
+        </div>
+
+    </div>
+
+    <div class="supplier-section">
+        <p><b>Registration #:</b> <span id="supReg">-</span></p>
+        <p><b>Bank:</b> <span id="supBank">-</span></p>
+        <p><b>Account #:</b> <span id="supAccount">-</span></p>
+    </div>
+
+    <div class="buttons">
+        <button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
+            Add Supplier
+        </button>
+    </div>
+
 </div>
 
 </div>
@@ -392,17 +619,813 @@ box-shadow:0 2px 10px rgba(0,0,0,0.05);
 
 </div>
 
-<!-- OTHER MODULES -->
-<div id="supplier" class="module"><div class="placeholder">Supplier Module</div></div>
-<div id="invoice" class="module"><div class="placeholder">Invoice Module</div></div>
-<div id="payment" class="module"><div class="placeholder">Payment Module</div></div>
-<div id="grn" class="module"><div class="placeholder">GRN Module</div></div>
+</div>
+
+<!-- QUOTATION MODULE -->
+<div id="quotation" class="module">
+
+<div class="container">
+
+<!-- LEFT PANEL -->
+<div class="left">
+
+<div class="header">QUOTATION Management</div>
+
+<div class="search">
+    <input id="quotationSearch" type="text" onkeyup="searchQuotation()" placeholder="Search quotation, supplier, or PRS...">
+</div>
+
+<div style="margin:10px 0;">
+    <button class="btn success" onclick="approveQuotation()">Very qoutation</button>
+    <button class="btn danger" onclick="rejectQuotation()">Reject</button>
+    <button class="btn primary" onclick="printQuotation()">Print</button>
+</div>
+
+<table id="quotationTable">
+<thead>
+<tr>
+    <th>Select</th>
+    <th>Quotation No</th>
+    <th>PRS No</th>
+    <th>Supplier</th>
+    <th>Status</th>
+    <th>Department</th>
+    <th>Creation Date</th>
+</tr>
+</thead>
+<tbody id="quotationBody"></tbody>
+</table>
 
 </div>
 
-<script>
+<!-- RIGHT PANEL -->
+<div class="right">
 
-/* MODULE SWITCH */
+<div class="slip">
+
+    <div class="header">
+        <h2>QUOTATION REQUEST SLIP (QRF)</h2>
+        <p><b>Official Procurement Document</b></p>
+    </div>
+
+    <div class="info-section">
+
+        <div class="box">
+            <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
+            <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
+            <p><b>Date:</b> <span id="qrfDate">-</span></p>
+        </div>
+
+        <div class="box">
+            <p><b>Requester:</b> <span id="qr_requester">-</span></p>
+            <p><b>Department:</b> <span id="qr_department">-</span></p>
+            <p><b>Contact:</b> <span id="qr_contact">-</span></p>
+        </div>
+
+    </div>
+
+    <div class="supplier-section">
+        <p><b>To:</b> <span id="sp_to">Supplier</span></p>
+        <p><b>Company:</b> <span id="sp_name">-</span></p>
+        <p><b>Location:</b> <span id="sp_location">-</span></p>
+        <p><b>Item:</b> <span id="sp_item">-</span></p>
+    </div>
+
+    <table class="items-table">
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+        </tr>
+        </thead>
+        <tbody id="sharedPRS"></tbody>
+    </table>
+
+    <div class="footer">
+        <p>Kindly submit your quotation within <b>3–5 working days</b>.</p>
+        <p>Ensure all requested items are available and include delivery details.</p>
+        <br>
+        <p>Authorized By: ________________________</p>
+        <p>Procurement Department</p>
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- ================= PURCHASE ORDER MODULE ================= -->
+<div id="purchaseOrder" class="module">
+
+    <div class="container">
+
+        <!-- LEFT PANEL -->
+        <div class="left">
+
+            <div class="header">
+                Purchase Order Management
+            </div>
+
+            <!-- SEARCH -->
+            <div class="search">
+
+                <input
+                    id="poSearch"
+                    type="text"
+                    onkeyup="searchPO()"
+                    placeholder="Search PO, Supplier, or Department..."
+                >
+
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+
+                <button class="btn success"
+                        onclick="approvePO()">
+                    Verify PO
+                </button>
+
+                <button class="btn danger"
+                        onclick="rejectPO()">
+                    Reject
+                </button>
+
+                <button class="btn primary"
+                        onclick="printPO()">
+                    Print
+                </button>
+
+            </div>
+
+            <!-- TABLE -->
+            <table id="poTable">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Select</th>
+                        <th>PO No</th>
+                        <th>PRS No</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                        <th>Department</th>
+                        <th>Creation Date</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="poBody">
+                    <!-- PO rows loaded dynamically -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right">
+
+            <div class="slip" id="poPrintArea">
+
+                <!-- HEADER -->
+                <h2>Purchase Order</h2>
+
+                <!-- INFO -->
+                <div class="info">
+
+                    <p>
+                        <b>PO Number:</b>
+                        <span id="poNumber">-</span>
+                    </p>
+
+                    <p>
+                        <b>Supplier:</b>
+                        <span id="poSupplier">-</span>
+                    </p>
+
+                    <p>
+                        <b>Date:</b>
+                        <span id="poDate">-</span>
+                    </p>
+
+                </div>
+
+                <!-- ITEMS -->
+                <h3>Items</h3>
+
+                <table class="items-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Material</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="poItemsBody">
+                        <!-- PO items loaded dynamically -->
+                    </tbody>
+
+                </table>
+
+                <!-- TOTAL -->
+                <div class="info">
+
+                    <p>
+                        <b>Total:</b>
+                        <span id="poTotal">0</span>
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ================= GRN MODULE ================= -->
+<div id="grn" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Goods Received Note (GRN)</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                
+                <input id="grnSearch" type="text" onkeyup="searchGRN()" placeholder="Search GRN or PRS...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printGRN()">Print GRN</button>
+                <button class="btn primary" onclick="approveGRN()">Verify GRN</button>
+                <button class="btn danger" onclick="rejectGRN()">Reject GRN</button>
+            </div>
+
+            <!-- TABLE -->
+            <table id="grnTable">
+
+                <thead>
+                    <th>Select</th>
+                    <th>Quotation No</th>
+                    <th> PRS_NO</th>
+                    <th>Supplier Name</th>
+                    <th>STATUS</th>
+                    <th>DEPARTMENT</th>
+                    <th>CREATION DATE</th>
+                </thead>
+
+                <tbody id="grnBody">
+                <!-- GRN rows loaded from procurement_view backend -->
+            </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- RIGHT PANEL -->
+<div class="right">
+
+<div class="slip" id="grnPrintArea">
+
+    <!-- HEADER -->
+    <div class="header">
+
+        <h2>GOODS RECEIVED NOTE (GRN)</h2>
+
+        <p>
+            <b>Official Receiving Document</b>
+        </p>
+
+    </div>
+
+    <!-- INFO SECTION -->
+    <div class="info-section">
+
+        <div class="box">
+
+            <p>
+                <b>GRN Number:</b>
+                <span id="grnNumber">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Date:</b>
+                <span id="grnDate">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>PO Number:</b>
+                <span id="grnPO">- <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+        <div class="box">
+
+            <p>
+                <b>Supplier:</b>
+                <span id="grnSupplier">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Received By:</b>
+                <span id="grnReceiver">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>Delivery Status:</b>
+                <span id="grnStatus">- <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- DELIVERY INFO -->
+    <div class="supplier-section">
+
+        <p>
+            <b>Delivery Location:</b>
+            <span id="grnLocation">- <!-- static sample removed --> </span>
+        </p>
+
+        <p>
+            <b>Receiving Date:</b>
+            <span id="grnReceivingDate">- <!-- static sample removed --> </span>
+        </p>
+
+    </div>
+
+    <!-- ITEMS -->
+    <h3>Received Items</h3>
+
+    <table class="items-table" id="grnItemsTable">
+
+        <thead>
+
+        <tr>
+            <th>Material</th>
+            <th>Description</th>
+            <th>Ordered Qty</th>
+            <th>Received Qty</th>
+            <th>Balance</th>
+        </tr>
+
+        </thead>
+
+        <tbody id="grnItemsBody">
+            <!-- GRN line items loaded from procurement_view backend -->
+        </tbody>
+
+    </table>
+
+    <!-- SUMMARY -->
+    <div class="info-section" style="margin-top:20px;">
+
+        <div class="box">
+
+            <p>
+                <b>Total Items Received:</b>
+                <span id="grnTotal">0 <!-- static sample removed --> </span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+
+        <p>
+            The above items were received
+            in good condition unless stated otherwise.
+        </p>
+
+        <!-- SIGNATURES -->
+        <div class="signature-section">
+
+            <div class="sig-box">
+
+                <p>Received By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Verified By</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+            <div class="sig-box">
+
+                <p>Supplier Representative</p>
+
+                <br><br>
+
+                ____________________
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="buttons">
+
+        <button class="btn print"
+                onclick="window.print()">
+            Print / Save PDF
+        </button>
+
+        <button class="btn whatsapp"
+                onclick="shareGRNWhatsApp()">
+            Share WhatsApp
+        </button>
+
+        <button class="btn email"
+                onclick="shareGRNEmail()">
+            Email Supplier
+        </button>
+
+    </div>
+
+</div>
+
+</div>
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ================= INVOICE MODULE ================= -->
+<div id="invoice" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">Invoice Management</div>
+
+            <!-- SEARCH -->
+            <div class="search">
+                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
+                
+            </div>
+
+            <!-- TABLE -->
+            <table id="invoiceTable">
+
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>PRS No</th>
+                        <th>Invoice No</th>
+                        <th>GRN No</th>
+                        <th>Supplier</th>
+                        <th>Department</th>
+                        <th>Status</th>
+                        <th>submission_date</th>
+                    </tr>
+                </thead>
+
+                <tbody id="invoiceBody">
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip" id="invoicePrintArea">
+
+                <h2>PURCHASE INVOICE</h2>
+
+                <!-- INFO -->
+                <div class="info">
+                    <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
+                    <p><b>GRN No:</b> <span id="i_grn">-</span></p>
+                    <p><b>Supplier:</b> <span id="i_supplier">-</span></p>
+                    <p><b>Amount:</b> <span id="i_amount">-</span></p>
+                    <p><b>Date:</b> <span id="i_date">-</span></p>
+                </div>
+
+                <h3>Items</h3>
+
+                <!-- ITEMS TABLE -->
+                <table class="items-table">
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>Laptop</td>
+                            <td>2</td>
+                            <td>500</td>
+                            <td>1000</td>
+                        </tr>
+
+                        <tr>
+                            <td>Printer</td>
+                            <td>1</td>
+                            <td>200</td>
+                            <td>200</td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURES -->
+                <div class="signature">
+                    <div class="sig">Supplier</div>
+                    <div class="sig">Procurement</div>
+                    <div class="sig">Finance</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+</div>
+
+<!-- ================= PAYMENT MODULE ================= -->
+<div id="payment" class="module">
+
+    <div class="container">
+
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
+
+            <div class="header">
+                Payment Management
+            </div>
+
+            <!-- SEARCH -->
+            <div class="search">
+
+                <input
+                    id="paymentSearch"
+                    type="text"
+                    onkeyup="searchPayment()"
+                    placeholder="Search Payment, Invoice, Supplier..."
+                >
+
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div style="margin:10px 0;">
+
+                <button class="btn success"
+                        onclick="approvePayment()">
+                    Approve Payment
+                </button>
+
+                <button class="btn danger"
+                        onclick="rejectPayment()">
+                    Reject Payment
+                </button>
+
+                <button class="btn primary"
+                        onclick="printPayment()">
+                    Print
+                </button>
+
+            </div>
+
+            <!-- TABLE -->
+            <table id="paymentTable">
+
+                <thead>
+
+                    <tr>
+
+                        <th>Select</th>
+                        <th>Payment No</th>
+                        <th>Invoice No</th>
+                        <th>Supplier</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="paymentBody">
+                    <!-- Loaded dynamically -->
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip" id="paymentPrintArea">
+
+                <h2>PAYMENT VOUCHER</h2>
+
+                <!-- PAYMENT INFO -->
+                <div class="info">
+
+                    <p>
+                        <b>Payment No:</b>
+                        <span id="payNumber">-</span>
+                    </p>
+
+                    <p>
+                        <b>Invoice No:</b>
+                        <span id="payInvoice">-</span>
+                    </p>
+
+                    <p>
+                        <b>Supplier:</b>
+                        <span id="paySupplier">-</span>
+                    </p>
+
+                    <p>
+                        <b>Amount:</b>
+                        <span id="payAmount">-</span>
+                    </p>
+
+                    <p>
+                        <b>Payment Method:</b>
+                        <span id="payMethod">-</span>
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        <span id="payStatus">-</span>
+                    </p>
+
+                    <p>
+                        <b>Date:</b>
+                        <span id="payDate">-</span>
+                    </p>
+
+                </div>
+
+                <!-- ITEMS -->
+                <h3>Invoice Items</h3>
+
+                <table class="items-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="paymentItemsBody">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+
+                </table>
+
+                <!-- SIGNATURE -->
+                <div class="signature-section">
+
+                    <div class="sig-box">
+
+                        <p>Prepared By</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                    <div class="sig-box">
+
+                        <p>Approved By</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                    <div class="sig-box">
+
+                        <p>Finance</p>
+
+                        <br><br>
+
+                        ___________________
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+
+
+<script >
+
 function openModule(id,btn){
 
 document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
@@ -410,48 +1433,917 @@ document.getElementById(id).classList.add("active");
 
 document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
 btn.classList.add("active");
+
+if(id === "supplier"){
+    loadSupplierModule();
 }
 
-/* SELECT ONLY ONE */
-function selectRow(row){
-
-document.querySelectorAll("#prsTable tr").forEach(r=>{
-r.classList.remove("selected");
-let radio=r.querySelector("input");
-if(radio) radio.checked=false;
-});
-
-row.classList.add("selected");
-row.querySelector("input").checked=true;
-
-let c=row.getElementsByTagName("td");
-let id = row.getAttribute("data-id");
-
-document.getElementById("d_prs").innerText=c[1].innerText;
-document.getElementById("d_dept").innerText=c[2].innerText;
-document.getElementById("d_status").innerText=c[3].innerText;
-document.getElementById("d_submit").innerText=c[4].innerText;
-document.getElementById("d_approve").innerText=c[5].innerText;
-
-document.getElementById("approveForm").action = "/ceo/approve/" + id;
-document.getElementById("rejectForm").action = "/ceo/reject/" + id;
+if(id === "quotation"){
+    loadQuotationModule();
 }
 
-/* PRINT ONLY SLIP */
-function printPRS(){
-window.print();
+if(id === "purchaseOrder"){
+    loadPOModule();
 }
 
-/* SEARCH */
-function searchPRS(){
-let input=document.querySelector(".search input").value.toUpperCase();
-let rows=document.querySelectorAll("#prsTable tr");
+if(id === "grn"){
+    loadGRNModule();
+}
+}
 
-for(let i=1;i<rows.length;i++){
-rows[i].style.display =
-rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
+
+let selectedRow = null;
+
+// ================= LOAD SLIP =================
+function loadSlipFromRow(row){
+
+    let id = row.getAttribute("data-id");
+
+    if(!id){
+        alert("Invalid requisition ID");
+        return;
+    }
+
+    // highlight row
+    document.querySelectorAll("#prsTable tr").forEach(r => {
+        r.classList.remove("selected");
+    });
+
+    row.classList.add("selected");
+
+    document.getElementById("selectedPRS").value = id;
+
+    fetch("/hod/requisition/api/" + id)
+    .then(res => res.json())
+    .then(data => {
+
+        let r = data.requisition;
+        let items = data.items || [];
+
+        // ================= HEADER INFO =================
+        document.getElementById("prs_no").innerText = r.prs_no || "-";
+        document.getElementById("dept").innerText = r.department_name || "-";
+        document.getElementById("submission").innerText = r.submission_date || "-";
+
+        document.getElementById("hod_status").innerText = r.hod_status || "Pending";
+        document.getElementById("ceo_status").innerText = r.ceo_status || "Pending";
+
+        // ================= APPROVAL DATES =================
+        document.getElementById("hod_approval_date").innerText =
+            r.hod_approval_date || "-";
+
+        document.getElementById("ceo_approval_date").innerText =
+            r.ceo_approval_date || "-";
+
+        // ================= ITEMS TABLE =================
+        let tbody = document.getElementById("items_body");
+        tbody.innerHTML = "";
+
+        items.forEach((item, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td>${item.material_name}</td>
+                    <td>${item.uom}</td>
+                    <td>${item.qty_required}</td>
+                </tr>
+            `;
+        });
+
+        // ================= SIGNATURES =================
+
+        document.getElementById("sig_prepared").innerText =
+            r.prepared_by || "Not signed";
+
+        document.getElementById("sig_ceo").innerText =
+            r.ceo_signature || "Pending";
+
+        // ================= HOD SIGNATURE IMAGE =================
+        let sig = document.getElementById("sig_hod");
+
+if (r.hod_signature) {
+
+    // ensure no double /static/
+    let path = r.hod_signature.replace("/static/", "");
+
+    sig.src = "/static/" + path;
+    sig.style.display = "block";
+
+} else {
+    sig.src = "";
+    sig.style.display = "none";
 }
+
+    })
+    .catch(err => {
+        console.error("Error fetching requisition details:", err);
+        alert("Failed to load requisition details");
+    });
 }
+
+function validateApprove(){
+    let id = document.getElementById("selectedPRS").value;
+
+    if(!id){
+        alert("Please select a requisition first");
+        return false;
+    }
+    return true;
+}
+
+
+
+
+function searchPRS() {
+
+    let input = document.getElementById("prsSearch");
+    let filter = input.value.toLowerCase();
+
+    let table = document.getElementById("prsTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) { // skip header row
+
+        let rowText = rows[i].innerText.toLowerCase();
+
+        if (rowText.includes(filter)) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }
+}
+
+function searchQuotation(){
+    let input = document.getElementById("quotationSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#quotationTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function searchSupplier(){
+    let input = document.getElementById("supplierSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#supplierBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function searchPO(){
+    let input = document.getElementById("poSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#poBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function printPO(){
+    window.print();
+}
+
+function approvePO(){
+    const selected = document.querySelector("input[name='poSelect']:checked");
+    if (!selected) {
+        alert("Please select a purchase order first.");
+        return;
+    }
+
+    const poId = selected.dataset.poId;
+    fetch(`/hod/po_approve/${poId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Approval failed.");
+        alert(data.message || "Purchase order approved.");
+        loadPOModule();
+        selectPO(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to approve purchase order.");
+    });
+}
+
+function rejectPO(){
+    const selected = document.querySelector("input[name='poSelect']:checked");
+    if (!selected) {
+        alert("Please select a purchase order first.");
+        return;
+    }
+
+    const poId = selected.dataset.poId;
+    fetch(`/hod/po_reject/${poId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ remarks: "Rejected by HOD" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) throw new Error(data.message || "Rejection failed.");
+        alert(data.message || "Purchase order rejected.");
+        loadPOModule();
+        selectPO(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to reject purchase order.");
+    });
+}
+
+function selectPO(radio){
+    if(!radio || !radio.dataset.poId){
+        alert("Please select a purchase order");
+        return;
+    }
+
+    let poId = radio.dataset.poId;
+    fetch(`/hod/po_details/${poId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`PO details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("poNumber").innerText = data.po_number || "-";
+            document.getElementById("poSupplier").innerText = data.supplier_name || "-";
+            document.getElementById("poDate").innerText = data.order_date || "-";
+            document.getElementById("poTotal").innerText = data.total_amount || "0";
+
+            let itemsBody = document.getElementById("poItemsBody");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.item_name || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                    <td>${item.unit_price || "-"}</td>
+                    <td>${item.total_price || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase order details.");
+        });
+}
+
+function loadPOModule(){
+    fetch("/hod/po_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`PO list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("poBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No purchase orders found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="poSelect" data-po-id="${item.purchase_order_id}"></td>
+                    <td>${item.po_number || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.order_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='poSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#poBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectPO(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load purchase order list.");
+        });
+}
+
+
+
+
+
+
+// =======================================================
+// LOAD ALL GRN DATA
+// =======================================================
+async function loadGRNData() {
+
+    try {
+
+        const response = await fetch("/hod/grn_data");
+
+        const data = await response.json();
+
+        const tbody = document.getElementById("grnBody");
+
+        tbody.innerHTML = "";
+
+        data.forEach(grn => {
+
+            tbody.innerHTML += `
+
+                <tr onclick="loadGRNDetails(${grn.grn_id})">
+
+                    <td>
+                        <input 
+                            type="radio"
+                            name="selectedGRN"
+                            value="${grn.grn_id}"
+                        >
+                    </td>
+
+                    <td>${grn.grn_no || ''}</td>
+
+                    <td>${grn.prs_no || ''}</td>
+
+                    <td>${grn.supplier_name || ''}</td>
+
+                    <td>${grn.status || ''}</td>
+
+                    <td>${grn.department || ''}</td>
+
+                    <td>${formatDate(grn.received_date)}</td>
+
+                </tr>
+
+            `;
+        });
+
+    }
+    catch (error) {
+
+        console.error("Error loading GRN data:", error);
+    }
+}
+
+
+// =======================================================
+// LOAD SINGLE GRN DETAILS
+// =======================================================
+async function loadGRNDetails(grnId) {
+
+    try {
+
+        const response = await fetch(`/hod/grn_details/${grnId}`);
+
+        const data = await response.json();
+
+        // ===================================================
+        // HEADER
+        // ===================================================
+        document.getElementById("grnNumber").innerText =
+            data.grn_no || "-";
+
+        document.getElementById("grnDate").innerText =
+            formatDate(data.received_date);
+
+        document.getElementById("grnPO").innerText =
+            data.po_number || "-";
+
+        document.getElementById("grnSupplier").innerText =
+            data.supplier_name || "-";
+
+        document.getElementById("grnReceiver").innerText =
+            data.received_by || "-";
+
+        document.getElementById("grnStatus").innerText =
+            data.inspection_status || "-";
+
+        document.getElementById("grnLocation").innerText =
+            data.supplier_address || "-";
+
+        document.getElementById("grnReceivingDate").innerText =
+            formatDate(data.received_date);
+
+        document.getElementById("grnTotal").innerText =
+            data.total_received || 0;
+
+        // ===================================================
+        // ITEMS
+        // ===================================================
+        const tbody = document.getElementById("grnItemsBody");
+
+        tbody.innerHTML = "";
+
+        data.items.forEach(item => {
+
+            tbody.innerHTML += `
+
+                <tr>
+
+                    <td>${item.material_name || ''}</td>
+
+                    <td>${item.description || ''}</td>
+
+                    <td>${item.quantity_ordered || 0}</td>
+
+                    <td>${item.quantity_received || 0}</td>
+
+                    <td>${item.balance || 0}</td>
+
+                </tr>
+
+            `;
+        });
+
+    }
+    catch (error) {
+
+        console.error("Error loading GRN details:", error);
+    }
+}
+
+
+// =======================================================
+// SEARCH GRN
+// =======================================================
+function searchGRN() {
+
+    const input = document
+        .getElementById("grnSearch")
+        .value
+        .toLowerCase();
+
+    const rows = document.querySelectorAll("#grnTable tbody tr");
+
+    rows.forEach(row => {
+
+        const text = row.innerText.toLowerCase();
+
+        row.style.display =
+            text.includes(input)
+            ? ""
+            : "none";
+    });
+}
+
+
+// =======================================================
+// GET SELECTED GRN ID
+// =======================================================
+function getSelectedGRN() {
+
+    const selected = document.querySelector(
+        'input[name="selectedGRN"]:checked'
+    );
+
+    if (!selected) {
+
+        alert("Please select a GRN");
+
+        return null;
+    }
+
+    return selected.value;
+}
+
+
+// =======================================================
+// APPROVE GRN
+// =======================================================
+async function approveGRN() {
+
+    const grnId = getSelectedGRN();
+
+    if (!grnId) return;
+
+    if (!confirm("Approve this GRN?")) return;
+
+    try {
+
+        const response = await fetch(
+            `/hod/approve_grn/${grnId}`,
+            {
+                method: "POST"
+            }
+        );
+
+        const result = await response.json();
+
+        alert(result.message);
+
+        loadGRNData();
+
+        loadGRNDetails(grnId);
+
+    }
+    catch (error) {
+
+        console.error("Approval error:", error);
+    }
+}
+
+
+// =======================================================
+// REJECT GRN
+// =======================================================
+async function rejectGRN() {
+
+    const grnId = getSelectedGRN();
+
+    if (!grnId) return;
+
+    if (!confirm("Reject this GRN?")) return;
+
+    try {
+
+        const response = await fetch(
+            `/hod/reject_grn/${grnId}`,
+            {
+                method: "POST"
+            }
+        );
+
+        const result = await response.json();
+
+        alert(result.message);
+
+        loadGRNData();
+
+        loadGRNDetails(grnId);
+
+    }
+    catch (error) {
+
+        console.error("Reject error:", error);
+    }
+}
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printGRN() {
+
+    const content = document.getElementById(
+        "grnPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print GRN</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+// =======================================================
+// SHARE WHATSAPP
+// =======================================================
+function shareGRNWhatsApp() {
+
+    const grnNo =
+        document.getElementById("grnNumber").innerText;
+
+    const supplier =
+        document.getElementById("grnSupplier").innerText;
+
+    const message = `
+
+GRN Number: ${grnNo}
+Supplier: ${supplier}
+
+Goods Received Successfully.
+
+    `;
+
+    const url =
+        "https://wa.me/?text=" +
+        encodeURIComponent(message);
+
+    window.open(url, "_blank");
+}
+
+
+// =======================================================
+// SHARE EMAIL
+// =======================================================
+function shareGRNEmail() {
+
+    const grnNo =
+        document.getElementById("grnNumber").innerText;
+
+    const supplier =
+        document.getElementById("grnSupplier").innerText;
+
+    const body = `
+
+GRN Number: ${grnNo}
+Supplier: ${supplier}
+
+Goods Received Successfully.
+
+    `;
+
+    window.location.href =
+        `mailto:?subject=GRN ${grnNo}&body=${encodeURIComponent(body)}`;
+}
+
+
+// =======================================================
+// FORMAT DATE
+// =======================================================
+function formatDate(dateString) {
+
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString();
+}
+
+
+// =======================================================
+// LOAD ON PAGE OPEN
+// =======================================================
+document.addEventListener(
+    "DOMContentLoaded",
+    loadGRNData
+);
+
+
+
+
+function approveQuotation(){
+    const selected = document.querySelector("input[name='quotationSelect']:checked");
+    if (!selected) {
+        alert("Please select a quotation first.");
+        return;
+    }
+
+    const qrfId = selected.dataset.qrfId;
+
+    fetch(`/hod/quotation_approve/${qrfId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || "Approval failed.");
+        }
+        alert(data.message || "Quotation approved.");
+        loadQuotationModule();
+        selectQuotation(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to approve quotation.");
+    });
+}
+
+function rejectQuotation(){
+    const selected = document.querySelector("input[name='quotationSelect']:checked");
+    if (!selected) {
+        alert("Please select a quotation first.");
+        return;
+    }
+
+    const qrfId = selected.dataset.qrfId;
+
+    fetch(`/hod/quotation_reject/${qrfId}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ remarks: "Rejected by HOD" })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || "Rejection failed.");
+        }
+        alert(data.message || "Quotation rejected.");
+        loadQuotationModule();
+        selectQuotation(selected);
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Unable to reject quotation.");
+    });
+}
+
+function selectQuotation(radio){
+    if(!radio || !radio.dataset.qrfId){
+        alert("Please select a quotation");
+        return;
+    }
+
+    let qrfId = radio.dataset.qrfId;
+
+    fetch(`/hod/quotation_details/${qrfId}`)
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation details request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data.error){
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
+            document.getElementById("qrfPrs").innerText = data.prs_no || "-";
+            document.getElementById("qrfDate").innerText = data.request_date || "-";
+            document.getElementById("qr_requester").innerText = data.requester_name || "-";
+            document.getElementById("qr_department").innerText = data.department || "-";
+            document.getElementById("qr_contact").innerText = data.supplier_phone || "-";
+            document.getElementById("sp_to").innerText = data.supplier_name || "-";
+            document.getElementById("sp_name").innerText = data.supplier_name || "-";
+            document.getElementById("sp_location").innerText = data.supplier_address || "-";
+            document.getElementById("sp_item").innerText = data.items.length > 0 ? data.items[0].material_name : "-";
+
+            let itemsBody = document.getElementById("sharedPRS");
+            itemsBody.innerHTML = "";
+
+            data.items.forEach(item => {
+                let itemRow = document.createElement("tr");
+                itemRow.innerHTML = `
+                    <td>${item.material_name || "-"}</td>
+                    <td>${item.description || "-"}</td>
+                    <td>${item.quantity || "-"}</td>
+                `;
+                itemsBody.appendChild(itemRow);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation details.");
+        });
+}
+
+function loadQuotationModule(){
+    fetch("/hod/quotation_data")
+        .then(res => {
+            if (!res.ok) throw new Error(`Quotation list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("quotationBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotations found.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                let row = document.createElement("tr");
+                row.style.cursor = "pointer";
+                row.innerHTML = `
+                    <td><input type="radio" name="quotationSelect" data-qrf-id="${item.qrf_id}"></td>
+                    <td>${item.qrf_no || "-"}</td>
+                    <td>${item.prs_no || "-"}</td>
+                    <td>${item.supplier_name || "-"}</td>
+                    <td>${item.status || "-"}</td>
+                    <td>${item.department || "-"}</td>
+                    <td>${item.request_date || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    const radio = row.querySelector("input[name='quotationSelect']");
+                    if (radio) {
+                        radio.checked = true;
+                        document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
+                        row.classList.add("selected");
+                        selectQuotation(radio);
+                    }
+                });
+                body.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load quotation list.");
+        });
+}
+
+function showSupplierDetails(supplier){
+    document.getElementById("supName").innerText = supplier.supplier_name || "-";
+    document.getElementById("supContact").innerText = supplier.contact_person || "-";
+    document.getElementById("supPhone").innerText = supplier.phone || "-";
+    document.getElementById("supEmail").innerText = supplier.email || "-";
+    document.getElementById("supAddress").innerText = supplier.address || "-";
+    document.getElementById("supTin").innerText = supplier.tin_number || "-";
+    document.getElementById("supReg").innerText = supplier.registration_number || "-";
+    document.getElementById("supBank").innerText = supplier.bank_name || "-";
+    document.getElementById("supAccount").innerText = supplier.account_number || "-";
+}
+
+function loadSupplierModule(){
+    fetch("/hod/supplier_list")
+        .then(res => {
+            if (!res.ok) throw new Error(`Supplier list request failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            let body = document.getElementById("supplierBody");
+            body.innerHTML = "";
+
+            if (!data || data.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;">No suppliers found.</td></tr>`;
+                showSupplierDetails({});
+                return;
+            }
+
+            data.forEach(supplier => {
+                let row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${supplier.supplier_name || "-"}</td>
+                    <td>${supplier.contact_person || "-"}</td>
+                    <td>${supplier.phone || "-"}</td>
+                    <td>${supplier.address || "-"}</td>
+                    <td>${supplier.email || "-"}</td>
+                `;
+                row.addEventListener("click", () => {
+                    document.querySelectorAll("#supplierBody tr").forEach(r => r.classList.remove("selected"));
+                    row.classList.add("selected");
+                    showSupplierDetails(supplier);
+                });
+                body.appendChild(row);
+            });
+
+            showSupplierDetails(data[0]);
+        })
+        .catch(error => {
+            console.error(error);
+            alert("Failed to load suppliers.");
+        });
+}
+
 
 function logoutUser() {
     window.location.href = "/logout";
@@ -461,3 +2353,4 @@ function logoutUser() {
 
 </body>
 </html>
+

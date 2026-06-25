@@ -256,34 +256,6 @@ CREATE TABLE settings (
 
 
 
--- =========================
--- 5. APPROVALS
--- =========================
-CREATE TABLE approvals (
-    approval_id INT AUTO_INCREMENT PRIMARY KEY,
-    requisition_id INT NOT NULL,
-    approver_id INT NOT NULL,
-    role ENUM('HOD','CEO','Finance','Procurement') NOT NULL,
-    action ENUM('Approved','Rejected') NULL,
-    remarks TEXT NULL,
-    hod_approval_date TIMESTAMP NULL,
-    ceo_approval_date TIMESTAMP NULL,
-    finance_approval_date TIMESTAMP NULL,
-    procurement_approval_date TIMESTAMP NULL,
-    hod_status ENUM('Pending','Approved') DEFAULT 'Pending',
-    ceo_status ENUM('Pending','Approved') DEFAULT 'Pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-
-    FOREIGN KEY (approver_id) REFERENCES users(user_id)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
 
 INSERT INTO departments (department_name) VALUES
 ('IT'),
@@ -301,29 +273,7 @@ INSERT INTO departments (department_name) VALUES
 ('Production'),
 ('Regulatory');
 
-CREATE TABLE approval_stages (
-    stage_id INT AUTO_INCREMENT PRIMARY KEY,
 
-    requisition_id INT NOT NULL,
-    stage ENUM('HOD','CEO','FINANCE','PROCUREMENT') NOT NULL,
-
-    status ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',
-
-    approver_id INT NULL,
-
-    approval_date TIMESTAMP NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-
-    FOREIGN KEY (approver_id) REFERENCES users(user_id)
-    ON DELETE SET NULL
-    ON UPDATE CASCADE
-);
 
 
 CREATE TABLE suppliers (
@@ -568,3 +518,76 @@ CREATE TABLE quotation_records_items (
         ON UPDATE CASCADE
 );
 
+
+
+
+
+ALTER TABLE quotation_request_items 
+ADD COLUMN uom VARCHAR(25) NULL;
+
+
+ALTER TABLE quotations
+ADD COLUMN delivery_date DATE NULL;
+
+ALTER TABLE quotation_request_suppliers
+ADD COLUMN selected_supplier ENUM('YES','NO') DEFAULT 'NO';
+
+
+ALTER TABLE purchase_orders
+ADD COLUMN supplier_id INT,
+ADD CONSTRAINT fk_purchase_orders_supplier
+FOREIGN KEY (supplier_id)
+REFERENCES suppliers(supplier_id)
+ON UPDATE CASCADE
+ON DELETE RESTRICT;
+
+
+ALTER TABLE `quotations` ADD `created_by` INT NOT NULL AFTER `delivery_date`;
+ADD CONSTRAINT fk_quotation_user_created
+FOREIGN KEY (user_id)
+REFERENCES userss(user_id)
+ON UPDATE CASCADE
+ON DELETE RESTRICT;
+
+
+ALTER TABLE `grn` ADD `status` ENUM('verified','canceled','pending') NOT NULL AFTER `created_at`;
+
+
+CREATE TABLE approvals (
+    approval_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    module_name ENUM('PRS', 'PO', 'GRN', 'INVOICE', 'PAYMENT', 'QRF') NOT NULL,
+    document_id INT NOT NULL,
+
+    hod_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+    hod_user_id INT NULL,
+    hod_approved_at DATETIME NULL,
+
+    ceo_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+    ceo_user_id INT NULL,
+    ceo_approved_at DATETIME NULL,
+
+    final_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+
+    remarks TEXT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY unique_module_document (module_name, document_id),
+
+    INDEX idx_module_document (module_name, document_id),
+    INDEX idx_final_status (final_status),
+    INDEX idx_hod_status (hod_status),
+    INDEX idx_ceo_status (ceo_status),
+
+    CONSTRAINT fk_hod_user
+        FOREIGN KEY (hod_user_id) REFERENCES users(user_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_ceo_user
+        FOREIGN KEY (ceo_user_id) REFERENCES users(user_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);

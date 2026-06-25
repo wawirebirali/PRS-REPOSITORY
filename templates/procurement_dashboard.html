@@ -22,40 +22,66 @@ body{
 /* =========================
    SIDEBAR
 ========================= */
-.sidebar{
-    width:230px;
-    background:#2C7A7B;
-    color:white;
-    height:100vh;
-    position:fixed;
-    left:0;
-    top:0;
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
+    color: #ffffff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    /* 👇 modern look improvements */
+    border-right: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    padding-top: 10px;
 }
 
-.sidebar h2{
-    text-align:center;
-    padding:20px;
-    border-bottom:1px solid rgba(255,255,255,0.1);
+/* Sidebar title */
+.sidebar h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* nice bottom separation line */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar button{
-    width:100%;
-    padding:14px 20px;
-    border:none;
-    background:none;
-    color:white;
-    text-align:left;
-    cursor:pointer;
+/* Sidebar buttons */
+.sidebar button {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    border-left: 3px solid transparent;
 }
 
-.sidebar button:hover{
-    background:#1f5f61;
+/* Hover effect */
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #F97316; /* orange highlight */
+    padding-left: 18px;
 }
 
-.sidebar button.active{
-    background:black;
+/* Active button */
+.sidebar button.active {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #D4AF37; /* gold active indicator */
+    color: #ffffff;
 }
-
 /* =========================
    MAIN LAYOUT
 ========================= */
@@ -531,7 +557,7 @@ tr:hover{
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-<h2>PRS SYSTEM</h2>
+<h2>PRS SYSTEM <br> PROCUREMENT DASHBOARD</h2>
 
 <button class="active" onclick="openModule('requisition',this)">Requisition</button>
 <button onclick="openModule('supplier',this)">Suppliers</button>
@@ -953,6 +979,11 @@ tr:hover{
 </div>
 
 </div>
+
+
+
+
+<!-- ================= QUOTATION MODULE ================= -->
 
 
 <div id="quotation" class="module">

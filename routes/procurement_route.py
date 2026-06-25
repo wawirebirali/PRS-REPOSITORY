@@ -1825,7 +1825,7 @@ def save_invoice():
 
         conn.commit()
 
-        return redirect(url_for("finance_dashboard.finance_dashboard"))
+        return redirect(url_for("finance_dashboard.dashboard"))
 
     except Exception as e:
         conn.rollback()
