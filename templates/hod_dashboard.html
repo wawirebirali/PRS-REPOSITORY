@@ -473,74 +473,74 @@ tr:hover{
 </div>
 
 <!-- ===================== RIGHT ===================== -->
-<div class="right">
+    <div class="right">
 
-<div id="printArea" class="slip">
+    <div id="printArea" class="slip">
 
-    <h2>PURCHASE REQUISITION SLIP</h2>
+        <h2>PURCHASE REQUISITION SLIP</h2>
 
-    <!-- HEADER -->
-    <div class="info">
+        <!-- HEADER -->
+        <div class="info">
 
-        <p><b>PRS No:</b> <span id="prs_no">-</span></p>
-        <p><b>Department:</b> <span id="department_name">-</span></p>
-        <p><b>Submission:</b> <span id="submission">-</span></p>
+            <p><b>PRS No:</b> <span id="prs_no">-</span></p>
+            <p><b>Department:</b> <span id="department_name">-</span></p>
+            <p><b>Submission:</b> <span id="submission">-</span></p>
 
-        <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
-        <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+            <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+            <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+
+        </div>
+
+        <!-- ITEMS -->
+        <h3>Items</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Material</th>
+                    <th>UOM</th>
+                    <th>Qty</th>
+                </tr>
+            </thead>
+            <tbody id="items_body"></tbody>
+        </table>
+
+        <!-- SIGNATURES -->
+        <h3>Signatures</h3>
+
+        <div class="signature-section">
+
+            <!-- CREATED BY -->
+            <div class="sig-box">
+                <p>Prepared By</p>
+                <p><span id="created_by_name">-</span></p>
+                <img id="sig_created_by" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="created_date">-</span></p>
+            </div>
+            
+
+            <!-- HOD -->
+            <div class="sig-box">
+                <p>HOD Approval</p>
+                <p><span id="hod_username">-</span></p>
+                <img id="sig_hod" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
+            </div>
+
+            <!-- CEO -->
+            <div class="sig-box">
+                <p>CEO Approval</p>
+                <p><span id="ceo_username">-</span></p>
+                <img id="sig_ceo" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
+            </div>
+
+        </div>
 
     </div>
 
-    <!-- ITEMS -->
-    <h3>Items</h3>
-
-    <table>
-        <thead>
-            <tr>
-                <th>No</th>
-                <th>Material</th>
-                <th>UOM</th>
-                <th>Qty</th>
-            </tr>
-        </thead>
-        <tbody id="items_body"></tbody>
-    </table>
-
-    <!-- SIGNATURES -->
-    <h3>Signatures</h3>
-
-    <div class="signature-section">
-
-        <!-- CREATED BY -->
-        <div class="sig-box">
-            <p>Prepared By</p>
-            <p><span id="created_by_name">-</span></p>
-            <img id="sig_created_by" style="height:60px; display:none;">
-            <p><b>Date:</b> <span id="created_date">-</span></p>
-        </div>
-        
-
-        <!-- HOD -->
-        <div class="sig-box">
-            <p>HOD Approval</p>
-            <p><span id="hod_username">-</span></p>
-            <img id="sig_hod" style="height:60px; display:none;">
-            <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
-        </div>
-
-        <!-- CEO -->
-        <div class="sig-box">
-            <p>CEO Approval</p>
-            <p><span id="ceo_username">-</span></p>
-            <img id="sig_ceo" style="height:60px; display:none;">
-            <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
-        </div>
-
     </div>
-
-</div>
-
-</div>
 </div>
 
 </div>
@@ -1179,8 +1179,6 @@ tr:hover{
 
 
 
-
-
 <!-- ================= INVOICE MODULE ================= -->
 <div id="invoice" class="module">
 
@@ -1189,36 +1187,44 @@ tr:hover{
         <!-- ================= LEFT PANEL ================= -->
         <div class="left">
 
-            <div class="header">Invoice Management</div>
+            <div class="header">
+                Invoice Management
+            </div>
 
             <!-- SEARCH -->
             <div class="search">
-                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
+                <input
+                    id="invoiceSearch"
+                    type="text"
+                    placeholder="Search Invoice, PRS, PO or Supplier..."
+                    onkeyup="searchInvoice()">
             </div>
 
-            <!-- ACTION BUTTONS -->
+            <!-- ACTIONS -->
             <div style="margin:10px 0;">
-                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
-                
+                <button class="btn primary" onclick="printInvoice()">
+                    Print Invoice
+                </button>
             </div>
 
-            <!-- TABLE -->
+            <!-- INVOICE TABLE -->
             <table id="invoiceTable">
 
                 <thead>
                     <tr>
                         <th>Select</th>
                         <th>PRS No</th>
+                        <th>PO No</th>
                         <th>Invoice No</th>
-                        <th>GRN No</th>
                         <th>Supplier</th>
                         <th>Department</th>
                         <th>Status</th>
-                        <th>submission_date</th>
+                        <th>Invoice Date</th>
                     </tr>
                 </thead>
 
                 <tbody id="invoiceBody">
+                    <!-- Loaded dynamically -->
                 </tbody>
 
             </table>
@@ -1232,52 +1238,118 @@ tr:hover{
 
                 <h2>PURCHASE INVOICE</h2>
 
-                <!-- INFO -->
+                <!-- HEADER DETAILS -->
                 <div class="info">
-                    <p><b>Invoice No:</b> <span id="i_invoice">-</span></p>
-                    <p><b>GRN No:</b> <span id="i_grn">-</span></p>
-                    <p><b>Supplier:</b> <span id="i_supplier">-</span></p>
-                    <p><b>Amount:</b> <span id="i_amount">-</span></p>
-                    <p><b>Date:</b> <span id="i_date">-</span></p>
+
+                    <p>
+                        <b>Invoice No:</b>
+                        <span id="i_invoice_number">-</span>
+                    </p>
+
+                    <p>
+                        <b>PO Number:</b>
+                        <span id="i_po_number">-</span>
+                    </p>
+
+                    <p>
+                        <b>PRS Number:</b>
+                        <span id="i_prs_number">-</span>
+                    </p>
+
+                    <p>
+                        <b>Department:</b>
+                        <span id="i_department">-</span>
+                    </p>
+
+                    <p>
+                        <b>Supplier:</b>
+                        <span id="i_supplier">-</span>
+                    </p>
+
+                    <p>
+                        <b>Invoice Date:</b>
+                        <span id="i_date">-</span>
+                    </p>
+
+                    <p>
+                        <b>Total Amount:</b>
+                        <span id="i_amount">-</span>
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        <span id="i_status">-</span>
+                    </p>
+
                 </div>
 
-                <h3>Items</h3>
+                <!-- ITEMS -->
+                <h3>Invoice Items</h3>
 
-                <!-- ITEMS TABLE -->
                 <table class="items-table">
 
                     <thead>
                         <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
                             <th>Unit Price</th>
-                            <th>Total</th>
+                            <th>Total Price</th>
                         </tr>
                     </thead>
 
-                    <tbody>
-                        <tr>
-                            <td>Laptop</td>
-                            <td>2</td>
-                            <td>500</td>
-                            <td>1000</td>
-                        </tr>
-
-                        <tr>
-                            <td>Printer</td>
-                            <td>1</td>
-                            <td>200</td>
-                            <td>200</td>
-                        </tr>
+                    <tbody id="invoiceItemsBody">
+                        <!-- Loaded dynamically -->
                     </tbody>
 
                 </table>
 
-                <!-- SIGNATURES -->
-                <div class="signature">
-                    <div class="sig">Supplier</div>
-                    <div class="sig">Procurement</div>
-                    <div class="sig">Finance</div>
+                <!-- APPROVAL SECTION -->
+                <div class="approval-section">
+
+                    <div class="approval-box">
+
+                        <p><strong>Prepared By</strong></p>
+
+                        <img
+                            id="invoice_creator_signature"
+                            class="signature-img"
+                            src=""
+                            style="display:none; max-height:80px;">
+
+                        <p id="invoice_creator_name">-</p>
+
+                    </div>
+
+                    <div class="approval-box">
+
+                        <p><strong>HOD Approval</strong></p>
+
+                        <img
+                            id="invoice_hod_signature"
+                            class="signature-img"
+                            src=""
+                            style="display:none; max-height:80px;">
+
+                        <p id="invoice_hod_name">-</p>
+                        <p id="invoice_hod_status">PENDING</p>
+
+                    </div>
+
+                    <div class="approval-box">
+
+                        <p><strong>CEO Approval</strong></p>
+
+                        <img
+                            id="invoice_ceo_signature"
+                            class="signature-img"
+                            src=""
+                            style="display:none; max-height:80px;">
+
+                        <p id="invoice_ceo_name">-</p>
+                        <p id="invoice_ceo_status">PENDING</p>
+
+                    </div>
+
                 </div>
 
             </div>
@@ -1287,9 +1359,6 @@ tr:hover{
     </div>
 
 </div>
-
-
-
 
 
 
@@ -1528,6 +1597,9 @@ if(id === "quotation"){
 
 if(id === "purchaseOrder"){
     loadPOModule();
+}
+if(id === "invoice"){
+    loadInvoices
 }
 
 if(id === "grn"){
@@ -2859,6 +2931,267 @@ function loadSupplierModule(){
             alert("Failed to load suppliers.");
         });
 }
+
+
+/* inoice*/
+
+
+// =========================================
+// GLOBAL SELECTED INVOICE
+// =========================================
+let selectedInvoiceId = null;
+
+// =========================================
+// LOAD INVOICE TABLE
+// =========================================
+async function loadInvoices() {
+
+    try {
+
+        const response = await fetch("/hod/invoice_data");
+
+        console.log("Status:", response.status);
+
+        const text = await response.text();
+
+        if (!text || text.startsWith("<!DOCTYPE")) {
+            console.error("Server returned HTML or empty response");
+            return;
+        }
+
+        const invoices = JSON.parse(text);
+
+        const tbody = document.getElementById("invoiceBody");
+        tbody.innerHTML = "";
+
+        invoices.forEach(inv => {
+
+            tbody.innerHTML += `
+                <tr onclick="loadInvoiceDetails(${inv.invoice_id})">
+                    <td>
+                        <input type="radio"
+                            onclick="event.stopPropagation(); loadInvoiceDetails(${inv.invoice_id})">
+                    </td>
+                    <td>${inv.prs_no || "-"}</td>
+                    <td>${inv.invoice_number || "-"}</td>
+                    <td>${inv.po_number || "-"}</td>
+                    <td>${inv.supplier_name || "-"}</td>
+                    <td>${inv.department_name || "-"}</td>
+                    <td>${inv.status || "-"}</td>
+                    <td>${inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : "-"}</td>
+                </tr>
+            `;
+        });
+
+    } catch (err) {
+        console.error("Invoice load error:", err);
+    }
+}
+
+// =========================================
+// LOAD SINGLE INVOICE
+// =========================================
+async function loadInvoiceDetails(invoiceId) {
+
+    try {
+
+        const response = await fetch(`/hod/invoice_details/${invoiceId}`);
+        const data = await response.json();
+
+        console.log(data);
+
+        if (!data.success) {
+            alert(data.error || "Failed to load invoice.");
+            return;
+        }
+
+        // ================= HEADER =================
+        document.getElementById("i_invoice_number").textContent =
+            data.invoice_number || "-";
+
+        document.getElementById("i_po_number").textContent =
+            data.po_number || "-";
+
+        document.getElementById("i_prs_number").textContent =
+            data.prs_no || "-";
+
+        document.getElementById("i_department").textContent =
+            data.department_name || "-";
+
+        document.getElementById("i_supplier").textContent =
+            data.supplier_name || "-";
+
+        document.getElementById("i_date").textContent =
+            data.invoice_date || "-";
+
+        document.getElementById("i_amount").textContent =
+            data.total_amount || "-";
+
+        document.getElementById("i_status").textContent =
+            data.status || "-";
+
+        // ================= ITEMS =================
+        const itemsBody = document.getElementById("invoiceItemsBody");
+        itemsBody.innerHTML = "";
+
+        data.items.forEach(item => {
+            itemsBody.innerHTML += `
+                <tr>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.unit_price}</td>
+                    <td>${item.total_price}</td>
+                </tr>
+            `;
+        });
+
+        // ================= CREATOR =================
+        document.getElementById("invoice_creator_name").textContent =
+            data.creator_name || "-";
+
+        const creatorSig = document.getElementById(
+            "invoice_creator_signature"
+        );
+
+        if (data.creator_signature) {
+            creatorSig.src =
+                `/static/signatures/${data.creator_signature}`;
+            creatorSig.style.display = "block";
+        } else {
+            creatorSig.style.display = "none";
+        }
+
+        // ================= HOD =================
+        document.getElementById("invoice_hod_name").textContent =
+            data.hod_name || "-";
+
+        document.getElementById("invoice_hod_status").textContent =
+            data.hod_status || "PENDING";
+
+        const hodSig = document.getElementById(
+            "invoice_hod_signature"
+        );
+
+        if (data.hod_signature) {
+            hodSig.src =
+                `/static/signatures/${data.hod_signature}`;
+            hodSig.style.display = "block";
+        } else {
+            hodSig.style.display = "none";
+        }
+
+        // ================= CEO =================
+        document.getElementById("invoice_ceo_name").textContent =
+            data.ceo_name || "-";
+
+        document.getElementById("invoice_ceo_status").textContent =
+            data.ceo_status || "PENDING";
+
+        const ceoSig = document.getElementById(
+            "invoice_ceo_signature"
+        );
+
+        if (data.ceo_signature) {
+            ceoSig.src =
+                `/static/signatures/${data.ceo_signature}`;
+            ceoSig.style.display = "block";
+        } else {
+            ceoSig.style.display = "none";
+        }
+
+    } catch (error) {
+        console.error("Invoice details error:", error);
+    }
+}
+
+
+// =========================================
+// SEARCH TABLE
+// =========================================
+function searchInvoice() {
+
+    const input =
+        document.getElementById("invoiceSearch")
+            .value
+            .toLowerCase();
+
+    const rows =
+        document.querySelectorAll("#invoiceBody tr");
+
+    rows.forEach(row => {
+
+        const text =
+            row.textContent.toLowerCase();
+
+        row.style.display =
+            text.includes(input)
+                ? ""
+                : "none";
+    });
+}
+
+// =========================================
+// DATE FORMAT
+// =========================================
+function formatDate(dateString){
+
+    if(!dateString)
+        return "-";
+
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            year:"numeric",
+            month:"short",
+            day:"numeric"
+        }
+    );
+}
+
+// =========================================
+// PRINT
+// =========================================
+function printInvoice(){
+
+    if(!selectedInvoiceId){
+        alert("Select an invoice first.");
+        return;
+    }
+
+    const content =
+        document.getElementById(
+            "invoicePrintArea"
+        ).innerHTML;
+
+    const printWindow =
+        window.open("", "", "width=1000,height=700");
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Invoice Print</title>
+            </head>
+            <body>
+                ${content}
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+// =========================================
+// AUTO LOAD
+// =========================================
+document.addEventListener(
+    "DOMContentLoaded",
+    loadInvoices
+);
 
 
 function logoutUser() {

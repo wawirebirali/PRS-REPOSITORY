@@ -101,26 +101,49 @@ CREATE TABLE requisition_items (
 -- =========================
 CREATE TABLE payments (
     payment_id INT AUTO_INCREMENT PRIMARY KEY,
-    requisition_id INT NOT NULL,
+
+    requisition_id INT,
+    invoice_no VARCHAR(50) NOT NULL,
+
+    payment_no VARCHAR(50) NOT NULL UNIQUE,
+
     paid_by INT NOT NULL,
-    payment_method ENUM('Cash','Bank Transfer','Mobile Money','Cheque') NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
+
+    payment_method ENUM(
+        'Cash',
+        'Bank Transfer',
+        'Cheque',
+        'Mobile Money'
+    ) NOT NULL,
+
+    amount DECIMAL(15,2) NOT NULL,
+    amount_paid DECIMAL(15,2) NOT NULL,
+    balance DECIMAL(15,2) NOT NULL,
+
     currency VARCHAR(10) DEFAULT 'UGX',
-    payment_status ENUM('Pending','Completed','Failed','Cancelled') DEFAULT 'Pending',
-    transaction_reference VARCHAR(100) NULL,
-    payment_date TIMESTAMP NULL,
-    remarks TEXT NULL,
+
+    payment_status ENUM(
+        'Pending',
+        'Partial',
+        'Completed',
+        'Cancelled'
+    ) DEFAULT 'Pending',
+
+    payment_date DATE NOT NULL,
+
+    remarks TEXT,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (requisition_id) REFERENCES requisitions(requisition_id)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (paid_by) REFERENCES users(user_id)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE
-) ENGINE=InnoDB;
+    FOREIGN KEY (requisition_id)
+        REFERENCES requisitions(requisition_id),
+
+    FOREIGN KEY (paid_by)
+        REFERENCES users(user_id)
+);
 
 
 -- =========================

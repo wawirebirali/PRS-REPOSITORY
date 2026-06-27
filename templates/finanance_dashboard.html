@@ -283,6 +283,7 @@ input[type="text"], input[type="date"], input[type="number"]{
 
 <!-- MAIN -->
 <div class="main">
+    
 
 <!-- REQUISITION -->
 <div id="requisition" class="module active">
@@ -320,23 +321,76 @@ onkeyup="searchPRS()">
 
 </div>
 
-<!-- RIGHT SLIP -->
-<div class="right">
 
-<div id="printArea" class="slip">
+<!-- ===================== RIGHT ===================== -->
+    <div class="right">
 
-<h2>PRS SLIP</h2>
+    <div id="printArea" class="slip">
 
-<div class="info">
-<p><b>PRS No:</b> <span id="prs_no">-</span></p>
-<p><b>Department:</b> <span id="dept">-</span></p>
-<p><b>Status:</b> <span id="status">-</span></p>
-<p><b>Date:</b> <span id="date">-</span></p>
-</div>
+        <h2>PURCHASE REQUISITION SLIP</h2>
 
-</div>
+        <!-- HEADER -->
+        <div class="info">
 
-</div>
+            <p><b>PRS No:</b> <span id="prs_no">-</span></p>
+            <p><b>Department:</b> <span id="department_name">-</span></p>
+            <p><b>Submission:</b> <span id="submission">-</span></p>
+
+            <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+            <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+
+        </div>
+
+        <!-- ITEMS -->
+        <h3>Items</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Material</th>
+                    <th>UOM</th>
+                    <th>Qty</th>
+                </tr>
+            </thead>
+            <tbody id="items_body"></tbody>
+        </table>
+
+        <!-- SIGNATURES -->
+        <h3>Signatures</h3>
+
+        <div class="signature-section">
+
+            <!-- CREATED BY -->
+            <div class="sig-box">
+                <p>Prepared By</p>
+                <p><span id="created_by_name">-</span></p>
+                <img id="sig_created_by" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="created_date">-</span></p>
+            </div>
+            
+
+            <!-- HOD -->
+            <div class="sig-box">
+                <p>HOD Approval</p>
+                <p><span id="hod_username">-</span></p>
+                <img id="sig_hod" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
+            </div>
+
+            <!-- CEO -->
+            <div class="sig-box">
+                <p>CEO Approval</p>
+                <p><span id="ceo_username">-</span></p>
+                <img id="sig_ceo" style="height:60px; display:none;">
+                <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
+            </div>
+
+        </div>
+
+    </div>
+
+    </div>
 
 </div>
 
@@ -468,6 +522,88 @@ onkeyup="searchPRS()">
     <!-- LEFT SIDE -->
     <div class="left">
 
+        <div id="createPaymentForm"
+     style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px;">
+
+    <h3>Create New Payment</h3>
+
+    <!-- Supplier -->
+    <div class="form-group">
+        <label>Supplier</label>
+        <input type="text" id="cp_supplier" readonly>
+    </div>
+
+    <!-- Invoice -->
+    <div class="form-group">
+        <label>Invoice No</label>
+        <input type="text" id="cp_invoice" readonly>
+    </div>
+
+    <!-- Payment No -->
+    <div class="form-group">
+        <label>Payment No</label>
+        <input type="text" id="cp_payment" readonly>
+    </div>
+
+    <!-- Payment Method (MISSING BEFORE) -->
+    <div class="form-group">
+        <label>Payment Method</label>
+        <select id="cp_method">
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Mobile Money">Mobile Money</option>
+        </select>
+    </div>
+
+    <!-- Amount -->
+    <div class="form-group">
+        <label>Total Amount</label>
+        <input type="number" id="cp_amount" readonly>
+    </div>
+
+    <!-- Amount Paid -->
+    <div class="form-group">
+        <label>Amount Paid</label>
+        <input type="number" id="cp_amountpaid" oninput="calculateBalance()">
+    </div>
+
+    <!-- Balance -->
+    <div class="form-group">
+        <label>Balance</label>
+        <input type="number" id="cp_balance" readonly>
+    </div>
+
+    <!-- Payment Date -->
+    <div class="form-group">
+        <label>Created Date</label>
+        <input type="date" id="cp_date">
+    </div>
+
+    <!-- Remarks -->
+    <div class="form-group">
+        <label>Remarks</label>
+        <textarea id="cp_remarks"></textarea>
+    </div>
+
+    <!-- Buttons -->
+    <div class="form-group" style="margin-top:10px;">
+
+        <button class="btn success" onclick="savePayment()">
+            Save Payment
+        </button>
+
+        <button class="btn danger" onclick="hideCreatePaymentForm()">
+            Cancel
+        </button>
+
+    </div>
+</div>
+
+       
+
+    
+
         <!-- HEADER -->
         <div class="header">Payment Module</div>
 
@@ -544,47 +680,7 @@ onkeyup="searchPRS()">
 
         </table>
 
-        <!-- =========================
-             CREATE PAYMENT FORM
-        ========================= -->
-        <div id="createPaymentForm"
-             style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px;">
-
-            <h3>Create New Payment</h3>
-
-            <div class="form-group">
-                <label>Supplier</label>
-                <input type="text" id="cp_supplier">
-            </div>
-
-            <div class="form-group">
-                <label>Invoice No</label>
-                <input type="text" id="cp_invoice">
-            </div>
-
-            <div class="form-group">
-                <label>Amount</label>
-                <input type="number" id="cp_amount">
-            </div>
-
-            <div class="form-group">
-                <label>Date</label>
-                <input type="date" id="cp_date">
-            </div>
-
-            <div class="form-group" style="margin-top:10px;">
-
-                <button class="btn success" onclick="savePayment()">
-                    Save Payment
-                </button>
-
-                <button class="btn danger" onclick="hideCreatePaymentForm()">
-                    Cancel
-                </button>
-
-            </div>
-
-        </div>
+       
 
     </div>
 
@@ -632,35 +728,104 @@ document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("acti
 btn.classList.add("active");
 }
 
-/* ROW SELECT */
-function selectRow(row){
 
-document.querySelectorAll("#prsTable tr").forEach(r=>{
-r.classList.remove("selected");
-r.querySelector("input").checked=false;
-});
 
-row.classList.add("selected");
-row.querySelector("input").checked=true;
 
-let c=row.getElementsByTagName("td");
+function loadSlipFromRow(row) {
 
-document.getElementById("prs_no").innerText=c[1].innerText;
-document.getElementById("dept").innerText=c[2].innerText;
-document.getElementById("status").innerText=c[3].innerText;
-document.getElementById("date").innerText=c[4].innerText;
+    const requisitionId = row.getAttribute("data-id");
+
+    fetch(`/hod/requisition/api/${requisitionId}`)
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.success) {
+                alert(data.message);
+                return;
+            }
+
+            const req = data.requisition;
+
+            // =========================
+            // HEADER INFO
+            // =========================
+            document.getElementById("prs_no").innerText = req.prs_no;
+            document.getElementById("department_name").innerText = req.department_name;
+            document.getElementById("submission").innerText = req.submission_date;
+
+            document.getElementById("hod_status").innerText = req.hod_status;
+            document.getElementById("ceo_status").innerText = req.ceo_status;
+
+            // =========================
+            // ITEMS
+            // =========================
+            let tbody = document.getElementById("items_body");
+            tbody.innerHTML = "";
+
+            data.items.forEach((item, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.material_name}</td>
+                        <td>${item.uom}</td>
+                        <td>${item.qty_required}</td>
+                    </tr>
+                `;
+            });
+
+            // =========================
+            // CREATED BY
+            // =========================
+            document.getElementById("created_by_name").innerText =
+                data.created_by.name;
+
+            document.getElementById("created_date").innerText =
+                req.submission_date;
+
+            if (data.created_by.signature) {
+                document.getElementById("sig_created_by").src =
+                    "/static/signatures/" + data.created_by.signature;
+                document.getElementById("sig_created_by").style.display = "block";
+            }
+
+            // =========================
+            // HOD SIGNATURE
+            // =========================
+            if (data.hod_signature) {
+                document.getElementById("hod_username").innerText =
+                    data.hod_signature.username;
+
+                document.getElementById("hod_approval_date").innerText =
+                    data.hod_signature.hod_approved_at;
+
+                document.getElementById("sig_hod").src =
+                    "/static/signatures/" + data.hod_signature.signature;
+
+                document.getElementById("sig_hod").style.display = "block";
+            }
+
+            // =========================
+            // CEO SIGNATURE
+            // =========================
+            if (data.ceo_signature) {
+                document.getElementById("ceo_username").innerText =
+                    data.ceo_signature.username;
+
+                document.getElementById("ceo_approval_date").innerText =
+                    data.ceo_signature.ceo_approved_at;
+
+                document.getElementById("sig_ceo").src =
+                    "/static/signatures/" + data.ceo_signature.signature;
+
+                document.getElementById("sig_ceo").style.display = "block";
+            }
+
+        })
+        .catch(error => {
+            console.error("Error loading slip:", error);
+            alert("Failed to load requisition details");
+        });
 }
-
-/* SEARCH */
-function searchPRS(){
-let val=document.getElementById("searchBox").value.toLowerCase();
-let rows=document.querySelectorAll("#prsTable tbody tr");
-
-rows.forEach(r=>{
-r.style.display=r.innerText.toLowerCase().includes(val)?"":"none";
-});
-}
-
 
 function openModule(moduleId, btn){
 
@@ -863,45 +1028,58 @@ function hideCreatePaymentForm(){
 }
 
 /* SAVE PAYMENT */
-function savePayment(){
 
-    let supplier = document.getElementById("cp_supplier").value;
-    let invoice = document.getElementById("cp_invoice").value;
-    let amount = document.getElementById("cp_amount").value;
-    let date = document.getElementById("cp_date").value;
+const amount = parseFloat(document.getElementById("cp_amount").value);
+const paid = parseFloat(document.getElementById("cp_amountpaid").value);
 
-    if(!supplier || !invoice || !amount || !date){
-        alert("Fill all fields");
-        return;
-    }
+document.getElementById("cp_balance").value = amount - paid;
+function savePayment() {
 
-    let table = document.querySelector("#paymentTable tbody");
+    const data = {
+        requisition_id: currentRequisitionId, // must be defined globally or passed
+        invoice_no: document.getElementById("cp_invoice").value,
+        payment_no: document.getElementById("cp_payment").value,
+        payment_method: document.getElementById("cp_method").value,
+        amount: parseFloat(document.getElementById("cp_amount").value),
+        amount_paid: parseFloat(document.getElementById("cp_amountpaid").value),
+        balance: parseFloat(document.getElementById("cp_balance").value),
+        payment_date: document.getElementById("cp_date").value,
+        remarks: document.getElementById("cp_remarks") ? document.getElementById("cp_remarks").value : ""
+    };
 
-    let row = table.insertRow();
+    fetch("/finance/create_payment", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
 
-    row.setAttribute("data-id", Date.now());
-    row.onclick = function(){ selectPayment(this); };
+        if (result.success) {
+            alert("Payment saved successfully");
 
-    row.innerHTML = `
-        <td><input type="radio" name="pay"></td>
-        <td>PAY${Date.now()}</td>
-        <td>${supplier}</td>
-        <td>${invoice}</td>
-        <td>${amount}</td>
-        <td>Pending</td>
-        <td>${date}</td>
-    `;
+            // optional: reload table/list
+            if (typeof loadPayments === "function") {
+                loadPayments();
+            }
 
-    alert("Payment created successfully!");
+            // optional: reset form
+            document.getElementById("createPaymentForm").reset?.();
 
-    hideCreatePaymentForm();
+            document.getElementById("createPaymentForm").style.display = "none";
 
-    document.getElementById("cp_supplier").value = "";
-    document.getElementById("cp_invoice").value = "";
-    document.getElementById("cp_amount").value = "";
-    document.getElementById("cp_date").value = "";
+        } else {
+            alert("Error: " + result.message);
+        }
+
+    })
+    .catch(error => {
+        console.error("Payment error:", error);
+        alert("Something went wrong while saving payment");
+    });
 }
-
 /* SEARCH */
 function searchPayments(){
     let input = document.getElementById("paymentSearch").value.toUpperCase();

@@ -64,75 +64,163 @@ def quotation_data():
 
     return jsonify(quotations)
 
-
 @hod_dashboard_view_bp.route("/quotation_details/<int:qrf_id>")
 def quotation_details(qrf_id):
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            q.qrf_id,
-            q.qrf_no,
-            r.prs_no,
-            q.request_date,
-            q.status,
-            q.remarks,
-            s.supplier_name,
-            s.address AS supplier_address,
-            s.phone AS supplier_phone,
-            s.contact_person AS supplier_contact,
-            u.username AS requester_name,
-            d.department_name AS department
-        FROM quotation_requests q
-        JOIN requisitions r ON q.requisition_id = r.requisition_id
-        JOIN departments d ON r.department_id = d.department_id
-        JOIN users u ON q.requested_by = u.user_id
-        JOIN quotation_request_suppliers qrs ON q.qrf_id = qrs.qrf_id
-        JOIN suppliers s ON qrs.supplier_id = s.supplier_id
-        WHERE q.qrf_id = %s
-        LIMIT 1
-    """, (qrf_id,))
+    try:
 
-    qrf = cursor.fetchone()
-    if not qrf:
+        # ================= QRF HEADER =================
+        cursor.execute("""
+            SELECT
+                q.qrf_id,
+                q.qrf_no,
+                r.prs_no,
+                q.request_date,
+                q.deadline_date,
+                q.status,
+                q.remarks,
+
+                u.username AS requester_name,
+                d.department_name AS department
+
+            FROM quotation_requests q
+
+            JOIN requisitions r
+                ON q.requisition_id = r.requisition_id
+
+            JOIN users u
+                ON q.requested_by = u.user_id
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            WHERE q.qrf_id = %s
+        """, (qrf_id,))
+
+        qrf = cursor.fetchone()
+
+        if not qrf:
+            return jsonify({
+                "success": False,
+                "error": "QRF not found"
+            }), 404
+
+        # ================= SUPPLIERS =================
+        cursor.execute("""
+            SELECT
+                s.supplier_id,
+                s.supplier_name,
+                s.address,
+                s.phone,
+                qrs.supplier_response,
+                qrs.sent_date,
+                qrs.selected_supplier
+            FROM quotation_request_suppliers qrs
+            JOIN suppliers s
+                ON qrs.supplier_id = s.supplier_id
+            WHERE qrs.qrf_id = %s
+        """, (qrf_id,))
+
+        suppliers = cursor.fetchall()
+
+        # ================= ITEMS =================
+        cursor.execute("""
+            SELECT
+                material_name,
+                description,
+                quantity
+            FROM quotation_request_items
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+        items = cursor.fetchall()
+
+        # ================= APPROVAL =================
+        cursor.execute("""
+            SELECT
+                a.hod_status,
+                a.ceo_status,
+                a.final_status,
+
+                a.hod_approved_at,
+                a.ceo_approved_at,
+
+                hod.username AS hod_name,
+                ceo.username AS ceo_name,
+
+                hod.signature AS hod_signature,
+                ceo.signature AS ceo_signature
+
+            FROM approvals a
+
+            LEFT JOIN users hod
+                ON a.hod_user_id = hod.user_id
+
+            LEFT JOIN users ceo
+                ON a.ceo_user_id = ceo.user_id
+
+            WHERE a.module_name = 'QRF'
+              AND a.document_id = %s
+        """, (qrf_id,))
+
+        approval = cursor.fetchone()
+
+        # ================= FORMAT =================
+        if qrf.get("request_date"):
+            qrf["request_date"] = qrf["request_date"].isoformat()
+
+        if approval and approval.get("hod_approved_at"):
+            approval["hod_approved_at"] = approval["hod_approved_at"].isoformat()
+
+        if approval and approval.get("ceo_approved_at"):
+            approval["ceo_approved_at"] = approval["ceo_approved_at"].isoformat()
+
+        # ================= RESPONSE =================
+        return jsonify({
+            "success": True,
+
+            # QRF HEADER
+            "qrf_id": qrf["qrf_id"],
+            "qrf_no": qrf["qrf_no"],
+            "prs_no": qrf["prs_no"],
+            "request_date": qrf["request_date"],
+            "deadline_date": qrf["deadline_date"],
+            "status": qrf["status"],
+            "remarks": qrf["remarks"],
+            "requester_name": qrf["requester_name"],
+            "department": qrf["department"],
+
+            # DATA
+            "items": items,
+            "suppliers": suppliers,
+
+            # APPROVAL
+            "hod_status": approval["hod_status"] if approval else "PENDING",
+            "ceo_status": approval["ceo_status"] if approval else "PENDING",
+            "final_status": approval["final_status"] if approval else "PENDING",
+
+            "hod_approved_at": approval["hod_approved_at"] if approval else None,
+            "ceo_approved_at": approval["ceo_approved_at"] if approval else None,
+
+            "hod_name": approval["hod_name"] if approval else None,
+            "ceo_name": approval["ceo_name"] if approval else None,
+
+            "hod_signature": approval["hod_signature"] if approval else None,
+            "ceo_signature": approval["ceo_signature"] if approval else None
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+    finally:
         cursor.close()
         conn.close()
-        return jsonify({"error": "Quotation request not found"}), 404
-
-    cursor.execute("""
-        SELECT
-            material_name,
-            description,
-            quantity
-        FROM quotation_record_items
-        WHERE qrf_id = %s
-    """, (qrf_id,))
-
-    items = cursor.fetchall()
-
-    if qrf.get("request_date") is not None:
-        qrf["request_date"] = qrf["request_date"].isoformat()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({
-        "qrf_id": qrf["qrf_id"],
-        "qrf_no": qrf["qrf_no"],
-        "prs_no": qrf["prs_no"],
-        "request_date": qrf["request_date"],
-        "status": qrf["status"],
-        "remarks": qrf["remarks"],
-        "supplier_name": qrf["supplier_name"],
-        "supplier_address": qrf["supplier_address"],
-        "supplier_phone": qrf["supplier_phone"],
-        "supplier_contact": qrf["supplier_contact"],
-        "requester_name": qrf["requester_name"],
-        "department": qrf["department"],
-        "items": items
-    })
-
 
 @hod_dashboard_view_bp.route("/quotation_approve/<int:qrf_id>", methods=["POST"])
 def quotation_approve(qrf_id):
@@ -582,6 +670,64 @@ def grn_reject(grn_id):
 
 
 
+@hod_dashboard_view_bp.route("/invoice_data")
+def invoice_data():
 
-#GRN STARTS HERE
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_number,
+                i.invoice_date,
+                i.total_amount,
+                i.status,
+
+                p.po_number,
+
+                r.prs_no,
+
+                d.department_name,
+
+                i.supplier_name
+
+            FROM invoices i
+
+            JOIN purchase_orders p
+                ON i.purchase_order_id = p.purchase_order_id
+
+            JOIN requisitions r
+                ON p.requisition_id = r.requisition_id
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            ORDER BY i.invoice_id DESC
+        """)
+
+        invoices = cursor.fetchall()
+
+        for invoice in invoices:
+            if invoice["invoice_date"]:
+                invoice["invoice_date"] = invoice["invoice_date"].isoformat()
+
+            invoice["total_amount"] = float(
+                invoice["total_amount"] or 0
+            )
+
+        return jsonify(invoices)
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 
