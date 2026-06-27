@@ -284,118 +284,132 @@ input[type="text"], input[type="date"], input[type="number"]{
 <!-- MAIN -->
 <div class="main">
     
-
-<!-- REQUISITION -->
+   
+<!-- ================= REQUISITION MODULE ================= -->
 <div id="requisition" class="module active">
 
+<div class="container">
+
+<!-- LEFT -->
 <div class="left">
 
 <div class="header">Purchase Requisitions</div>
 
-<input type="text" id="searchBox" placeholder="Search PRS..."
-onkeyup="searchPRS()">
+<input type="text" id="prsSearch" placeholder="Search PRS..."
+       onkeyup="searchPRS()"
+       style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
 
+<br><br>
+
+<div class="action-buttons">
+
+
+    <button class="btn primary" onclick="window.print()">Print</button>
+
+    <button class="btn primary" onclick="downloadPDF('printArea','PRS_Slip')">
+        Download PDF
+    </button>
+
+</div>
+
+<br><br>
+
+<!-- ================= TABLE (AJAX POPULATED) ================= -->
 <table id="prsTable">
+
 <thead>
 <tr>
-<th>Select</th>
-<th>PRS No</th>
-<th>Department</th>
-<th>Status</th>
-<th>Date</th>
+    <th>Select</th>
+    <th>PRS No</th>
+    <th>Department</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Approval date</th>
 </tr>
 </thead>
 
-<tbody>
-{% for req in requisitions %}
-<tr onclick="selectRow(this)" data-id="{{ req.requisition_id }}">
-<td><input type="radio"></td>
-<td>{{ req.prs_no }}</td>
-<td>{{ req.department_name }}</td>
-<td>{{ req.hod_status }}</td>
-<td>{{ req.submission_date }}</td>
-</tr>
-{% endfor %}
+<tbody id="prsBody">
+    <!-- AJAX WILL LOAD DATA HERE -->
 </tbody>
+
 </table>
 
 </div>
 
+<!-- ================= RIGHT SLIP ================= -->
+<div class="right">
 
-<!-- ===================== RIGHT ===================== -->
-    <div class="right">
+<div id="printArea" class="slip">
 
-    <div id="printArea" class="slip">
+<h2>PURCHASE REQUISITION SLIP</h2>
 
-        <h2>PURCHASE REQUISITION SLIP</h2>
+<div class="info">
 
-        <!-- HEADER -->
-        <div class="info">
+<p><b>PRS No:</b> <span id="prs_no">-</span></p>
+<p><b>Department:</b> <span id="dept">-</span></p>
+<p><b>Submission Date:</b> <span id="submission">-</span></p>
 
-            <p><b>PRS No:</b> <span id="prs_no">-</span></p>
-            <p><b>Department:</b> <span id="department_name">-</span></p>
-            <p><b>Submission:</b> <span id="submission">-</span></p>
+<p><b>HOD Status:</b> <span id="hod_status">-</span></p>
+<p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
 
-            <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
-            <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+<p><b>HOD Approval Date:</b> <span id="hod_approval_date">-</span></p>
+<p><b>CEO Approval Date:</b> <span id="ceo_approval_date">-</span></p>
 
+</div>
+
+<h3>Items</h3>
+
+<table>
+
+<thead>
+<tr>
+    <th>No</th>
+    <th>Material</th>
+    <th>UOM</th>
+    <th>Qty</th>
+</tr>
+</thead>
+
+<tbody id="items_body">
+    <!-- AJAX LOAD -->
+</tbody>
+
+</table>
+
+<h3>Signatures</h3>
+
+<div class="signature-section">
+
+    <div class="sig-box">
+        <p>Prepared By</p>
+        <div class="sig">
+            <span id="sig_prepared">-</span>
         </div>
-
-        <!-- ITEMS -->
-        <h3>Items</h3>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Material</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
-                </tr>
-            </thead>
-            <tbody id="items_body"></tbody>
-        </table>
-
-        <!-- SIGNATURES -->
-        <h3>Signatures</h3>
-
-        <div class="signature-section">
-
-            <!-- CREATED BY -->
-            <div class="sig-box">
-                <p>Prepared By</p>
-                <p><span id="created_by_name">-</span></p>
-                <img id="sig_created_by" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="created_date">-</span></p>
-            </div>
-            
-
-            <!-- HOD -->
-            <div class="sig-box">
-                <p>HOD Approval</p>
-                <p><span id="hod_username">-</span></p>
-                <img id="sig_hod" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
-            </div>
-
-            <!-- CEO -->
-            <div class="sig-box">
-                <p>CEO Approval</p>
-                <p><span id="ceo_username">-</span></p>
-                <img id="sig_ceo" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
-            </div>
-
-        </div>
-
     </div>
 
+    <div class="sig-box">
+        <p>HOD Approval</p>
+        <div class="sig">
+            <img id="sig_hod" src="" alt="HOD Signature" style="height:60px; display:none;">
+        </div>
+    </div>
+
+    <div class="sig-box">
+        <p>CEO Approval</p>
+        <div class="sig">
+            <span id="sig_ceo">-</span>
+        </div>
     </div>
 
 </div>
 
+</div>
 
+</div>
 
+</div>
+
+</div>
 
 
 <!-- ================= INVOICE MODULE ================= -->
@@ -411,16 +425,21 @@ onkeyup="searchPRS()">
             <!-- SEARCH -->
             <div class="search">
                 <button class="btn primary"
-                 onclick="window.location.href='/procurement/create_invoice'">
-                     Create Invoice
+                        onclick="window.location.href='/procurement/create_invoice'">
+                    Create Invoice
                 </button>
-                <input id="invoiceSearch" type="text" onkeyup="searchInvoice()" placeholder="Search Invoice or GRN...">
+
+                <input id="invoiceSearch"
+                       type="text"
+                       onkeyup="searchInvoice()"
+                       placeholder="Search Invoice or GRN...">
             </div>
 
             <!-- ACTION BUTTONS -->
             <div style="margin:10px 0;">
-                <button class="btn primary" onclick="printInvoice()">Print Invoice</button>
-                
+                <button class="btn primary" onclick="printInvoice()">
+                    Print Invoice
+                </button>
             </div>
 
             <!-- TABLE -->
@@ -435,11 +454,12 @@ onkeyup="searchPRS()">
                         <th>Supplier</th>
                         <th>Department</th>
                         <th>Status</th>
-                        <th>submission_date</th>
+                        <th>Date</th>
                     </tr>
                 </thead>
 
                 <tbody id="invoiceBody">
+                    <!-- DYNAMIC DATA FROM JS -->
                 </tbody>
 
             </table>
@@ -464,9 +484,8 @@ onkeyup="searchPRS()">
 
                 <h3>Items</h3>
 
-                <!-- ITEMS TABLE -->
+                <!-- ITEMS TABLE (DYNAMIC) -->
                 <table class="items-table">
-
                     <thead>
                         <tr>
                             <th>Item</th>
@@ -476,29 +495,34 @@ onkeyup="searchPRS()">
                         </tr>
                     </thead>
 
-                    <tbody>
-                        <tr>
-                            <td>Laptop</td>
-                            <td>2</td>
-                            <td>500</td>
-                            <td>1000</td>
-                        </tr>
-
-                        <tr>
-                            <td>Printer</td>
-                            <td>1</td>
-                            <td>200</td>
-                            <td>200</td>
-                        </tr>
+                    <tbody id="invoiceItemsBody">
+                        <!-- JS LOADS ITEMS HERE -->
                     </tbody>
-
                 </table>
 
-                <!-- SIGNATURES -->
-                <div class="signature">
-                    <div class="sig">Supplier</div>
-                    <div class="sig">Procurement</div>
-                    <div class="sig">Finance</div>
+                <!-- ================= SIGNATURE SECTION ================= -->
+                <h3>Signatures</h3>
+
+                <div class="signature-section">
+
+                    <div class="sig-box">
+                        <p>Supplier</p>
+                        <div class="sig-line"></div>
+                        <span id="sig_supplier_name">-</span>
+                    </div>
+
+                    <div class="sig-box">
+                        <p>Procurement</p>
+                        <div class="sig-line"></div>
+                        <span id="sig_procurement_name">-</span>
+                    </div>
+
+                    <div class="sig-box">
+                        <p>Finance</p>
+                        <div class="sig-line"></div>
+                        <span id="sig_finance_name">-</span>
+                    </div>
+
                 </div>
 
             </div>
@@ -509,127 +533,121 @@ onkeyup="searchPRS()">
 
 </div>
 
-
-
-
- <!-- =========================
+<!-- =========================
      PAYMENT MODULE
 ========================= -->
 <div id="payment" class="module">
 
-<div class="container payment-container">
+    <div class="container payment-container">
 
-    <!-- LEFT SIDE -->
-    <div class="left">
+        <!-- ================= LEFT SIDE ================= -->
+        <div class="left">
 
-        <div id="createPaymentForm"
-     style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px;">
+            <!-- CREATE PAYMENT FORM -->
+            <div id="createPaymentForm"
+                 style="display:none; margin-top:20px; background:white; padding:15px; border-radius:8px;">
 
-    <h3>Create New Payment</h3>
+                <h3>Create New Payment</h3>
 
-    <!-- Supplier -->
-    <div class="form-group">
-        <label>Supplier</label>
-        <input type="text" id="cp_supplier" readonly>
-    </div>
+                <div class="form-group">
+                    <label>Supplier</label>
+                    <input type="text" id="cp_supplier" readonly>
+                </div>
 
-    <!-- Invoice -->
-    <div class="form-group">
-        <label>Invoice No</label>
-        <input type="text" id="cp_invoice" readonly>
-    </div>
+                <div class="form-group">
+                    <label>Invoice</label>
+                    <select id="cp_invoice" onchange="onInvoiceChange()">
+                        <option value="">-- Select Invoice --</option>
+                    </select>
+                </div>
 
-    <!-- Payment No -->
-    <div class="form-group">
-        <label>Payment No</label>
-        <input type="text" id="cp_payment" readonly>
-    </div>
+                <div class="form-group">
+                    <label>Payment No</label>
+                    <input type="text" id="cp_payment" readonly>
+                </div>
 
-    <!-- Payment Method (MISSING BEFORE) -->
-    <div class="form-group">
-        <label>Payment Method</label>
-        <select id="cp_method">
-            <option value="Cash">Cash</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Cheque">Cheque</option>
-            <option value="Mobile Money">Mobile Money</option>
-        </select>
-    </div>
+                <div class="form-group">
+                    <label>PRS No</label>
+                    <input type="text" id="cp_prs" readonly>
+                </div>
 
-    <!-- Amount -->
-    <div class="form-group">
-        <label>Total Amount</label>
-        <input type="number" id="cp_amount" readonly>
-    </div>
+                <div class="form-group">
+                    <label>PO No</label>
+                    <input type="text" id="cp_po" readonly>
+                </div>
 
-    <!-- Amount Paid -->
-    <div class="form-group">
-        <label>Amount Paid</label>
-        <input type="number" id="cp_amountpaid" oninput="calculateBalance()">
-    </div>
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="cp_method">
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                    </select>
+                </div>
 
-    <!-- Balance -->
-    <div class="form-group">
-        <label>Balance</label>
-        <input type="number" id="cp_balance" readonly>
-    </div>
+                <div class="form-group">
+                    <label>Total Amount</label>
+                    <input type="number" id="cp_amount" readonly>
+                </div>
 
-    <!-- Payment Date -->
-    <div class="form-group">
-        <label>Created Date</label>
-        <input type="date" id="cp_date">
-    </div>
+                <div class="form-group">
+                    <label>Amount Paid</label>
+                    <input type="number" id="cp_amountpaid" oninput="calculateBalance()">
+                </div>
 
-    <!-- Remarks -->
-    <div class="form-group">
-        <label>Remarks</label>
-        <textarea id="cp_remarks"></textarea>
-    </div>
+                <div class="form-group">
+                    <label>Balance</label>
+                    <input type="number" id="cp_balance" readonly>
+                </div>
 
-    <!-- Buttons -->
-    <div class="form-group" style="margin-top:10px;">
+                <div class="form-group">
+                    <label>Created Date</label>
+                    <input type="date" id="cp_date" readonly>
+                </div>
 
-        <button class="btn success" onclick="savePayment()">
-            Save Payment
-        </button>
+                <div class="form-group">
+                    <label>Remarks</label>
+                    <textarea id="cp_remarks"></textarea>
+                </div>
 
-        <button class="btn danger" onclick="hideCreatePaymentForm()">
-            Cancel
-        </button>
+                <div class="form-group" style="margin-top:10px;">
 
-    </div>
-</div>
+                    <button class="btn success" onclick="savePayment()">
+                        Save Payment
+                    </button>
 
-       
+                    <button class="btn danger" onclick="hideCreatePaymentForm()">
+                        Cancel
+                    </button>
 
-    
+                </div>
 
-        <!-- HEADER -->
-        <div class="header">Payment Module</div>
+            </div>
 
-        <!-- ACTION BUTTONS (TOP) -->
-        <div class="action-buttons">
+            <!-- HEADER -->
+            <div class="header">Payment Module</div>
 
-            <!-- CREATE PAYMENT BUTTON (AFTER SEARCH) -->
-        <button class="btn primary" onclick="showCreatePaymentForm()">
-            + Create Payment
-        </button>
+            <!-- ACTION BUTTONS -->
+            <div class="action-buttons">
 
-        </div>
+                <button class="btn primary" onclick="showCreatePaymentForm()">
+                    + Create Payment
+                </button>
 
-        <br>
+            </div>
 
-        <!-- SEARCH BAR -->
-        <input type="text" id="paymentSearch"
-               placeholder="Search payments..."
-               onkeyup="searchPayments()"
-               style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
+            <br>
 
-        <br><br>
+            <!-- SEARCH -->
+            <input type="text" id="paymentSearch"
+                   placeholder="Search payments..."
+                   onkeyup="searchPayments()"
+                   style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
 
-        
+            <br><br>
 
-        <button class="btn primary" onclick="window.print()">
+            <button class="btn primary" onclick="window.print()">
                 Print
             </button>
 
@@ -637,67 +655,86 @@ onkeyup="searchPRS()">
                 Mark as Paid
             </button>
 
-        <br><br>
+            <br><br>
 
-        <!-- PAYMENT TABLE -->
-        <table id="paymentTable">
+            <!-- PAYMENT TABLE -->
+            <table id="paymentTable">
 
-            <thead>
-                <tr>
-                    <th>Select</th>
-                    <th>Payment No</th>
-                    <th>Supplier</th>
-                    <th>Invoice</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Payment No</th>
+                        <th>Supplier</th>
+                        <th>Invoice</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
 
-            <tbody>
+                <tbody id="paymentBody"></tbody>
 
-                <tr data-id="1" onclick="selectPayment(this)">
-                    <td><input type="radio" name="pay"></td>
-                    <td>PAY001</td>
-                    <td>ABC Ltd</td>
-                    <td>INV-001</td>
-                    <td>7500</td>
-                    <td>Pending</td>
-                    <td>2026-05-20</td>
-                </tr>
+            </table>
 
-                <tr data-id="2" onclick="selectPayment(this)">
-                    <td><input type="radio" name="pay"></td>
-                    <td>PAY002</td>
-                    <td>Mega Stores</td>
-                    <td>INV-002</td>
-                    <td>4100</td>
-                    <td>Paid</td>
-                    <td>2026-05-21</td>
-                </tr>
+        </div>
 
-            </tbody>
+        <!-- ================= RIGHT SIDE ================= -->
+        <div class="right">
 
-        </table>
+            <div class="slip" id="paymentPrintArea">
 
-       
+                <h2>PAYMENT VOUCHER</h2>
 
-    </div>
+                <div class="info">
 
-    <!-- RIGHT SIDE (SLIP) -->
-    <div class="right">
+                    <p><b>Payment No:</b> <span id="payNumber">-</span></p>
+                    <p><b>Invoice No:</b> <span id="payInvoice">-</span></p>
+                    <p><b>Supplier:</b> <span id="paySupplier">-</span></p>
+                    <p><b>Amount:</b> <span id="payAmount">-</span></p>
+                    <p><b>Amount Paid:</b> <span id="payAmountPaid">-</span></p>
+                    <p><b>Balance:</b> <span id="payBalance">-</span></p>
+                    <p><b>Payment Method:</b> <span id="payMethod">-</span></p>
+                    <p><b>Status:</b> <span id="payStatus">-</span></p>
+                    <p><b>Date:</b> <span id="payDate">-</span></p>
 
-        <div class="slip">
+                </div>
 
-            <h2>PAYMENT SLIP</h2>
+                <h3>Invoice Items</h3>
 
-            <div class="info">
-                <p><b>Payment No:</b> <span id="p_no">-</span></p>
-                <p><b>Supplier:</b> <span id="p_supplier">-</span></p>
-                <p><b>Invoice:</b> <span id="p_invoice">-</span></p>
-                <p><b>Amount:</b> <span id="p_amount">-</span></p>
-                <p><b>Status:</b> <span id="p_status">-</span></p>
-                <p><b>Date:</b> <span id="p_date">-</span></p>
+                <table class="items-table">
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="paymentItemsBody"></tbody>
+
+                </table>
+
+                <div class="signature-section">
+
+                    <div class="sig-box">
+                        <p>Prepared By</p>
+                        <br><br>
+                    </div>
+
+                    <div class="sig-box">
+                        <p>Approved By</p>
+                        <br><br>
+                    </div>
+
+                    <div class="sig-box">
+                        <p>Finance</p>
+                        <br><br>
+                    </div>
+
+                </div>
+
             </div>
 
         </div>
@@ -706,125 +743,173 @@ onkeyup="searchPRS()">
 
 </div>
 
-</div>
-
-
-
-
-
-
-<!-- ================= PAYMENT MODULE ================= -->
-
-</div>
-
 <script>
 
-/* SWITCH MODULE */
-function openModule(id,btn){
-document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+// ==============================
+// SEARCH PRS
+// ==============================
+function searchPRS() {
 
-document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
-btn.classList.add("active");
+    let input = document.getElementById("prsSearch");
+    let filter = input.value.toLowerCase();
+
+    let rows = document.getElementById("prsTable")
+        .getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) {
+        let text = rows[i].innerText.toLowerCase();
+        rows[i].style.display = text.includes(filter) ? "" : "none";
+    }
 }
+// ==============================
+// LOAD PRS LIST (FINANCE MODULE)
+// ==============================
+// ==============================
+// LOAD PRS LIST (FIXED)
+// ==============================
+// ==============================
+// LOAD FINANCE PRS LIST
+// ==============================
 
+// ==============================
+// LOAD PRS LIST (FINANCE)
+// ==============================
+function loadFinanceRequisitionModule() {
 
-
-
-function loadSlipFromRow(row) {
-
-    const requisitionId = row.getAttribute("data-id");
-
-    fetch(`/hod/requisition/api/${requisitionId}`)
-        .then(res => res.json())
+    fetch("/finance/api/finance_requisition")
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
         .then(data => {
 
-            if (!data.success) {
-                alert(data.message);
+            const body = document.getElementById("prsBody");
+            body.innerHTML = "";
+
+            if (!Array.isArray(data) || data.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center;">No PRS found</td>
+                    </tr>`;
                 return;
             }
 
-            const req = data.requisition;
+            data.forEach(item => {
 
-            // =========================
+                const row = document.createElement("tr");
+
+                // ==============================
+                // ROW CONTENT
+                // ==============================
+                row.innerHTML = `
+                    <td>${item.prs_no ?? "-"}</td>
+                    <td>${item.department_name ?? "-"}</td>
+                    <td>${item.hod_status ?? "PENDING"}</td>
+                    <td>${item.ceo_status ?? "PENDING"}</td>
+                    <td>${item.submission_date ?? "-"}</td>
+                `;
+
+                // ==============================
+                // CLICK EVENT (LOAD DETAILS)
+                // ==============================
+                row.addEventListener("click", function () {
+
+                    loadRequisitionDetails(item.requisition_id);
+
+                    // highlight selected row
+                    document.querySelectorAll("#prsBody tr")
+                        .forEach(r => r.classList.remove("selected"));
+
+                    this.classList.add("selected");
+                });
+
+                body.appendChild(row);
+            });
+        })
+        .catch(err => {
+            console.error("PRS LIST ERROR:", err);
+            alert("Failed to load PRS list");
+        });
+}
+
+
+// ==============================
+// LOAD PRS DETAILS (SLIP PANEL)
+// ==============================
+function loadRequisitionDetails(reqId) {
+
+    fetch("/finance/api/finance_requisitiondetails/" + reqId)
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+        })
+        .then(data => {
+
+            console.log("DETAILS:", data);
+
+            // ==============================
             // HEADER INFO
-            // =========================
-            document.getElementById("prs_no").innerText = req.prs_no;
-            document.getElementById("department_name").innerText = req.department_name;
-            document.getElementById("submission").innerText = req.submission_date;
+            // ==============================
+            document.getElementById("prs_no").innerText = data.prs_no ?? "-";
+            document.getElementById("dept").innerText = data.department ?? "-";
+            document.getElementById("submission").innerText = data.submission_date ?? "-";
 
-            document.getElementById("hod_status").innerText = req.hod_status;
-            document.getElementById("ceo_status").innerText = req.ceo_status;
+            document.getElementById("hod_status").innerText = data.hod_status ?? "PENDING";
+            document.getElementById("ceo_status").innerText = data.ceo_status ?? "PENDING";
 
-            // =========================
-            // ITEMS
-            // =========================
-            let tbody = document.getElementById("items_body");
+            document.getElementById("hod_approval_date").innerText =
+                data.hod_approved_at ?? "-";
+
+            document.getElementById("ceo_approval_date").innerText =
+                data.ceo_approved_at ?? "-";
+
+            // ==============================
+            // ITEMS TABLE
+            // ==============================
+            const tbody = document.getElementById("items_body");
             tbody.innerHTML = "";
 
-            data.items.forEach((item, index) => {
-                tbody.innerHTML += `
+            if (Array.isArray(data.items) && data.items.length > 0) {
+
+                data.items.forEach((item, i) => {
+                    const row = `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${item.material_name ?? "-"}</td>
+                            <td>${item.uom ?? "-"}</td>
+                            <td>${item.qty_required ?? 0}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML("beforeend", row);
+                });
+
+            } else {
+                tbody.innerHTML = `
                     <tr>
-                        <td>${index + 1}</td>
-                        <td>${item.material_name}</td>
-                        <td>${item.uom}</td>
-                        <td>${item.qty_required}</td>
-                    </tr>
-                `;
-            });
-
-            // =========================
-            // CREATED BY
-            // =========================
-            document.getElementById("created_by_name").innerText =
-                data.created_by.name;
-
-            document.getElementById("created_date").innerText =
-                req.submission_date;
-
-            if (data.created_by.signature) {
-                document.getElementById("sig_created_by").src =
-                    "/static/signatures/" + data.created_by.signature;
-                document.getElementById("sig_created_by").style.display = "block";
+                        <td colspan="4" style="text-align:center;">No items found</td>
+                    </tr>`;
             }
-
-            // =========================
-            // HOD SIGNATURE
-            // =========================
-            if (data.hod_signature) {
-                document.getElementById("hod_username").innerText =
-                    data.hod_signature.username;
-
-                document.getElementById("hod_approval_date").innerText =
-                    data.hod_signature.hod_approved_at;
-
-                document.getElementById("sig_hod").src =
-                    "/static/signatures/" + data.hod_signature.signature;
-
-                document.getElementById("sig_hod").style.display = "block";
-            }
-
-            // =========================
-            // CEO SIGNATURE
-            // =========================
-            if (data.ceo_signature) {
-                document.getElementById("ceo_username").innerText =
-                    data.ceo_signature.username;
-
-                document.getElementById("ceo_approval_date").innerText =
-                    data.ceo_signature.ceo_approved_at;
-
-                document.getElementById("sig_ceo").src =
-                    "/static/signatures/" + data.ceo_signature.signature;
-
-                document.getElementById("sig_ceo").style.display = "block";
-            }
-
         })
-        .catch(error => {
-            console.error("Error loading slip:", error);
-            alert("Failed to load requisition details");
+        .catch(err => {
+            console.error("DETAIL ERROR:", err);
+            alert("Failed to load PRS details");
         });
+}
+
+
+// ==============================
+// AUTO LOAD ON PAGE OPEN
+// ==============================
+document.addEventListener("DOMContentLoaded", function () {
+    loadFinanceRequisitionModule();
+});
+
+
+// ==============================
+// OPTIONAL: RELOAD MODULE
+// ==============================
+function refreshFinancePRS() {
+    loadFinanceRequisitionModule();
 }
 
 function openModule(moduleId, btn){
@@ -853,6 +938,10 @@ function openModule(moduleId, btn){
     }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    loadFinanceRequisitionModule();
+});
+
 
 
 
@@ -860,103 +949,177 @@ function openModule(moduleId, btn){
 // ==============================
 // INVOICE LOADING
 // ==============================
-function searchInvoice(){
-    let input = document.getElementById("invoiceSearch").value.toLowerCase();
-    let rows = document.querySelectorAll("#invoiceTable tbody tr");
+// ==============================
+// SEARCH INVOICE
+// ==============================
+
+// ==============================
+// SEARCH INVOICE
+// ==============================
+function searchInvoice() {
+
+    const input = document.getElementById("invoiceSearch").value.toLowerCase();
+    const rows = document.querySelectorAll("#invoiceTable tbody tr");
 
     rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
     });
 }
 
-function selectInvoice(radio){
-    if(!radio || !radio.dataset.invoiceId){
-        alert("Please select an invoice");
-        return;
-    }
 
-    let invoiceId = radio.dataset.invoiceId;
+// ==============================
+// INIT MODULE (IMPORTANT)
+// ==============================
+function initInvoiceModule() {
+    loadInvoiceModule();
+}
 
-    fetch(`/procurement/invoice_details/${invoiceId}`)
+
+// ==============================
+// LOAD INVOICE LIST
+// ==============================
+function loadInvoiceModule() {
+
+    fetch("/finance/finance_invoice_data")
         .then(res => res.json())
         .then(data => {
-            if(data.error){
-                alert(data.error);
+
+            const body = document.getElementById("invoiceBody");
+
+            if (!body) {
+                console.error("invoiceBody not found in DOM");
                 return;
             }
 
-            document.getElementById("i_invoice").innerText = data.invoice_number || "-";
-            document.getElementById("i_grn").innerText = data.grn_no || "-";
-            document.getElementById("i_supplier").innerText = data.supplier_name || "-";
-            document.getElementById("i_amount").innerText = data.total_amount || "-";
-            document.getElementById("i_date").innerText = data.invoice_date || "-";
-
-            let itemsBody = document.querySelector("#invoicePrintArea .items-table tbody");
-            itemsBody.innerHTML = "";
-
-            data.items.forEach(item => {
-                let itemRow = document.createElement("tr");
-                itemRow.innerHTML = `
-                    <td>${item.description || "-"}</td>
-                    <td>${item.quantity || "-"}</td>
-                    <td>${item.unit_price || "-"}</td>
-                    <td>${item.total_price || "-"}</td>
-                `;
-                itemsBody.appendChild(itemRow);
-            });
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load invoice details.");
-        });
-}
-
-function loadInvoiceModule(){
-    fetch("/procurement/invoice_data")
-        .then(res => res.json())
-        .then(data => {
-            let body = document.getElementById("invoiceBody");
             body.innerHTML = "";
 
-            if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;">No invoices found.</td></tr>`;
+            if (!Array.isArray(data) || data.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center;padding:15px;">
+                            No invoices found
+                        </td>
+                    </tr>`;
                 return;
             }
 
             data.forEach(item => {
-                let row = document.createElement("tr");
+
+                const row = document.createElement("tr");
+                row.dataset.id = item.invoice_id;
+
                 row.innerHTML = `
-                    <td><input type="radio" name="invoiceSelect" data-invoice-id="${item.invoice_id}" onchange="selectInvoice(this)"></td>
+                    <td>
+                        <input type="radio" name="invoiceSelect">
+                    </td>
                     <td>${item.prs_no || "-"}</td>
                     <td>${item.invoice_number || "-"}</td>
                     <td>${item.grn_no || "-"}</td>
                     <td>${item.supplier_name || "-"}</td>
                     <td>${item.department || "-"}</td>
-                    <td>${item.status || "-"}</td>
+                    <td>${item.final_status || item.status || "PENDING"}</td>
                     <td>${item.invoice_date || "-"}</td>
                 `;
+
+                // CLICK HANDLER
                 row.addEventListener("click", () => {
-                    const radio = row.querySelector("input[name='invoiceSelect']");
-                    if (radio) {
-                        radio.checked = true;
-                        document.querySelectorAll("#invoiceBody tr").forEach(r => r.classList.remove("selected"));
-                        row.classList.add("selected");
-                        selectInvoice(radio);
-                    }
+
+                    document.querySelectorAll("#invoiceBody tr")
+                        .forEach(r => r.classList.remove("selected"));
+
+                    row.classList.add("selected");
+
+                    const radio = row.querySelector("input[type='radio']");
+                    if (radio) radio.checked = true;
+
+                    loadInvoiceDetails(item.invoice_id);
                 });
+
                 body.appendChild(row);
             });
+
         })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load invoice records.");
+        .catch(err => {
+            console.error("Invoice load error:", err);
         });
 }
 
-function printInvoice(){
+
+// ==============================
+// LOAD INVOICE DETAILS
+// ==============================
+function loadInvoiceDetails(invoiceId) {
+
+    if (!invoiceId) return;
+
+    fetch(`/finance/finance_invoice_details/${invoiceId}`)
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch invoice details");
+            return res.json();
+        })
+        .then(data => {
+
+            // HEADER
+            document.getElementById("i_invoice").innerText = data.invoice_number || "-";
+            document.getElementById("i_grn").innerText = data.grn_no || "-";
+            document.getElementById("i_supplier").innerText = data.supplier_name || "-";
+            document.getElementById("i_amount").innerText = data.total_amount || "0";
+            document.getElementById("i_date").innerText = data.invoice_date || "-";
+
+            // ITEMS
+            const tbody = document.querySelector("#invoiceItemsBody");
+
+            if (!tbody) return;
+
+            tbody.innerHTML = "";
+
+            if (Array.isArray(data.items) && data.items.length > 0) {
+
+                data.items.forEach(item => {
+
+                    const tr = document.createElement("tr");
+
+                    tr.innerHTML = `
+                        <td>${item.description || "-"}</td>
+                        <td>${item.quantity || "-"}</td>
+                        <td>${item.unit_price || "-"}</td>
+                        <td>${item.total_price || "-"}</td>
+                    `;
+
+                    tbody.appendChild(tr);
+                });
+
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center;">
+                            No items found
+                        </td>
+                    </tr>`;
+            }
+        })
+        .catch(err => {
+            console.error("Invoice detail error:", err);
+            alert("Failed to load invoice details");
+        });
+}
+
+
+// ==============================
+// PRINT
+// ==============================
+function printInvoice() {
     window.print();
 }
 
+
+// ==============================
+// AUTO START (VERY IMPORTANT)
+// ==============================
+document.addEventListener("DOMContentLoaded", () => {
+    initInvoiceModule();
+});
 
 // ==============================
 // SHARE QUOTATION REQUEST
@@ -988,63 +1151,104 @@ alert("Quotation request sent to "+supplier)
 
 
 
-
-
-// =========================handle payment =========================
+// =========================
+// GLOBAL STATE
+// =========================
 let selectedPaymentId = null;
 
-/* SELECT PAYMENT */
-function selectPayment(row){
-
-    document.querySelectorAll("#paymentTable tr").forEach(r=>{
-        r.classList.remove("selected");
-        let radio = r.querySelector("input");
-        if(radio) radio.checked = false;
-    });
-
-    row.classList.add("selected");
-    row.querySelector("input").checked = true;
-
-    let c = row.getElementsByTagName("td");
-
-    selectedPaymentId = row.getAttribute("data-id");
-
-    document.getElementById("p_no").innerText = c[1].innerText;
-    document.getElementById("p_supplier").innerText = c[2].innerText;
-    document.getElementById("p_invoice").innerText = c[3].innerText;
-    document.getElementById("p_amount").innerText = c[4].innerText;
-    document.getElementById("p_status").innerText = c[5].innerText;
-    document.getElementById("p_date").innerText = c[6].innerText;
+// =========================
+// LOAD PAYMENT NO ON PAGE OPEN
+// =========================
+function loadPaymentNo() {
+    fetch("/finance/next_payment_no")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("cp_payment").value = data.payment_no;
+        })
+        .catch(err => console.error("Payment No Error:", err));
 }
 
-/* SHOW FORM */
-function showCreatePaymentForm(){
-    document.getElementById("createPaymentForm").style.display = "block";
+// =========================
+// INVOICE DROPDOWN / SELECTION
+// =========================
+function loadInvoices() {
+    fetch("/procurement/invoice_data")
+        .then(res => res.json())
+        .then(data => {
+            const select = document.getElementById("cp_invoice");
+            select.innerHTML = `<option value="">-- Select Invoice --</option>`;
+
+            data.forEach(inv => {
+                let option = document.createElement("option");
+                option.value = inv.invoice_id;
+                option.textContent = inv.invoice_number;
+                select.appendChild(option);
+            });
+        })
+        .catch(err => console.error(err));
 }
 
-/* HIDE FORM */
-function hideCreatePaymentForm(){
-    document.getElementById("createPaymentForm").style.display = "none";
+// =========================
+// WHEN INVOICE CHANGES
+// =========================
+function onInvoiceChange() {
+
+    const invoiceId = document.getElementById("cp_invoice").value;
+
+    if (!invoiceId) {
+
+        document.getElementById("cp_supplier").value = "";
+        document.getElementById("cp_amount").value = "";
+        document.getElementById("cp_prs").value = "";
+        document.getElementById("cp_po").value = "";
+
+        calculateBalance();
+        return;
+    }
+
+    fetch(`/finance/api/invoice/${invoiceId}`)
+        .then(res => res.json())
+        .then(data => {
+
+            console.log(data);
+
+            // =========================
+            // AUTO FILL ALL FIELDS
+            // =========================
+            document.getElementById("cp_supplier").value = data.supplier_name || "-";
+            document.getElementById("cp_amount").value = data.total_amount || 0;
+
+            document.getElementById("cp_prs").value = data.prs_no || "-";
+            document.getElementById("cp_po").value = data.po_number || "-";
+
+            calculateBalance();
+        })
+        .catch(err => console.error("Invoice load error:", err));
 }
 
-/* SAVE PAYMENT */
+// =========================
+// BALANCE CALCULATION
+// =========================
+function calculateBalance() {
+    const amount = parseFloat(document.getElementById("cp_amount").value || 0);
+    const paid = parseFloat(document.getElementById("cp_amountpaid").value || 0);
 
-const amount = parseFloat(document.getElementById("cp_amount").value);
-const paid = parseFloat(document.getElementById("cp_amountpaid").value);
+    document.getElementById("cp_balance").value = (amount - paid).toFixed(2);
+}
 
-document.getElementById("cp_balance").value = amount - paid;
+// =========================
+// SAVE PAYMENT
+// =========================
 function savePayment() {
 
     const data = {
-        requisition_id: currentRequisitionId, // must be defined globally or passed
-        invoice_no: document.getElementById("cp_invoice").value,
-        payment_no: document.getElementById("cp_payment").value,
+        invoice_id: document.getElementById("cp_invoice").value,
         payment_method: document.getElementById("cp_method").value,
-        amount: parseFloat(document.getElementById("cp_amount").value),
-        amount_paid: parseFloat(document.getElementById("cp_amountpaid").value),
-        balance: parseFloat(document.getElementById("cp_balance").value),
+        amount: document.getElementById("cp_amount").value,
+        amount_paid: document.getElementById("cp_amountpaid").value,
+        balance: document.getElementById("cp_balance").value,
         payment_date: document.getElementById("cp_date").value,
-        remarks: document.getElementById("cp_remarks") ? document.getElementById("cp_remarks").value : ""
+        remarks: document.getElementById("cp_remarks").value
     };
 
     fetch("/finance/create_payment", {
@@ -1054,52 +1258,191 @@ function savePayment() {
         },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(result => {
+    .then(res => res.json())
+    .then(res => {
 
-        if (result.success) {
-            alert("Payment saved successfully");
+        if (res.success) {
+            alert("Payment Created Successfully: " + res.payment_no);
 
-            // optional: reload table/list
-            if (typeof loadPayments === "function") {
-                loadPayments();
-            }
+            // optional reset (not really needed since you're leaving page)
+            loadPaymentNo();
 
-            // optional: reset form
-            document.getElementById("createPaymentForm").reset?.();
+            document.getElementById("cp_amountpaid").value = "";
+            document.getElementById("cp_balance").value = "";
+            document.getElementById("cp_invoice").value = "";
+            document.getElementById("cp_supplier").value = "";
+            document.getElementById("cp_amount").value = "";
 
-            document.getElementById("createPaymentForm").style.display = "none";
-
+            // ✅ redirect to finance dashboard
+            window.location.href = "/finance/dashboard";
         } else {
-            alert("Error: " + result.message);
+            alert(res.message || "Failed to create payment");
         }
 
     })
-    .catch(error => {
-        console.error("Payment error:", error);
-        alert("Something went wrong while saving payment");
+    .catch(err => console.error(err));
+}
+// =========================
+// PAYMENT TABLE SEARCH
+// =========================
+function searchPayments() {
+    let input = document.getElementById("paymentSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#paymentTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
     });
 }
-/* SEARCH */
-function searchPayments(){
-    let input = document.getElementById("paymentSearch").value.toUpperCase();
-    let rows = document.querySelectorAll("#paymentTable tr");
 
-    for(let i=1;i<rows.length;i++){
-        rows[i].style.display =
-            rows[i].innerText.toUpperCase().includes(input) ? "" : "none";
-    }
+// =========================
+// SELECT PAYMENT ROW
+// =========================
+function selectPayment(row) {
+
+    document.querySelectorAll("#paymentTable tr").forEach(r => {
+        r.classList.remove("selected");
+        let radio = r.querySelector("input");
+        if (radio) radio.checked = false;
+    });
+
+    row.classList.add("selected");
+    let radio = row.querySelector("input");
+    if (radio) radio.checked = true;
+
+    selectedPaymentId = row.getAttribute("data-id");
+
+    const c = row.getElementsByTagName("td");
+
+    document.getElementById("p_no").innerText = c[1].innerText;
+    document.getElementById("p_supplier").innerText = c[2].innerText;
+    document.getElementById("p_invoice").innerText = c[3].innerText;
+    document.getElementById("p_amount").innerText = c[4].innerText;
+    document.getElementById("p_status").innerText = c[5].innerText;
+    document.getElementById("p_date").innerText = c[6].innerText;
 }
 
-/* MARK AS PAID */
-function markPaid(){
-    if(!selectedPaymentId){
-        alert("Select a payment first");
-        return;
-    }
-    alert("Payment marked as PAID (dummy)");
+// =========================
+// UI CONTROLS
+// =========================
+function showCreatePaymentForm() {
+    document.getElementById("createPaymentForm").style.display = "block";
 }
 
+function hideCreatePaymentForm() {
+    document.getElementById("createPaymentForm").style.display = "none";
+}
+
+// =========================
+// INIT
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+    loadPaymentNo();
+    loadInvoices();
+});
+
+
+/* FINANCE DASHBOARD*/
+
+function loadPayments() {
+
+    fetch("/finance/payments/api")
+        .then(res => res.json())
+        .then(res => {
+
+            if (!res.success) {
+                alert(res.message || "Failed to load payments");
+                return;
+            }
+
+            const data = res.data;
+            const tbody = document.getElementById("paymentBody");
+
+            tbody.innerHTML = "";
+
+            data.forEach(p => {
+
+                let statusColor = "";
+
+                if (p.status === "APPROVED") {
+                    statusColor = "green";
+                } else if (p.status === "REJECTED") {
+                    statusColor = "red";
+                } else {
+                    statusColor = "orange";
+                }
+
+                const row = `
+                    <tr data-id="${p.payment_id}" onclick="selectPayment(this)">
+                        <td><input type="radio" name="pay"></td>
+                        <td>${p.payment_no}</td>
+                        <td>${p.supplier_name}</td>
+                        <td>${p.invoice_no}</td>
+                        <td>${p.amount_paid}</td>
+
+                        <td style="color:${statusColor}; font-weight:bold;">
+                            ${p.status || "PENDING"}
+                        </td>
+
+                        <td>${p.payment_date}</td>
+                    </tr>
+                `;
+
+                tbody.innerHTML += row;
+            });
+
+        })
+        .catch(err => {
+            console.error("Error loading payments:", err);
+        });
+}
+
+window.onload = function () {
+    loadPayments();
+};
+
+
+function selectPayment(row) {
+
+    const id = row.getAttribute("data-id");
+
+    fetch(`/finance/payment/${id}`)
+        .then(res => res.json())
+        .then(res => {
+
+            if (!res.success) {
+                alert("Failed to load slip");
+                return;
+            }
+
+            const d = res.data;
+
+            document.getElementById("payNumber").innerText = d.payment_no;
+            document.getElementById("payInvoice").innerText = d.invoice_no;
+            document.getElementById("paySupplier").innerText = d.supplier_name;
+            document.getElementById("payAmount").innerText = d.amount;
+            document.getElementById("payAmountPaid").innerText = d.amount_paid;
+            document.getElementById("payBalance").innerText = d.balance;
+            document.getElementById("payMethod").innerText = d.payment_method;
+            document.getElementById("payStatus").innerText = d.status;
+            document.getElementById("payDate").innerText = d.payment_date;
+
+            const tbody = document.getElementById("paymentItemsBody");
+            tbody.innerHTML = "";
+
+            d.items.forEach(i => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${i.item_name}</td>
+                        <td>${i.quantity}</td>
+                        <td>${i.unit_price}</td>
+                        <td>${i.total}</td>
+                    </tr>
+                `;
+            });
+
+        })
+        .catch(err => console.error(err));
+}
 
 function logoutUser() {
     window.location.href = "/logout";

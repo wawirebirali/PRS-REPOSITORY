@@ -13,6 +13,10 @@ def procurement_dashboard():
     if session.get("user_role") != "procurement":
         return redirect(url_for("auth.login"))
 
+    return render_template("procurement_dashboard.html")
+@procurement_dashboard_bp.route("/api/procurement_requisition")
+def procurement_requisition():
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -21,57 +25,81 @@ def procurement_dashboard():
             r.requisition_id,
             r.prs_no,
             d.department_name,
-            COALESCE(a.hod_status,'Pending') AS hod_status,
             r.submission_date,
-            COALESCE(a.hod_approval_date,'-') AS hod_approval_date
+            r.status,
+            COALESCE(a.hod_status, 'PENDING') AS hod_status,
+            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+            COALESCE(a.final_status, 'PENDING') AS final_status
+
         FROM requisitions r
-        LEFT JOIN departments d ON r.department_id = d.department_id
-        LEFT JOIN approvals a ON r.requisition_id = a.requisition_id
+
+        JOIN departments d 
+            ON r.department_id = d.department_id
+
+        LEFT JOIN approvals a 
+            ON a.module_name = 'PRS'
+            AND a.document_id = r.requisition_id
+
         ORDER BY r.requisition_id DESC
     """)
 
-    requisitions = cursor.fetchall()
+    data = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-    return render_template("procurement_dashboard.html", requisitions=requisitions)
-
+    return jsonify(data)
 
 # =========================
 # PRS DETAILS API (AJAX)
 # =========================
-@procurement_dashboard_bp.route("/requisition/api/<int:requisition_id>")
-def requisition_api(requisition_id):
+@procurement_dashboard_bp.route("/api/procurement_requisition/<int:req_id>")
+def procurement_requisition_details(req_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # HEADER
+    # =========================
+    # HEADER (SLIP INFO)
+    # =========================
     cursor.execute("""
         SELECT 
             r.requisition_id,
             r.prs_no,
             d.department_name,
             r.submission_date,
-            a.hod_status,
-            a.ceo_status,
-            a.hod_approval_date,
-            a.ceo_approval_date
+
+            COALESCE(a.hod_status, 'PENDING') AS hod_status,
+            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+
+            a.hod_approved_at,
+            a.ceo_approved_at
+
         FROM requisitions r
-        LEFT JOIN departments d ON r.department_id = d.department_id
-        LEFT JOIN approvals a ON r.requisition_id = a.requisition_id
+
+        JOIN departments d 
+            ON r.department_id = d.department_id
+
+        LEFT JOIN approvals a 
+            ON a.module_name = 'PRS'
+            AND a.document_id = r.requisition_id
+
         WHERE r.requisition_id = %s
-    """, (requisition_id,))
+    """, (req_id,))
 
     requisition = cursor.fetchone()
 
+    # =========================
     # ITEMS
+    # =========================
     cursor.execute("""
-        SELECT material_name, uom, qty_required
+        SELECT 
+            material_name,
+            uom,
+            qty_required
         FROM requisition_items
         WHERE requisition_id = %s
-    """, (requisition_id,))
+    """, (req_id,))
 
     items = cursor.fetchall()
 
