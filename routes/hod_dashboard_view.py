@@ -433,8 +433,8 @@ def po_details(po_id):
         conn.close()
 
 
-@hod_dashboard_view_bp.route("/grn_data")
-def grn_data():
+@hod_dashboard_view_bp.route("/hod_grn_data")
+def hod_grn_data():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -465,18 +465,17 @@ def grn_data():
     conn.close()
 
     return jsonify(rows)
-@hod_dashboard_view_bp.route("/grn_details/<int:grn_id>")
-def grn_details(grn_id):
+@hod_dashboard_view_bp.route("/hod_grn_details/<int:grn_id>")
+def hod_grn_details(grn_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-
         # =====================================================
-        # MAIN GRN DATA + APPROVAL JOIN
+        # FETCH GRN HEADER DETAILS
         # =====================================================
-        cursor.execute("""
+        query = """
             SELECT
                 g.grn_id,
                 g.grn_no,
@@ -487,6 +486,7 @@ def grn_details(grn_id):
 
                 p.po_number,
                 r.prs_no,
+
                 d.department_name,
 
                 s.supplier_name,
@@ -509,24 +509,24 @@ def grn_details(grn_id):
 
             FROM grn g
 
-            JOIN purchase_orders p
+            INNER JOIN purchase_orders p
                 ON g.po_id = p.purchase_order_id
 
-            JOIN requisitions r
+            INNER JOIN requisitions r
                 ON p.requisition_id = r.requisition_id
 
-            JOIN departments d
+            LEFT JOIN departments d
                 ON r.department_id = d.department_id
 
-            JOIN suppliers s
+            LEFT JOIN suppliers s
                 ON g.supplier_id = s.supplier_id
 
-            JOIN users u
+            LEFT JOIN users u
                 ON g.received_by = u.user_id
 
             LEFT JOIN approvals a
-                ON a.module_name = 'GRN'
-               AND a.document_id = g.grn_id
+                ON a.document_id = g.grn_id
+               AND a.module_name = 'GRN'
 
             LEFT JOIN users hod
                 ON a.hod_user_id = hod.user_id
@@ -536,21 +536,34 @@ def grn_details(grn_id):
 
             WHERE g.grn_id = %s
             LIMIT 1
-        """, (grn_id,))
+        """
 
+        cursor.execute(query, (grn_id,))
         grn = cursor.fetchone()
 
         if not grn:
-            return jsonify({"success": False, "error": "GRN not found"}), 404
+            return jsonify({
+                "success": False,
+                "error": "GRN not found"
+            }), 404
 
         # =====================================================
-        # SAFE DATE FORMAT
+        # CONVERT DATETIME FIELDS
         # =====================================================
-        if grn.get("received_date"):
-            grn["received_date"] = grn["received_date"].isoformat()
+        date_fields = [
+            "received_date",
+            "hod_approved_at",
+            "ceo_approved_at"
+        ]
+
+        for field in date_fields:
+            if grn.get(field):
+                grn[field] = grn[field].isoformat()
+            else:
+                grn[field] = None
 
         # =====================================================
-        # ITEMS
+        # FETCH ITEMS
         # =====================================================
         cursor.execute("""
             SELECT
@@ -564,59 +577,82 @@ def grn_details(grn_id):
 
         items = cursor.fetchall()
 
-        for item in items:
-            ordered = float(item["quantity_ordered"] or 0)
-            received = float(item["quantity_received"] or 0)
+        formatted_items = []
 
-            item["quantity_ordered"] = ordered
-            item["quantity_received"] = received
-            item["balance"] = ordered - received
+        for item in items:
+
+            ordered = float(item.get("quantity_ordered") or 0)
+            received = float(item.get("quantity_received") or 0)
+
+            formatted_items.append({
+                "material_name": item.get("material_name"),
+                "description": item.get("description"),
+                "quantity_ordered": ordered,
+                "quantity_received": received,
+                "balance": ordered - received
+            })
 
         # =====================================================
         # RESPONSE
         # =====================================================
-        return jsonify({
+        response = {
             "success": True,
 
-            # GRN INFO
-            "grn_id": grn["grn_id"],
-            "grn_no": grn["grn_no"],
-            "received_date": grn["received_date"],
-            "delivery_note_no": grn["delivery_note_no"],
-            "inspection_status": grn["inspection_status"],
-            "remarks": grn["remarks"],
+            # -------------------------
+            # GRN DETAILS
+            # -------------------------
+            "grn_id": grn.get("grn_id"),
+            "grn_no": grn.get("grn_no"),
+            "received_date": grn.get("received_date"),
+            "delivery_note_no": grn.get("delivery_note_no"),
+            "inspection_status": grn.get("inspection_status"),
+            "remarks": grn.get("remarks"),
 
-            # PO / PRS
-            "po_number": grn["po_number"],
-            "prs_no": grn["prs_no"],
-            "department_name": grn["department_name"],
+            # -------------------------
+            # PROCUREMENT DETAILS
+            # -------------------------
+            "po_number": grn.get("po_number"),
+            "prs_no": grn.get("prs_no"),
+            "department_name": grn.get("department_name"),
 
-            # SUPPLIER
-            "supplier_name": grn["supplier_name"],
-            "supplier_address": grn["supplier_address"],
+            # -------------------------
+            # SUPPLIER DETAILS
+            # -------------------------
+            "supplier_name": grn.get("supplier_name"),
+            "supplier_address": grn.get("supplier_address"),
 
-            # RECEIVER
-            "received_by": grn["received_by"],
+            # -------------------------
+            # RECEIVING DETAILS
+            # -------------------------
+            "received_by": grn.get("received_by"),
 
+            # -------------------------
             # ITEMS
-            "items": items,
+            # -------------------------
+            "items": formatted_items,
 
-            # ================= APPROVAL =================
-            "hod_status": grn["hod_status"] or "PENDING",
-            "ceo_status": grn["ceo_status"] or "PENDING",
-            "final_status": grn["final_status"] or "PENDING",
+            # -------------------------
+            # APPROVAL INFORMATION
+            # -------------------------
+            "hod_status": grn.get("hod_status") or "PENDING",
+            "ceo_status": grn.get("ceo_status") or "PENDING",
+            "final_status": grn.get("final_status") or "PENDING",
 
-            "hod_approved_at": grn["hod_approved_at"],
-            "ceo_approved_at": grn["ceo_approved_at"],
+            "hod_approved_at": grn.get("hod_approved_at"),
+            "ceo_approved_at": grn.get("ceo_approved_at"),
 
-            "hod_name": grn["hod_name"],
-            "ceo_name": grn["ceo_name"],
+            "hod_name": grn.get("hod_name"),
+            "ceo_name": grn.get("ceo_name"),
 
-            "hod_signature": grn["hod_signature"],
-            "ceo_signature": grn["ceo_signature"]
-        })
+            "hod_signature": grn.get("hod_signature"),
+            "ceo_signature": grn.get("ceo_signature")
+        }
+
+        return jsonify(response), 200
 
     except Exception as e:
+        print("GRN DETAILS ERROR:", str(e))
+
         return jsonify({
             "success": False,
             "error": str(e)
@@ -626,47 +662,8 @@ def grn_details(grn_id):
         cursor.close()
         conn.close()
 
-@hod_dashboard_view_bp.route("/grn_approve/<int:grn_id>", methods=["POST"])
-def grn_approve(grn_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute(
-            "UPDATE grn SET inspection_status = %s WHERE grn_id = %s",
-            ("ACCEPTED", grn_id)
-        )
-        conn.commit()
-        return jsonify({"success": True, "message": "GRN approved."})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
 
-@hod_dashboard_view_bp.route("/grn_reject/<int:grn_id>", methods=["POST"])
-def grn_reject(grn_id):
-    data = request.get_json(silent=True) or {}
-    remarks = data.get("remarks", "Rejected by HOD")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute(
-            "UPDATE grn SET inspection_status = %s, remarks = %s WHERE grn_id = %s",
-            ("REJECTED", remarks, grn_id)
-        )
-        conn.commit()
-        return jsonify({"success": True, "message": "GRN rejected."})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
 
 
@@ -730,4 +727,314 @@ def invoice_data():
         conn.close()
 
 
+@hod_dashboard_view_bp.route("/hod_invoice_details/<int:invoice_id>")
+def invoice_details(invoice_id):
 
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ==========================================
+        # INVOICE HEADER
+        # ==========================================
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_number,
+                i.invoice_date,
+                i.total_amount,
+                i.status,
+                i.supplier_name,
+
+                p.po_number,
+                r.prs_no,
+                d.department_name,
+
+                creator.username AS creator_name,
+                creator.signature AS creator_signature,
+
+                hod_user.username AS hod_name,
+                hod_user.signature AS hod_signature,
+
+                ceo_user.username AS ceo_name,
+                ceo_user.signature AS ceo_signature,
+
+                COALESCE(a.hod_status,'PENDING') AS hod_status,
+                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+                COALESCE(a.final_status,'PENDING') AS final_status
+
+            FROM invoices i
+
+            JOIN purchase_orders p
+                ON i.purchase_order_id = p.purchase_order_id
+
+            JOIN requisitions r
+                ON p.requisition_id = r.requisition_id
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            -- creator of requisition
+            LEFT JOIN users creator
+                ON r.user_id = creator.user_id
+
+            -- approval table
+            LEFT JOIN approvals a
+                ON a.module_name = 'INVOICE'
+                AND a.document_id = i.invoice_id
+
+            LEFT JOIN users hod_user
+                ON a.hod_user_id = hod_user.user_id
+
+            LEFT JOIN users ceo_user
+                ON a.ceo_user_id = ceo_user.user_id
+
+            WHERE i.invoice_id = %s
+            LIMIT 1
+        """, (invoice_id,))
+
+        invoice = cursor.fetchone()
+
+        if not invoice:
+            return jsonify({
+                "success": False,
+                "error": "Invoice not found"
+            }), 404
+
+        # ==========================================
+        # FORMAT DATE
+        # ==========================================
+        if invoice.get("invoice_date"):
+            invoice["invoice_date"] = \
+                invoice["invoice_date"].strftime("%Y-%m-%d")
+
+        # ==========================================
+        # ITEMS
+        # ==========================================
+        cursor.execute("""
+            SELECT
+                description,
+                quantity,
+                unit_price,
+                total_price
+            FROM invoice_items
+            WHERE invoice_id = %s
+        """, (invoice_id,))
+
+        items = cursor.fetchall()
+
+        # ==========================================
+        # RESPONSE
+        # ==========================================
+        return jsonify({
+            "success": True,
+
+            "invoice_id": invoice["invoice_id"],
+            "invoice_number": invoice["invoice_number"],
+            "invoice_date": invoice["invoice_date"],
+            "total_amount": invoice["total_amount"],
+            "status": invoice["final_status"],
+            "supplier_name": invoice["supplier_name"],
+
+            "po_number": invoice["po_number"],
+            "prs_no": invoice["prs_no"],
+            "department_name": invoice["department_name"],
+
+            "creator_name": invoice["creator_name"],
+            "creator_signature": invoice["creator_signature"],
+
+            "hod_name": invoice["hod_name"],
+            "hod_signature": invoice["hod_signature"],
+            "hod_status": invoice["hod_status"],
+
+            "ceo_name": invoice["ceo_name"],
+            "ceo_signature": invoice["ceo_signature"],
+            "ceo_status": invoice["ceo_status"],
+
+            "items": items
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@hod_dashboard_view_bp.route("/payments_data")
+def payments_data():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                p.payment_id,
+                p.payment_no,
+                p.payment_date,
+
+                i.invoice_number,
+                i.supplier_name,
+
+                d.department_name AS requisition_department,
+
+                COALESCE(a.final_status, 'PENDING') AS status
+
+            FROM payments p
+
+            JOIN invoices i
+                ON p.invoice_id = i.invoice_id
+
+            JOIN purchase_orders po
+                ON i.purchase_order_id = po.purchase_order_id
+
+            JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'PAYMENT'
+                AND a.document_id = p.payment_id
+
+            ORDER BY p.payment_id DESC
+        """)
+
+        payments = cursor.fetchall()
+
+        for row in payments:
+            if row.get("payment_date"):
+                row["payment_date"] = row["payment_date"].isoformat()
+
+        return jsonify({
+            "success": True,
+            "data": payments
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@hod_dashboard_view_bp.route("/payment_details/<int:payment_id>")
+def payment_details(payment_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ============================
+        # PAYMENT HEADER INFO
+        # ============================
+        cursor.execute("""
+            SELECT
+                p.payment_id,
+                p.payment_no,
+                p.payment_date,
+                p.payment_method,
+                p.amount,
+                p.amount_paid,
+                p.balance,
+                p.payment_status,
+
+                i.invoice_number,
+                i.total_amount AS invoice_amount,
+
+                s.supplier_name,
+
+                d.department_name,
+
+                COALESCE(a.hod_status, 'PENDING') AS hod_status,
+                COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+                COALESCE(a.final_status, 'PENDING') AS final_status,
+
+                u.username AS prepared_by
+
+            FROM payments p
+
+            JOIN invoices i
+                ON p.invoice_id = i.invoice_id
+
+            JOIN purchase_orders po
+                ON i.purchase_order_id = po.purchase_order_id
+
+            JOIN suppliers s
+                ON po.supplier_id = s.supplier_id
+
+            JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            JOIN users u
+                ON p.paid_by = u.user_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'PAYMENT'
+                AND a.document_id = p.payment_id
+
+            WHERE p.payment_id = %s
+        """, (payment_id,))
+
+        payment = cursor.fetchone()
+
+        if not payment:
+            return jsonify({
+                "success": False,
+                "message": "Payment not found"
+            }), 404
+
+        # ============================
+        # INVOICE ITEMS
+        # ============================
+        cursor.execute("""
+            SELECT
+                description AS item_name,
+                quantity,
+                unit_price,
+                total_price
+            FROM invoice_items
+            WHERE invoice_id = (
+                SELECT invoice_id
+                FROM payments
+                WHERE payment_id = %s
+            )
+        """, (payment_id,))
+
+        items = cursor.fetchall()
+
+        # ============================
+        # FORMAT DATE
+        # ============================
+        if payment.get("payment_date"):
+            payment["payment_date"] = payment["payment_date"].isoformat()
+
+        return jsonify({
+            "success": True,
+            "data": payment,
+            "items": items
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()

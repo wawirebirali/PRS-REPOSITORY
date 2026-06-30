@@ -1366,9 +1366,6 @@ tr:hover{
 
 </div>
 
-
-
-
 <!-- ================= PAYMENT MODULE ================= -->
 <div id="payment" class="module">
 
@@ -1383,57 +1380,48 @@ tr:hover{
 
             <!-- SEARCH -->
             <div class="search">
-
                 <input
                     id="paymentSearch"
                     type="text"
                     onkeyup="searchPayment()"
                     placeholder="Search Payment, Invoice, Supplier..."
                 >
-
             </div>
 
             <!-- ACTION BUTTONS -->
-            <div style="margin:10px 0;">
+            <div class="action-buttons">
 
-                <button class="btn success"
-                        onclick="approvePayment()">
+                <button class="btn success" onclick="approvePayment()">
                     Approve Payment
                 </button>
 
-                <button class="btn danger"
-                        onclick="rejectPayment()">
+                <button class="btn danger" onclick="rejectPayment()">
                     Reject Payment
                 </button>
 
-                <button class="btn primary"
-                        onclick="printPayment()">
-                    Print
+                <button class="btn primary" onclick="printPayment()">
+                    Print Voucher
                 </button>
 
             </div>
 
-            <!-- TABLE -->
+            <!-- PAYMENT TABLE -->
             <table id="paymentTable">
 
                 <thead>
-
                     <tr>
-
                         <th>Select</th>
                         <th>Payment No</th>
                         <th>Invoice No</th>
                         <th>Supplier</th>
-                        <th>Amount</th>
+                        <th>Department</th>
                         <th>Status</th>
                         <th>Date</th>
-
                     </tr>
-
                 </thead>
 
                 <tbody id="paymentBody">
-                    <!-- Loaded dynamically -->
+                    <!-- Dynamic rows loaded here -->
                 </tbody>
 
             </table>
@@ -1447,105 +1435,93 @@ tr:hover{
 
                 <h2>PAYMENT VOUCHER</h2>
 
-                <!-- PAYMENT INFO -->
+                <!-- ================= PAYMENT INFO ================= -->
                 <div class="info">
 
-                    <p>
-                        <b>Payment No:</b>
-                        <span id="payNumber">-</span>
-                    </p>
+                    <p><b>Payment No:</b> <span id="payNumber">-</span></p>
+                    <p><b>Invoice No:</b> <span id="payInvoice">-</span></p>
+                    <p><b>Supplier:</b> <span id="paySupplier">-</span></p>
+                    <p><b>Department:</b> <span id="payDepartment">-</span></p>
 
-                    <p>
-                        <b>Invoice No:</b>
-                        <span id="payInvoice">-</span>
-                    </p>
+                    <p><b>Amount:</b> <span id="payAmount">-</span></p>
+                    <p><b>Amount Paid:</b> <span id="payAmountPaid">-</span></p>
+                    <p><b>Balance:</b> <span id="payBalance">-</span></p>
 
-                    <p>
-                        <b>Supplier:</b>
-                        <span id="paySupplier">-</span>
-                    </p>
-
-                    <p>
-                        <b>Amount:</b>
-                        <span id="payAmount">-</span>
-                    </p>
-                    <p>
-                        <b>Amount Paid:</b>
-                        <span id="payAmountPaid">-</span>
-                    </p>
-                    <p>
-                        <b>Balance:</b>
-                        <span id="payBalance">-</span>
-                    </p>
-
-                    <p>
-                        <b>Payment Method:</b>
-                        <span id="payMethod">-</span>
-                    </p>
-
-                    <p>
-                        <b>Status:</b>
-                        <span id="payStatus">-</span>
-                    </p>
-
-                    <p>
-                        <b>Date:</b>
-                        <span id="payDate">-</span>
-                    </p>
+                    <p><b>Payment Method:</b> <span id="payMethod">-</span></p>
+                    <p><b>Status:</b> <span id="payStatus">-</span></p>
+                    <p><b>Payment Date:</b> <span id="payDate">-</span></p>
 
                 </div>
 
-                <!-- ITEMS -->
+                <!-- ================= ITEMS ================= -->
                 <h3>Invoice Items</h3>
 
                 <table class="items-table">
 
                     <thead>
-
                         <tr>
-
                             <th>Item</th>
                             <th>Qty</th>
-                            <th>Price</th>
+                            <th>Unit Price</th>
                             <th>Total</th>
-
                         </tr>
-
                     </thead>
 
                     <tbody id="paymentItemsBody">
-                        <!-- Loaded dynamically -->
+                        <!-- Dynamic items loaded here -->
                     </tbody>
 
                 </table>
 
-                <!-- SIGNATURE -->
+                <!-- ================= SIGNATURE SECTION ================= -->
                 <div class="signature-section">
 
+                    <!-- PREPARED BY -->
                     <div class="sig-box">
+                        <p><strong>Prepared By</strong></p>
 
-                        <p>Prepared By</p>
+                        <div class="sig-image">
+                            <img id="payment_prepared_signature"
+                                 src=""
+                                 style="display:none;height:70px;"
+                                 alt="Prepared Signature">
+                        </div>
 
-                        <br><br>
-
+                        <p id="payment_prepared_name">-</p>
+                        <p id="payment_prepared_status">PREPARED</p>
+                        <small id="payment_prepared_date">-</small>
                     </div>
 
+                    <!-- FINANCE APPROVAL -->
                     <div class="sig-box">
+                        <p><strong>Finance Approval</strong></p>
 
-                        <p>Approved By</p>
+                        <div class="sig-image">
+                            <img id="payment_finance_signature"
+                                 src=""
+                                 style="display:none;height:70px;"
+                                 alt="Finance Signature">
+                        </div>
 
-                        <br><br>
-
-
+                        <p id="payment_finance_name">-</p>
+                        <p id="payment_finance_status">PENDING</p>
+                        <small id="payment_finance_date">-</small>
                     </div>
 
+                    <!-- CEO APPROVAL -->
                     <div class="sig-box">
+                        <p><strong>CEO Approval</strong></p>
 
-                        <p>Finance</p>
+                        <div class="sig-image">
+                            <img id="payment_ceo_signature"
+                                 src=""
+                                 style="display:none;height:70px;"
+                                 alt="CEO Signature">
+                        </div>
 
-                        <br><br>
-
-
+                        <p id="payment_ceo_name">-</p>
+                        <p id="payment_ceo_status">PENDING</p>
+                        <small id="payment_ceo_date">-</small>
                     </div>
 
                 </div>
@@ -1556,11 +1532,8 @@ tr:hover{
 
     </div>
 
-
-
-
-    
 </div>
+
 
 
 
@@ -2316,7 +2289,7 @@ async function loadGRNData() {
 
     try {
 
-        const response = await fetch("/hod/grn_data");
+        const response = await fetch("/hod/hod_grn_data");
 
         const data = await response.json();
 
@@ -2370,7 +2343,7 @@ async function loadGRNDetails(grnId) {
 
     try {
 
-        const response = await fetch(`/hod/grn_details/${grnId}`);
+        const response = await fetch(`/hod/hod_grn_details/${grnId}`);
 
         const data = await response.json();
 
@@ -3006,7 +2979,7 @@ async function loadInvoiceDetails(invoiceId) {
 
     try {
 
-        const response = await fetch(`/hod/invoice_details/${invoiceId}`);
+        const response = await fetch(`/hod/hod_invoice_details/${invoiceId}`);
         const data = await response.json();
 
         console.log(data);
@@ -3208,6 +3181,184 @@ document.addEventListener(
 function logoutUser() {
     window.location.href = "/logout";
 }
+
+
+
+async function loadPaymentData() {
+
+    try {
+
+        const response = await fetch("/hod/payments_data");
+        const result = await response.json();
+
+        const tableBody = document.getElementById("paymentBody");
+        tableBody.innerHTML = "";
+
+        if (!result.success || !Array.isArray(result.data) || result.data.length === 0) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align:center;">
+                        No payment records found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        result.data.forEach(payment => {
+
+            const row = document.createElement("tr");
+
+            const paymentDate = payment.payment_date
+                ? new Date(payment.payment_date).toLocaleDateString()
+                : "-";
+
+            row.innerHTML = `
+                <td>
+                    <input type="radio" name="paymentSelect">
+                </td>
+
+                <td>${payment.payment_no || "-"}</td>
+                <td>${payment.invoice_number || "-"}</td>
+                <td>${payment.supplier_name || "-"}</td>
+                <td>${payment.requisition_department || "-"}</td>
+                <td>${payment.status || "PENDING"}</td>
+                <td>${paymentDate}</td>
+            `;
+
+            row.addEventListener("click", () => {
+
+                document.querySelectorAll("#paymentBody tr")
+                    .forEach(r => r.classList.remove("selected"));
+
+                row.classList.add("selected");
+
+                const radio = row.querySelector("input[type='radio']");
+                if (radio) radio.checked = true;
+
+                loadPaymentDetails(payment.payment_id);
+            });
+
+            tableBody.appendChild(row);
+        });
+
+    }
+    catch (error) {
+        console.error("Payment load error:", error);
+        alert("Failed to load payment records.");
+    }
+}
+
+
+
+function loadPaymentDetails(payment_id) {
+
+    fetch(`/hod/payment_details/${payment_id}`)
+        .then(res => res.json())
+        .then(response => {
+
+            if (!response.success) {
+                console.error("Payment not found");
+                return;
+            }
+
+            const p = response.data;
+            const items = response.items || [];
+
+            // ================= PAYMENT INFO =================
+            document.getElementById("payNumber").textContent = p.payment_no || "-";
+            document.getElementById("payInvoice").textContent = p.invoice_number || "-";
+            document.getElementById("paySupplier").textContent = p.supplier_name || "-";
+
+            // ✅ REQUISITION DEPARTMENT (FIXED)
+            document.getElementById("payDepartment").textContent =
+                p.requisition_department || "-";
+
+            document.getElementById("payAmount").textContent = p.amount || "-";
+            document.getElementById("payAmountPaid").textContent = p.amount_paid || "-";
+            document.getElementById("payBalance").textContent = p.balance || "-";
+
+            document.getElementById("payMethod").textContent = p.payment_method || "-";
+            document.getElementById("payStatus").textContent = p.final_status || "PENDING";
+
+            document.getElementById("payDate").textContent =
+                p.payment_date
+                    ? new Date(p.payment_date).toLocaleDateString()
+                    : "-";
+
+            // ================= ITEMS =================
+            const itemsBody = document.getElementById("paymentItemsBody");
+            itemsBody.innerHTML = "";
+
+            if (items.length === 0) {
+
+                itemsBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align:center;">
+                            No items found
+                        </td>
+                    </tr>
+                `;
+
+            } else {
+
+                items.forEach(item => {
+
+                    itemsBody.innerHTML += `
+                        <tr>
+                            <td>${item.item_name || "-"}</td>
+                            <td>${item.quantity || "-"}</td>
+                            <td>${item.unit_price || "-"}</td>
+                            <td>${item.total_price || "-"}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // ================= SIGNATURES =================
+            document.getElementById("payment_prepared_name").textContent =
+                p.prepared_by || "-";
+
+            document.getElementById("payment_finance_status").textContent =
+                p.hod_status || "PENDING";
+
+            document.getElementById("payment_ceo_status").textContent =
+                p.ceo_status || "PENDING";
+
+        })
+        .catch(error => {
+            console.error("Payment details error:", error);
+            alert("Failed to load payment details.");
+        });
+}
+
+
+
+function searchPayment() {
+
+    const input =
+        document.getElementById("paymentSearch")
+        .value
+        .toLowerCase();
+
+    const rows =
+        document.querySelectorAll("#paymentBody tr");
+
+    rows.forEach(row => {
+
+        const match =
+            row.innerText.toLowerCase().includes(input);
+
+        row.style.display = match ? "" : "none";
+    });
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadPaymentData();
+});
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
