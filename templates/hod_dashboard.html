@@ -129,47 +129,22 @@
 ========================= */
 .container{
     display:flex;
-    gap:15px;
+    gap:20px;
     align-items:flex-start;
-    padding:15px;
-    flex-wrap:nowrap;
+    flex-wrap:nowrap; /* prevents moving below */
 }
 
-/* REMOVE THIS */
 .left{
-    width:65%;
+    flex:0 0 65%;
 }
 
-/* REMOVE THIS */
 .right{
-    width:35%;
-    min-width:300px;
+    flex:0 0 35%;
     background:white;
     padding:20px;
     border-radius:10px;
     box-shadow:0 2px 10px rgba(0,0,0,0.08);
 }
-
-@media (max-width: 1100px) {
-    .container{
-        flex-wrap:wrap;
-    }
-
-    .left, .right{
-        width:100%;
-    }
-}
-
-/* HEADER */
-.header{
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    font-weight:bold;
-    margin-bottom:15px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.08);
-}
-
 /* SEARCH */
 .search input{
     padding:10px;
@@ -713,6 +688,7 @@ tr:hover{
     </div>
 
     <!-- RIGHT PANEL -->
+     
     <div class="right">
 
         <div class="slip">
@@ -772,9 +748,9 @@ tr:hover{
                     <div style="text-align:center; width:30%;">
                         <p>Prepared By</p>
                         <br><br>
-                        <p>_____________________</p>
+                        
                         <p>Name & Signature</p>
-                    </div>
+                    </div
 
                     <div style="text-align:center; width:30%;">
                         <p>HOD Approval</p>
@@ -825,7 +801,7 @@ tr:hover{
                 <div style="margin-top:20px; text-align:center;">
                     <p>Procurement Department Confirmation</p>
                     <br>
-                    <p>______________________________</p>
+                    <p></p>
                 </div>
 
             </div>
@@ -1685,36 +1661,48 @@ tr:hover{
 
 <script >
 
+let quotationViewMode = "request";
+
 function openModule(id,btn){
 
-if (id === "quotationRequest") {
-    id = "quotation";
-}
+    if (id === "quotationRequest") {
+        quotationViewMode = "request";
+        id = "quotation";
+    } else if (id === "quotation") {
+        quotationViewMode = "quotation";
+    }
 
-document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
-document.getElementById(id).classList.add("active");
+    selectedQuotationId = null;
+    selectedQuotationMode = null;
 
-document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
-btn.classList.add("active");
+    document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
 
-if(id === "supplier"){
-    loadSupplierModule();
-}
+    document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
 
-if(id === "quotation"){
-    loadQuotationModule();
-}
+    if(id === "supplier"){
+        loadSupplierModule();
+    }
 
-if(id === "purchaseOrder"){
-    loadPOModule();
-}
-if(id === "invoice"){
-    loadInvoices();
-}
+    if(id === "quotation"){
+        if (quotationViewMode === "request") {
+            loadQuotationRequests();
+        } else {
+            loadQuotations();
+        }
+    }
 
-if(id === "grn"){
-    loadGRNData();
-}
+    if(id === "purchaseOrder"){
+        loadPOModule();
+    }
+    if(id === "invoice"){
+        loadInvoices();
+    }
+
+    if(id === "grn"){
+        loadGRNData();
+    }
 }
 
 // ================= REQUISITION MODULE =================
@@ -1723,6 +1711,7 @@ let selectedDocumentId = null;
 let selectedAction = null;
 let selectedQuotationId = null;
 let quotationPendingAction = null;
+let selectedQuotationMode = null;
 
 // ================= ACTION =================
 function setAction(action) {
@@ -1900,17 +1889,18 @@ function confirmApproval(action) {
 
 function confirmQuotationApproval(action) {
     if (!selectedQuotationId) {
-        alert("Please select a quotation request first");
+        alert("Please select a quotation first");
         return;
     }
 
     quotationPendingAction = action;
-    const qrfNo = document.getElementById("qrfNumber").innerText || "-";
+    const documentNo = document.getElementById("qrfNumber").innerText || "-";
+    const moduleLabel = quotationViewMode === "quotation" ? "quotation" : "quotation request";
 
     document.getElementById("confirmMessage").innerHTML =
         action === "APPROVED"
-            ? `Are you sure you want to approve quotation request <b>${qrfNo}</b>?`
-            : `Are you sure you want to reject quotation request <b>${qrfNo}</b>?`;
+            ? `Are you sure you want to approve ${moduleLabel} <b>${documentNo}</b>?`
+            : `Are you sure you want to reject ${moduleLabel} <b>${documentNo}</b>?`;
 
     document.getElementById("confirmModal").style.display = "block";
 }
@@ -2195,18 +2185,24 @@ function selectPO(radio) {
                 `;
             }
 
+            const resolveSignatureSrc = signaturePath => {
+                if (!signaturePath) return "";
+                if (signaturePath.startsWith("/")) return signaturePath;
+                if (signaturePath.startsWith("static/")) return `/${signaturePath}`;
+                return `/static/${signaturePath}`;
+            };
+
             // ================= PREPARED BY =================
             document.getElementById("poPreparedBy").innerText =
                 data.created_by?.username || "-";
 
+            const preparedBySig = document.getElementById("poPreparedBySig");
             if (data.created_by?.signature) {
-
-                document.getElementById("poPreparedBySig").src =
-                    "/static/" + data.created_by.signature;
-
+                preparedBySig.src = resolveSignatureSrc(data.created_by.signature);
+                preparedBySig.style.display = "block";
             } else {
-
-                document.getElementById("poPreparedBySig").src = "";
+                preparedBySig.src = "";
+                preparedBySig.style.display = "none";
             }
 
             // ================= HOD =================
@@ -2216,14 +2212,13 @@ function selectPO(radio) {
             document.getElementById("po_hod_ApprovalDate").innerText =
                 data.hod_approved_at || "-";
 
+            const hodSig = document.getElementById("poHodSig");
             if (data.hod_signature) {
-
-                document.getElementById("poHodSig").src =
-                    "/static/" + data.hod_signature;
-
+                hodSig.src = resolveSignatureSrc(data.hod_signature);
+                hodSig.style.display = "block";
             } else {
-
-                document.getElementById("poHodSig").src = "";
+                hodSig.src = "";
+                hodSig.style.display = "none";
             }
 
             // ================= CEO =================
@@ -2233,14 +2228,13 @@ function selectPO(radio) {
             document.getElementById("po_ceo_ApprovalDate").innerText =
                 data.ceo_approved_at || "-";
 
+            const ceoSig = document.getElementById("poCeoSig");
             if (data.ceo_signature) {
-
-                document.getElementById("poCeoSig").src =
-                    "/static/" + data.ceo_signature;
-
+                ceoSig.src = resolveSignatureSrc(data.ceo_signature);
+                ceoSig.style.display = "block";
             } else {
-
-                document.getElementById("poCeoSig").src = "";
+                ceoSig.src = "";
+                ceoSig.style.display = "none";
             }
 
         })
@@ -2921,12 +2915,14 @@ document.addEventListener(
 
 function selectQuotation(radio){
     if(!radio || !radio.dataset.qrfId){
-        alert("Please select a quotation");
+        alert("Please select a quotation request");
         return;
     }
 
     let qrfId = radio.dataset.qrfId;
     selectedQuotationId = qrfId;
+    selectedQuotationMode = "request";
+    quotationViewMode = "request";
 
     fetch(`/hod/quotationRequest_details/${qrfId}`)
         .then(res => {
@@ -2939,15 +2935,23 @@ function selectQuotation(radio){
                 return;
             }
 
+            const selectedSupplier = (Array.isArray(data.suppliers) ? data.suppliers.find(s => s.selected_supplier == 1) : null) ||
+                (Array.isArray(data.suppliers) && data.suppliers[0]) || {};
+
+            const resolveSignatureSrc = signaturePath => {
+                if (!signaturePath) return "";
+                return signaturePath.startsWith("/") ? signaturePath : `/static/${signaturePath}`;
+            };
+
             document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
             document.getElementById("qrfPrs").innerText = data.prs_no || "-";
             document.getElementById("qrfDate").innerText = data.request_date || "-";
             document.getElementById("qr_requester").innerText = data.requester_name || "-";
             document.getElementById("qr_department").innerText = data.department || "-";
-            document.getElementById("qr_contact").innerText = data.supplier_phone || "-";
-            document.getElementById("sp_to").innerText = data.supplier_name || "-";
-            document.getElementById("sp_name").innerText = data.supplier_name || "-";
-            document.getElementById("sp_location").innerText = data.supplier_address || "-";
+            document.getElementById("qr_contact").innerText = data.requester_email || "-";
+            document.getElementById("sp_to").innerText = selectedSupplier.supplier_name || "-";
+            document.getElementById("sp_name").innerText = selectedSupplier.supplier_name || "-";
+            document.getElementById("sp_location").innerText = selectedSupplier.address || "-";
             document.getElementById("sp_item").innerText = data.items.length > 0 ? data.items[0].material_name : "-";
 
             let itemsBody = document.getElementById("sharedPRS");
@@ -2962,6 +2966,51 @@ function selectQuotation(radio){
                 `;
                 itemsBody.appendChild(itemRow);
             });
+
+            const preparedSig = document.getElementById("qrfPreparedBySig");
+            const preparedName = document.getElementById("qrfPreparedByName");
+            const preparedDate = document.getElementById("qrfPreparedByDate");
+
+            if (data.requester_signature) {
+                preparedSig.src = resolveSignatureSrc(data.requester_signature);
+                preparedSig.style.display = "block";
+                preparedName.innerText = data.requester_name || "-";
+                preparedDate.innerText = data.request_date || "-";
+            } else {
+                preparedSig.style.display = "none";
+                preparedName.innerText = data.requester_name || "-";
+                preparedDate.innerText = "-";
+            }
+
+            const hodSig = document.getElementById("qrfHodSig");
+            const hodName = document.getElementById("qrfHodName");
+            const hodDate = document.getElementById("qrfHodDate");
+
+            if (data.hod_signature) {
+                hodSig.src = resolveSignatureSrc(data.hod_signature);
+                hodSig.style.display = "block";
+                hodName.innerText = data.hod_name || "-";
+                hodDate.innerText = data.hod_approved_at || "-";
+            } else {
+                hodSig.style.display = "none";
+                hodName.innerText = "-";
+                hodDate.innerText = "-";
+            }
+
+            const ceoSig = document.getElementById("qrfCeoSig");
+            const ceoName = document.getElementById("qrfCeoName");
+            const ceoDate = document.getElementById("qrfCeoDate");
+
+            if (data.ceo_signature) {
+                ceoSig.src = resolveSignatureSrc(data.ceo_signature);
+                ceoSig.style.display = "block";
+                ceoName.innerText = data.ceo_name || "-";
+                ceoDate.innerText = data.ceo_approved_at || "-";
+            } else {
+                ceoSig.style.display = "none";
+                ceoName.innerText = "-";
+                ceoDate.innerText = "-";
+            }
         })
         .catch(error => {
             console.error(error);
@@ -2969,10 +3018,14 @@ function selectQuotation(radio){
         });
 }
 
-function loadQuotationModule(){
+function loadQuotationRequests(){
+    selectedQuotationId = null;
+    selectedQuotationMode = "request";
+    quotationViewMode = "request";
+
     fetch("/hod/quotationRequest_data")
         .then(res => {
-            if (!res.ok) throw new Error(`Quotation list request failed: ${res.status}`);
+            if (!res.ok) throw new Error(`Quotation request list request failed: ${res.status}`);
             return res.json();
         })
         .then(data => {
@@ -2980,7 +3033,7 @@ function loadQuotationModule(){
             body.innerHTML = "";
 
             if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotations found.</td></tr>`;
+                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotation requests found.</td></tr>`;
                 return;
             }
 
@@ -3002,6 +3055,7 @@ function loadQuotationModule(){
                         radio.checked = true;
                         document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
                         row.classList.add("selected");
+                        quotationViewMode = "request";
                         selectQuotation(radio);
                     }
                 });
@@ -3010,7 +3064,7 @@ function loadQuotationModule(){
         })
         .catch(error => {
             console.error(error);
-            alert("Failed to load quotation list.");
+            alert("Failed to load quotation request list.");
         });
 }
 
@@ -3735,7 +3789,7 @@ function sendInvoiceApproval() {
 
 function sendQuotationApproval() {
     if (!selectedQuotationId) {
-        alert("Please select a quotation request first");
+        alert("Please select a quotation first");
         return;
     }
 
@@ -3744,12 +3798,14 @@ function sendQuotationApproval() {
         return;
     }
 
+    const moduleName = quotationViewMode === "quotation" ? "QUOTATION" : "QRF";
+
     fetch("/hod/approve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             document_id: selectedQuotationId,
-            module_name: "QRF",
+            module_name: moduleName,
             action: quotationPendingAction
         })
     })
@@ -3760,8 +3816,12 @@ function sendQuotationApproval() {
             return;
         }
 
-        alert("Quotation request updated successfully.");
-        loadQuotationModule();
+        alert("Quotation updated successfully.");
+        if (quotationViewMode === "quotation") {
+            loadQuotations();
+        } else {
+            loadQuotationRequests();
+        }
     })
     .catch(err => {
         console.error(err);
@@ -3829,13 +3889,18 @@ function renderQuotationTable(list) {
     const body = document.getElementById("quotationBody");
     body.innerHTML = "";
 
+    if (!Array.isArray(list) || list.length === 0) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotations found.</td></tr>`;
+        return;
+    }
+
     list.forEach(q => {
         const row = document.createElement("tr");
+        const radioId = `quotation-${q.quotation_id}`;
 
         row.innerHTML = `
             <td>
-                <input type="radio" name="quotationSelect"
-                    onclick="loadQuotationDetails(${q.quotation_id})">
+                <input type="radio" id="${radioId}" name="quotationSelect">
             </td>
             <td>${q.quotation_no || "-"}</td>
             <td>${q.qrf_no || "-"}</td>
@@ -3844,6 +3909,18 @@ function renderQuotationTable(list) {
             <td>${q.department || "-"}</td>
             <td>${q.created_at || "-"}</td>
         `;
+
+        row.addEventListener("click", () => {
+            const radio = row.querySelector(`input[name='quotationSelect']`);
+            if (radio) {
+                radio.checked = true;
+            }
+            document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
+            row.classList.add("selected");
+            quotationViewMode = "quotation";
+            selectedQuotationId = q.quotation_id;
+            loadQuotationDetails(q.quotation_id);
+        });
 
         body.appendChild(row);
     });
@@ -3854,6 +3931,9 @@ function renderQuotationTable(list) {
 // ================================
 async function loadQuotationDetails(id) {
     try {
+        selectedQuotationId = id;
+        selectedQuotationMode = "quotation";
+
         const res = await fetch(`/hod/quotations/api/${id}`);
         const data = await res.json();
 

@@ -84,6 +84,8 @@ def quotationRequest_details(qrf_id):
                 q.remarks,
 
                 u.username AS requester_name,
+                u.email AS requester_email,
+                u.signature AS requester_signature,
                 d.department_name AS department
 
             FROM quotation_requests q
@@ -209,7 +211,10 @@ def quotationRequest_details(qrf_id):
             "ceo_name": approval["ceo_name"] if approval else None,
 
             "hod_signature": approval["hod_signature"] if approval else None,
-            "ceo_signature": approval["ceo_signature"] if approval else None
+            "ceo_signature": approval["ceo_signature"] if approval else None,
+
+            "requester_email": qrf["requester_email"],
+            "requester_signature": qrf["requester_signature"]
         })
 
     except Exception as e:
@@ -329,6 +334,15 @@ def po_details(po_id):
 
         if not order:
             return jsonify({"error": "Purchase order not found"}), 404
+
+        if order.get("order_date") is not None:
+            order["order_date"] = order["order_date"].isoformat()
+
+        if order.get("hod_approved_at") is not None:
+            order["hod_approved_at"] = order["hod_approved_at"].isoformat()
+
+        if order.get("ceo_approved_at") is not None:
+            order["ceo_approved_at"] = order["ceo_approved_at"].isoformat()
 
         # =====================================================
         # ITEMS

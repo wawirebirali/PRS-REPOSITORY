@@ -1047,6 +1047,25 @@ tr:hover{
 <tbody id="quotationItems"></tbody>
 </table>
 
+<div class="signature-section" style="margin-top:20px; display:flex; gap:20px;">
+    <div class="sig-box">
+        <p><b>HOD Approval</b></p>
+        <img id="quotationHodSignature" src="" style="height:60px;display:none;">
+        <p id="quotationHodName">-</p>
+        <small>Date: <span id="quotationHodDate">-</span></small>
+        <br>
+        <small>Status: <span id="quotationHodStatus">-</span></small>
+    </div>
+    <div class="sig-box">
+        <p><b>CEO Approval</b></p>
+        <img id="quotationCeoSignature" src="" style="height:60px;display:none;">
+        <p id="quotationCeoName">-</p>
+        <small>Date: <span id="quotationCeoDate">-</span></small>
+        <br>
+        <small>Status: <span id="quotationCeoStatus">-</span></small>
+    </div>
+</div>
+
 </div>
 
 </div>
@@ -1715,6 +1734,30 @@ function selectQuotation(id) {
                 `;
             });
 
+            document.getElementById("quotationHodName").innerText = data.header.hod_name || "-";
+            document.getElementById("quotationHodDate").innerText = data.header.hod_approved_at || "-";
+            document.getElementById("quotationHodStatus").innerText = data.header.hod_status || "-";
+
+            const hodImg = document.getElementById("quotationHodSignature");
+            if (data.header.hod_signature) {
+                hodImg.src = `/static/signatures/${data.header.hod_signature}`;
+                hodImg.style.display = "block";
+            } else {
+                hodImg.style.display = "none";
+            }
+
+            document.getElementById("quotationCeoName").innerText = data.header.ceo_name || "-";
+            document.getElementById("quotationCeoDate").innerText = data.header.ceo_approved_at || "-";
+            document.getElementById("quotationCeoStatus").innerText = data.header.ceo_status || "-";
+
+            const ceoImg = document.getElementById("quotationCeoSignature");
+            if (data.header.ceo_signature) {
+                ceoImg.src = `/static/signatures/${data.header.ceo_signature}`;
+                ceoImg.style.display = "block";
+            } else {
+                ceoImg.style.display = "none";
+            }
+
         })
         .catch(err => {
             console.error("Quotation load error:", err);
@@ -1925,6 +1968,23 @@ function loadPODetails(poId, row = null) {
                 document.getElementById("poCeoDate").textContent =
                     data.ceo_approved_at || "-";
 
+            if (document.getElementById("preparedName"))
+                document.getElementById("preparedName").textContent =
+                    data.created_by_name || "-";
+
+            if (document.getElementById("preparedDate"))
+                document.getElementById("preparedDate").textContent =
+                    data.order_date || "-";
+
+            const preparedImg = document.getElementById("preparedSignature");
+            if (preparedImg) {
+                if (data.created_by_signature) {
+                    preparedImg.src = `/static/signatures/${data.created_by_signature}`;
+                    preparedImg.style.display = "block";
+                } else {
+                    preparedImg.style.display = "none";
+                }
+            }
 
             // ======================
             // SIGNATURES
@@ -2184,6 +2244,57 @@ function selectGRN(radio) {
             document.getElementById("grnStatus").innerText =
                 data.status || data.inspection_status || "PENDING";
 
+            document.getElementById("grnPreparedName").innerText =
+                data.received_by || "-";
+            document.getElementById("grnPreparedDate").innerText =
+                data.received_date || "-";
+            document.getElementById("grnPreparedStatus").innerText =
+                data.status || data.inspection_status || "PENDING";
+
+            const preparedImg = document.getElementById("grnPreparedSignature");
+            if (preparedImg) {
+                if (data.prepared_signature) {
+                    preparedImg.src = `/static/signatures/${data.prepared_signature}`;
+                    preparedImg.style.display = "block";
+                } else {
+                    preparedImg.style.display = "none";
+                }
+            }
+
+            document.getElementById("grnHodName").innerText =
+                data.hod_name || "-";
+            document.getElementById("grnHodDate").innerText =
+                data.hod_approved_at || "-";
+            document.getElementById("grnHodStatus").innerText =
+                data.hod_status || "PENDING";
+
+            const hodImg = document.getElementById("grnHodSignature");
+            if (hodImg) {
+                if (data.hod_signature) {
+                    hodImg.src = `/static/signatures/${data.hod_signature}`;
+                    hodImg.style.display = "block";
+                } else {
+                    hodImg.style.display = "none";
+                }
+            }
+
+            document.getElementById("grnCeoName").innerText =
+                data.ceo_name || "-";
+            document.getElementById("grnCeoDate").innerText =
+                data.ceo_approved_at || "-";
+            document.getElementById("grnCeoStatus").innerText =
+                data.ceo_status || "PENDING";
+
+            const ceoImg = document.getElementById("grnCeoSignature");
+            if (ceoImg) {
+                if (data.ceo_signature) {
+                    ceoImg.src = `/static/signatures/${data.ceo_signature}`;
+                    ceoImg.style.display = "block";
+                } else {
+                    ceoImg.style.display = "none";
+                }
+            }
+
             // ======================
             // ITEMS TABLE
             // ======================
@@ -2382,10 +2493,14 @@ function selectQuotationRequest(qrfId, row) {
             document.getElementById("qrf_hod_date").innerText =
                 data.hod_approval_date || "-";
 
-            if (data.hod_signature) {
-                let img = document.getElementById("qrf_hod_signature");
-                img.src = "/static/signatures/" + data.hod_signature;
-                img.style.display = "block";
+            const qrfHodImg = document.getElementById("qrf_hod_signature");
+            if (qrfHodImg) {
+                if (data.hod_signature) {
+                    qrfHodImg.src = "/static/signatures/" + data.hod_signature;
+                    qrfHodImg.style.display = "block";
+                } else {
+                    qrfHodImg.style.display = "none";
+                }
             }
 
             // ================= CEO =================
@@ -2398,10 +2513,14 @@ function selectQuotationRequest(qrfId, row) {
             document.getElementById("qrf_ceo_date").innerText =
                 data.ceo_approval_date || "-";
 
-            if (data.ceo_signature) {
-                let img = document.getElementById("qrf_ceo_signature");
-                img.src = "/static/signatures/" + data.ceo_signature;
-                img.style.display = "block";
+            const qrfCeoImg = document.getElementById("qrf_ceo_signature");
+            if (qrfCeoImg) {
+                if (data.ceo_signature) {
+                    qrfCeoImg.src = "/static/signatures/" + data.ceo_signature;
+                    qrfCeoImg.style.display = "block";
+                } else {
+                    qrfCeoImg.style.display = "none";
+                }
             }
 
         })

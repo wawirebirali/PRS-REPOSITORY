@@ -237,6 +237,9 @@ def procurementPOdetails(po_id):
 
             p.total_amount,
 
+            creator.username AS created_by_name,
+            creator.signature AS created_by_signature,
+
             COALESCE(a.hod_status,'PENDING') AS hod_status,
             COALESCE(a.ceo_status,'PENDING') AS ceo_status,
             COALESCE(a.final_status,'PENDING') AS final_status,
@@ -257,6 +260,9 @@ def procurementPOdetails(po_id):
 
         JOIN suppliers s
             ON p.supplier_id = s.supplier_id
+
+        LEFT JOIN users creator
+            ON r.user_id = creator.user_id
 
         LEFT JOIN approvals a
             ON a.module_name = 'PO'
@@ -309,6 +315,9 @@ def procurementPOdetails(po_id):
         "supplier_phone": order["supplier_phone"],
 
         "total_amount": str(order["total_amount"] or 0),
+
+        "created_by_name": order["created_by_name"],
+        "created_by_signature": order["created_by_signature"],
 
         "hod_status": order["hod_status"],
         "ceo_status": order["ceo_status"],
@@ -439,13 +448,30 @@ def quotation_details(id):
             qr.qrf_no,
             q.created_at,
             s.supplier_name,
-            d.department_name AS department
+            d.department_name AS department,
+
+            COALESCE(a.hod_status, 'PENDING') AS hod_status,
+            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+            a.hod_approved_at,
+            a.ceo_approved_at,
+
+            hod.username AS hod_name,
+            hod.signature AS hod_signature,
+            ceo.username AS ceo_name,
+            ceo.signature AS ceo_signature
         FROM quotations q
         JOIN quotation_request_suppliers qrs ON qrs.quotation_id = q.quotation_id
         JOIN quotation_requests qr ON qr.qrf_id = qrs.qrf_id
         JOIN requisitions r ON r.requisition_id = qr.requisition_id
         JOIN departments d ON d.department_id = r.department_id
         JOIN suppliers s ON s.supplier_id = qrs.supplier_id
+        LEFT JOIN approvals a
+            ON a.module_name = 'QUOTATION'
+           AND a.document_id = q.quotation_id
+        LEFT JOIN users hod
+            ON a.hod_user_id = hod.user_id
+        LEFT JOIN users ceo
+            ON a.ceo_user_id = ceo.user_id
         WHERE q.quotation_id = %s
     """, (id,))
 
@@ -462,6 +488,9 @@ def quotation_details(id):
 
     cursor.close()
     conn.close()
+
+    if header and header.get("created_at"):
+        header["created_at"] = header["created_at"].isoformat()
 
     return jsonify({
         "success": True,
@@ -768,7 +797,12 @@ def procurementquotationrequestdetails(qrf_id):
                 COALESCE(a.final_status, 'PENDING') AS final_status,
 
                 a.hod_approved_at,
-                a.ceo_approved_at
+                a.ceo_approved_at,
+
+                hod.username AS hod_name,
+                hod.signature AS hod_signature,
+                ceo.username AS ceo_name,
+                ceo.signature AS ceo_signature
 
             FROM quotation_requests qr
 
@@ -790,6 +824,12 @@ def procurementquotationrequestdetails(qrf_id):
                     ORDER BY approval_id DESC
                     LIMIT 1
                 )
+
+            LEFT JOIN users hod
+                ON a.hod_user_id = hod.user_id
+
+            LEFT JOIN users ceo
+                ON a.ceo_user_id = ceo.user_id
 
             WHERE qr.qrf_id = %s
             LIMIT 1
@@ -845,6 +885,10 @@ def procurementquotationrequestdetails(qrf_id):
 
             "hod_approval_date": safe_date(qrf["hod_approved_at"]),
             "ceo_approval_date": safe_date(qrf["ceo_approved_at"]),
+            "hod_name": qrf["hod_name"],
+            "hod_signature": qrf["hod_signature"],
+            "ceo_name": qrf["ceo_name"],
+            "ceo_signature": qrf["ceo_signature"],
 
             # ITEMS (CLEAN STRUCTURE)
             "items": [
