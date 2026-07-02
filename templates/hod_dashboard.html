@@ -89,7 +89,7 @@
 }
 
 /* =========================
-   MODULES (FIXED)
+   MODULES
 ========================= */
 .module {
     display: none;
@@ -98,26 +98,66 @@
 .module.active {
     display: block;
 }
+
 /* =========================
-   LAYOUT INSIDE MODULE
+   MODAL
+========================= */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+    max-width: 420px;
+    width: 90%;
+}
+
+/* =========================
+   MODULE LAYOUT
 ========================= */
 .container{
     display:flex;
     gap:15px;
+    align-items:flex-start;
+    padding:15px;
+    flex-wrap:nowrap;
 }
 
-/* LEFT PANEL */
+/* REMOVE THIS */
 .left{
     width:65%;
 }
 
-/* RIGHT PANEL */
+/* REMOVE THIS */
 .right{
     width:35%;
+    min-width:300px;
     background:white;
     padding:20px;
     border-radius:10px;
     box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 1100px) {
+    .container{
+        flex-wrap:wrap;
+    }
+
+    .left, .right{
+        width:100%;
+    }
 }
 
 /* HEADER */
@@ -373,8 +413,6 @@ tr:hover{
 }
 </style>
 </head>
-
-<body>
 
 <body>
 
@@ -635,105 +673,172 @@ tr:hover{
 
 
 
-
 <!-- QUOTATION MODULE -->
 <div id="quotation" class="module">
 
 <div class="container">
 
-<!-- LEFT PANEL -->
-<div class="left">
+    <!-- LEFT PANEL -->
+    <div class="left">
 
-<div class="header">QUOTATION Management</div>
+        <div class="header">QUOTATION Management</div>
 
-<div class="search">
-    <input id="quotationSearch" type="text" onkeyup="searchQuotation()" placeholder="Search quotation, supplier, or PRS...">
-</div>
-
-<div style="margin:10px 0;">
-    <button class="btn success" onclick="approveQuotation()">Very qoutation</button>
-    <button class="btn danger" onclick="rejectQuotation()">Reject</button>
-    <button class="btn primary" onclick="printQuotation()">Print</button>
-</div>
-
-<table id="quotationTable">
-<thead>
-<tr>
-    <th>Select</th>
-    <th>Quotation No</th>
-    <th>PRS No</th>
-    <th>Supplier</th>
-    <th>Status</th>
-    <th>Department</th>
-    <th>Creation Date</th>
-</tr>
-</thead>
-<tbody id="quotationBody"></tbody>
-</table>
-
-</div>
-
-<!-- RIGHT PANEL -->
-<div class="right">
-
-<div class="slip">
-
-    <div class="header">
-        <h2>QUOTATION REQUEST SLIP (QRF)</h2>
-        <p><b>Official Procurement Document</b></p>
-    </div>
-
-    <div class="info-section">
-
-        <div class="box">
-            <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
-            <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
-            <p><b>Date:</b> <span id="qrfDate">-</span></p>
+        <div class="search">
+            <input id="quotationSearch" type="text"
+                   onkeyup="searchQuotation()"
+                   placeholder="Search quotation, supplier, or PRS...">
         </div>
 
-        <div class="box">
-            <p><b>Requester:</b> <span id="qr_requester">-</span></p>
-            <p><b>Department:</b> <span id="qr_department">-</span></p>
-            <p><b>Contact:</b> <span id="qr_contact">-</span></p>
+        <div style="margin:10px 0;">
+            <button class="btn success" onclick="approveQuotation()">Verify Quotation</button>
+            <button class="btn danger" onclick="rejectQuotation()">Reject</button>
+            <button class="btn primary" onclick="printQuotation()">Print</button>
+        </div>
+
+        <table id="quotationTable">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Quotation No</th>
+                    <th>PRS No</th>
+                    <th>Supplier</th>
+                    <th>Status</th>
+                    <th>Department</th>
+                    <th>Creation Date</th>
+                </tr>
+            </thead>
+            <tbody id="quotationBody"></tbody>
+        </table>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right">
+
+        <div class="slip">
+
+            <div class="header">
+                <h2>QUOTATION REQUEST SLIP (QRF)</h2>
+                <p><b>Official Procurement Document</b></p>
+            </div>
+
+            <div class="info-section">
+
+                <div class="box">
+                    <p><b>QRF No:</b> <span id="qrfNumber">-</span></p>
+                    <p><b>PRS No:</b> <span id="qrfPrs">-</span></p>
+                    <p><b>Date:</b> <span id="qrfDate">-</span></p>
+                </div>
+
+                <div class="box">
+                    <p><b>Requester:</b> <span id="qr_requester">-</span></p>
+                    <p><b>Department:</b> <span id="qr_department">-</span></p>
+                    <p><b>Contact:</b> <span id="qr_contact">-</span></p>
+                </div>
+
+            </div>
+
+            <div class="supplier-section">
+                <p><b>To:</b> <span id="sp_to">Supplier</span></p>
+                <p><b>Company:</b> <span id="sp_name">-</span></p>
+                <p><b>Location:</b> <span id="sp_location">-</span></p>
+                <p><b>Item:</b> <span id="sp_item">-</span></p>
+            </div>
+
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody id="sharedPRS"></tbody>
+            </table>
+
+            <div class="footer">
+                <p>Kindly submit your quotation within <b>3–5 working days</b>.</p>
+                <p>Ensure all requested items are available and include delivery details.</p>
+            
+            </div>
+
+            <!-- SIGNATURE SECTION -->
+            <div class="signature-section" style="margin-top:20px; padding-top:10px; border-top:1px solid #ccc;">
+
+                <h4>Approval & Signatures</h4>
+
+                <div style="display:flex; justify-content:space-between; margin-top:15px;">
+
+                    <div style="text-align:center; width:30%;">
+                        <p>Prepared By</p>
+                        <br><br>
+                        <p>_____________________</p>
+                        <p>Name & Signature</p>
+                    </div>
+
+                    <div style="text-align:center; width:30%;">
+                        <p>HOD Approval</p>
+                        <br><br>
+                        <p>_____________________</p>
+                        <p>Signature & Date</p>
+                    </div>
+
+                    <div style="text-align:center; width:30%;">
+                        <p>CEO Approval</p>
+                        <br><br>
+                        <p>_____________________</p>
+                        <p>Signature & Date</p>
+                    </div>
+
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:20px; gap:16px;">
+
+                    <div style="text-align:center; width:32%;">
+                        <p><strong>Prepared By</strong></p>
+                        <div style="margin:10px 0;">
+                            <img id="qrfPreparedBySig" src="" alt="Prepared Signature" style="display:none; max-height:80px; max-width:100%;" />
+                        </div>
+                        <p id="qrfPreparedByName">-</p>
+                        <small id="qrfPreparedByDate">-</small>
+                    </div>
+
+                    <div style="text-align:center; width:32%;">
+                        <p><strong>HOD Approval</strong></p>
+                        <div style="margin:10px 0;">
+                            <img id="qrfHodSig" src="" alt="HOD Signature" style="display:none; max-height:80px; max-width:100%;" />
+                        </div>
+                        <p id="qrfHodName">-</p>
+                        <small id="qrfHodDate">-</small>
+                    </div>
+
+                    <div style="text-align:center; width:32%;">
+                        <p><strong>CEO Approval</strong></p>
+                        <div style="margin:10px 0;">
+                            <img id="qrfCeoSig" src="" alt="CEO Signature" style="display:none; max-height:80px; max-width:100%;" />
+                        </div>
+                        <p id="qrfCeoName">-</p>
+                        <small id="qrfCeoDate">-</small>
+                    </div>
+
+                </div>
+                <div style="margin-top:20px; text-align:center;">
+                    <p>Procurement Department Confirmation</p>
+                    <br>
+                    <p>______________________________</p>
+                </div>
+
+            </div>
+
+            
+
         </div>
 
     </div>
 
-    <div class="supplier-section">
-        <p><b>To:</b> <span id="sp_to">Supplier</span></p>
-        <p><b>Company:</b> <span id="sp_name">-</span></p>
-        <p><b>Location:</b> <span id="sp_location">-</span></p>
-        <p><b>Item:</b> <span id="sp_item">-</span></p>
-    </div>
-
-    <table class="items-table">
-        <thead>
-        <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Quantity</th>
-        </tr>
-        </thead>
-        <tbody id="sharedPRS"></tbody>
-    </table>
-
-    <div class="footer">
-        <p>Kindly submit your quotation within <b>3–5 working days</b>.</p>
-        <p>Ensure all requested items are available and include delivery details.</p>
-        <br>
-        <p>Authorized By: ________________________</p>
-        <p>Procurement Department</p>
-    </div>
-
 </div>
 
 </div>
-
-</div>
-
-</div>
-
-
 
 
 
@@ -789,6 +894,7 @@ tr:hover{
                  <button class="btn email"
                 onclick="sharePOEmail()">
                  Email Supplier
+                 </button>
 
             
         
@@ -872,7 +978,7 @@ tr:hover{
                         <p><b>Prepared By</b></p>
 
                         <div class="sig-frame">
-                            <img id="poPreparedBySig" src="" alt="Signature">
+                            <img id="poPreparedBySig" src="" alt="Signature" style="display:none; max-height:80px;">
                         </div>
 
                         <p id="poPreparedBy">-</p>
@@ -1024,6 +1130,16 @@ tr:hover{
             <p>
                 <b>Delivery Status:</b>
                 <span id="grnStatus">- <!-- static sample removed --> </span>
+            </p>
+
+            <p>
+                <b>HOD Status:</b>
+                <span id="grn_hod_Status">-</span>
+            </p>
+
+            <p>
+                <b>CEO Status:</b>
+                <span id="grn_ceo_Status">-</span>
             </p>
 
         </div>
@@ -1202,6 +1318,12 @@ tr:hover{
 
             <!-- ACTIONS -->
             <div style="margin:10px 0;">
+                <button class="btn success" onclick="confirmInvoice('APPROVED')">
+                    Approve Invoice
+                </button>
+                <button class="btn danger" onclick="confirmInvoice('REJECTED')">
+                    Reject Invoice
+                </button>
                 <button class="btn primary" onclick="printInvoice()">
                     Print Invoice
                 </button>
@@ -1565,6 +1687,10 @@ tr:hover{
 
 function openModule(id,btn){
 
+if (id === "quotationRequest") {
+    id = "quotation";
+}
+
 document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 
@@ -1583,11 +1709,11 @@ if(id === "purchaseOrder"){
     loadPOModule();
 }
 if(id === "invoice"){
-    loadInvoices
+    loadInvoices();
 }
 
 if(id === "grn"){
-    loadGRNModule();
+    loadGRNData();
 }
 }
 
@@ -1595,6 +1721,8 @@ if(id === "grn"){
 
 let selectedDocumentId = null;
 let selectedAction = null;
+let selectedQuotationId = null;
+let quotationPendingAction = null;
 
 // ================= ACTION =================
 function setAction(action) {
@@ -1754,17 +1882,15 @@ function submitApproval() {
 
 let pendingAction = null;
 
-function confirmPoApproval(action){
-
+function confirmApproval(action) {
     pendingAction = action;
 
-    const prsNo = document.getElementById("prs_no").innerText;
+    const prsNo = document.getElementById("prs_no").innerText || "-";
 
-    if(action === "APPROVED"){
+    if (action === "APPROVED") {
         document.getElementById("confirmMessage").innerHTML =
             `Are you sure you want to approve <b>${prsNo}</b>?`;
-    }
-    else{
+    } else {
         document.getElementById("confirmMessage").innerHTML =
             `Are you sure you want to reject <b>${prsNo}</b>?`;
     }
@@ -1772,16 +1898,33 @@ function confirmPoApproval(action){
     document.getElementById("confirmModal").style.display = "block";
 }
 
-function closeModal(){
-    document.getElementById("confirmModal").style.display = "none";
+function confirmQuotationApproval(action) {
+    if (!selectedQuotationId) {
+        alert("Please select a quotation request first");
+        return;
+    }
+
+    quotationPendingAction = action;
+    const qrfNo = document.getElementById("qrfNumber").innerText || "-";
+
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve quotation request <b>${qrfNo}</b>?`
+            : `Are you sure you want to reject quotation request <b>${qrfNo}</b>?`;
+
+    document.getElementById("confirmModal").style.display = "block";
 }
 
-function executeApproval(){
+function approveQuotation() {
+    confirmQuotationApproval("APPROVED");
+}
 
-    setAction(pendingAction);
-    submitApproval();
+function rejectQuotation() {
+    confirmQuotationApproval("REJECTED");
+}
 
-    closeModal();
+function printQuotation() {
+    window.print();
 }
 
 function autoLoadFirstRequisition() {
@@ -1962,13 +2105,6 @@ function approvePO() {
         console.error(error);
         alert("Server error while processing approval.");
     });
-}
-
-function executeApproval() {
-
-    approvePO();
-
-    closeModal();
 }
 
 // =======================================================
@@ -2307,6 +2443,7 @@ async function loadGRNData() {
                         <input 
                             type="radio"
                             name="selectedGRN"
+                            data-grn-id="${grn.grn_id}"
                             value="${grn.grn_id}"
                         >
                     </td>
@@ -2341,6 +2478,15 @@ async function loadGRNData() {
 // =======================================================
 async function loadGRNDetails(grnId) {
 
+    selectedGRNId = grnId;
+
+    document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
+    const radio = document.querySelector(`input[data-grn-id="${grnId}"]`);
+    if (radio) {
+        radio.checked = true;
+        radio.closest('tr')?.classList.add('selected');
+    }
+
     try {
 
         const response = await fetch(`/hod/hod_grn_details/${grnId}`);
@@ -2368,6 +2514,12 @@ async function loadGRNDetails(grnId) {
         document.getElementById("grnStatus").innerText =
             data.inspection_status || "-";
 
+        document.getElementById("grn_hod_Status").innerText =
+            data.hod_status || "PENDING";
+
+        document.getElementById("grn_ceo_Status").innerText =
+            data.ceo_status || "PENDING";
+
         document.getElementById("grnLocation").innerText =
             data.supplier_address || "-";
 
@@ -2376,6 +2528,51 @@ async function loadGRNDetails(grnId) {
 
         document.getElementById("grnTotal").innerText =
             data.total_received || 0;
+
+        // ===================================================
+        // SIGNATURES
+        // ===================================================
+        document.getElementById("grnReceiverNameSigText").innerText =
+            data.received_by || "-";
+
+        const receiverImg = document.getElementById("grnReceivedBySig");
+        if (data.receiver_signature) {
+            receiverImg.src = "/static/" + data.receiver_signature;
+            receiverImg.style.display = "block";
+        } else {
+            receiverImg.src = "";
+            receiverImg.style.display = "none";
+        }
+
+        document.getElementById("grnHodName").innerText =
+            data.hod_name || "-";
+
+        document.getElementById("grnHodDate").innerText =
+            data.hod_approved_at ? formatDate(data.hod_approved_at) : "-";
+
+        const hodImg = document.getElementById("grnHodSig");
+        if (data.hod_signature) {
+            hodImg.src = "/static/" + data.hod_signature;
+            hodImg.style.display = "block";
+        } else {
+            hodImg.src = "";
+            hodImg.style.display = "none";
+        }
+
+        document.getElementById("grnCeoName").innerText =
+            data.ceo_name || "-";
+
+        document.getElementById("grnCeoDate").innerText =
+            data.ceo_approved_at ? formatDate(data.ceo_approved_at) : "-";
+
+        const ceoImg = document.getElementById("grnCeoSig");
+        if (data.ceo_signature) {
+            ceoImg.src = "/static/" + data.ceo_signature;
+            ceoImg.style.display = "block";
+        } else {
+            ceoImg.src = "";
+            ceoImg.style.display = "none";
+        }
 
         // ===================================================
         // ITEMS
@@ -2410,6 +2607,21 @@ async function loadGRNDetails(grnId) {
 
         console.error("Error loading GRN details:", error);
     }
+}
+
+function selectGRN(radio) {
+    if (!radio || !radio.dataset.grnId) {
+        alert("Please select a goods receipt note first");
+        return;
+    }
+
+    selectedGRNId = radio.dataset.grnId;
+
+    document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
+    radio.checked = true;
+    radio.closest('tr')?.classList.add('selected');
+
+    loadGRNDetails(selectedGRNId);
 }
 
 
@@ -2459,6 +2671,13 @@ function confirmGRNApproval(action) {
 // =======================================================
 function closeModal() {
     document.getElementById("confirmModal").style.display = "none";
+
+    pendingAction = null;
+    quotationPendingAction = null;
+    invoicePendingAction = null;
+    pOpendingAction = null;
+    grnPendingAction = null;
+    paymentPendingAction = null;
 }
 
 
@@ -2525,7 +2744,7 @@ function approveGRN() {
         alert("Goods Receipt Note updated successfully.");
 
         // Refresh GRN details
-        loadGRNModule();
+        loadGRNData();
 
         if (selectedGRNId) {
             const radio = document.querySelector(
@@ -2541,13 +2760,6 @@ function approveGRN() {
         console.error(error);
         alert("Server error while processing approval.");
     });
-}
-
-function executeApproval() {
-
-    approveGRN();
-
-    closeModal();
 }
 
 
@@ -2707,68 +2919,6 @@ document.addEventListener(
 
 
 
-
-function approveQuotation(){
-    const selected = document.querySelector("input[name='quotationSelect']:checked");
-    if (!selected) {
-        alert("Please select a quotation first.");
-        return;
-    }
-
-    const qrfId = selected.dataset.qrfId;
-
-    fetch(`/hod/quotation_approve/${qrfId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            throw new Error(data.message || "Approval failed.");
-        }
-        alert(data.message || "Quotation approved.");
-        loadQuotationModule();
-        selectQuotation(selected);
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to approve quotation.");
-    });
-}
-
-function rejectQuotation(){
-    const selected = document.querySelector("input[name='quotationSelect']:checked");
-    if (!selected) {
-        alert("Please select a quotation first.");
-        return;
-    }
-
-    const qrfId = selected.dataset.qrfId;
-
-    fetch(`/hod/quotation_reject/${qrfId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ remarks: "Rejected by HOD" })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            throw new Error(data.message || "Rejection failed.");
-        }
-        alert(data.message || "Quotation rejected.");
-        loadQuotationModule();
-        selectQuotation(selected);
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Unable to reject quotation.");
-    });
-}
-
 function selectQuotation(radio){
     if(!radio || !radio.dataset.qrfId){
         alert("Please select a quotation");
@@ -2776,8 +2926,9 @@ function selectQuotation(radio){
     }
 
     let qrfId = radio.dataset.qrfId;
+    selectedQuotationId = qrfId;
 
-    fetch(`/hod/quotation_details/${qrfId}`)
+    fetch(`/hod/quotationRequest_details/${qrfId}`)
         .then(res => {
             if (!res.ok) throw new Error(`Quotation details request failed: ${res.status}`);
             return res.json();
@@ -2819,7 +2970,7 @@ function selectQuotation(radio){
 }
 
 function loadQuotationModule(){
-    fetch("/hod/quotation_data")
+    fetch("/hod/quotationRequest_data")
         .then(res => {
             if (!res.ok) throw new Error(`Quotation list request failed: ${res.status}`);
             return res.json();
@@ -2924,6 +3075,7 @@ function loadSupplierModule(){
 // GLOBAL SELECTED INVOICE
 // =========================================
 let selectedInvoiceId = null;
+let invoicePendingAction = null;
 
 // =========================================
 // LOAD INVOICE TABLE
@@ -2951,10 +3103,12 @@ async function loadInvoices() {
         invoices.forEach(inv => {
 
             tbody.innerHTML += `
-                <tr onclick="loadInvoiceDetails(${inv.invoice_id})">
+                <tr onclick="selectInvoice(this.querySelector('input'))">
                     <td>
                         <input type="radio"
-                            onclick="event.stopPropagation(); loadInvoiceDetails(${inv.invoice_id})">
+                            data-invoice-id="${inv.invoice_id}"
+                            name="invoiceSelect"
+                            onclick="event.stopPropagation(); selectInvoice(this)">
                     </td>
                     <td>${inv.prs_no || "-"}</td>
                     <td>${inv.invoice_number || "-"}</td>
@@ -2970,6 +3124,51 @@ async function loadInvoices() {
     } catch (err) {
         console.error("Invoice load error:", err);
     }
+}
+
+function selectInvoice(radio) {
+    if (!radio || !radio.closest('tr')) {
+        alert("Please select an invoice first.");
+        return;
+    }
+
+    const invoiceId = radio.getAttribute('data-invoice-id');
+    if (!invoiceId) {
+        alert("Invoice missing ID.");
+        return;
+    }
+
+    selectedInvoiceId = invoiceId;
+
+    document.querySelectorAll("#invoiceBody tr").forEach(r => r.classList.remove("selected"));
+    radio.closest('tr').classList.add('selected');
+
+    loadInvoiceDetails(invoiceId);
+}
+
+function confirmInvoice(action) {
+    if (!selectedInvoiceId) {
+        alert("Please select an invoice first");
+        return;
+    }
+
+    invoicePendingAction = action;
+
+    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
+            : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+function approveInvoice() {
+    confirmInvoice("APPROVED");
+}
+
+function rejectInvoice() {
+    confirmInvoice("REJECTED");
 }
 
 // =========================================
@@ -3033,13 +3232,24 @@ async function loadInvoiceDetails(invoiceId) {
         document.getElementById("invoice_creator_name").textContent =
             data.creator_name || "-";
 
+        function resolveSignatureSrc(signaturePath) {
+            if (!signaturePath) {
+                return "";
+            }
+
+            if (signaturePath.startsWith("/")) {
+                return signaturePath;
+            }
+
+            return `/static/${signaturePath}`;
+        }
+
         const creatorSig = document.getElementById(
             "invoice_creator_signature"
         );
 
         if (data.creator_signature) {
-            creatorSig.src =
-                `/static/signatures/${data.creator_signature}`;
+            creatorSig.src = resolveSignatureSrc(data.creator_signature);
             creatorSig.style.display = "block";
         } else {
             creatorSig.style.display = "none";
@@ -3057,8 +3267,7 @@ async function loadInvoiceDetails(invoiceId) {
         );
 
         if (data.hod_signature) {
-            hodSig.src =
-                `/static/signatures/${data.hod_signature}`;
+            hodSig.src = resolveSignatureSrc(data.hod_signature);
             hodSig.style.display = "block";
         } else {
             hodSig.style.display = "none";
@@ -3076,8 +3285,7 @@ async function loadInvoiceDetails(invoiceId) {
         );
 
         if (data.ceo_signature) {
-            ceoSig.src =
-                `/static/signatures/${data.ceo_signature}`;
+            ceoSig.src = resolveSignatureSrc(data.ceo_signature);
             ceoSig.style.display = "block";
         } else {
             ceoSig.style.display = "none";
@@ -3237,6 +3445,7 @@ async function loadPaymentData() {
                 const radio = row.querySelector("input[type='radio']");
                 if (radio) radio.checked = true;
 
+                selectedPaymentId = payment.payment_id;
                 loadPaymentDetails(payment.payment_id);
             });
 
@@ -3253,6 +3462,8 @@ async function loadPaymentData() {
 
 
 function loadPaymentDetails(payment_id) {
+
+    selectedPaymentId = payment_id;
 
     fetch(`/hod/payment_details/${payment_id}`)
         .then(res => res.json())
@@ -3320,11 +3531,53 @@ function loadPaymentDetails(payment_id) {
             document.getElementById("payment_prepared_name").textContent =
                 p.prepared_by || "-";
 
+            const preparedImg = document.getElementById("payment_prepared_signature");
+            if (p.prepared_signature) {
+                preparedImg.src = "/static/" + p.prepared_signature;
+                preparedImg.style.display = "block";
+            } else {
+                preparedImg.src = "";
+                preparedImg.style.display = "none";
+            }
+
+            document.getElementById("payment_prepared_date").textContent =
+                p.payment_date ? formatDate(p.payment_date) : "-";
+
+            document.getElementById("payment_finance_name").textContent =
+                p.hod_name || "-";
+
             document.getElementById("payment_finance_status").textContent =
                 p.hod_status || "PENDING";
 
+            document.getElementById("payment_finance_date").textContent =
+                p.hod_approved_at ? formatDate(p.hod_approved_at) : "-";
+
+            const financeImg = document.getElementById("payment_finance_signature");
+            if (p.hod_signature) {
+                financeImg.src = "/static/" + p.hod_signature;
+                financeImg.style.display = "block";
+            } else {
+                financeImg.src = "";
+                financeImg.style.display = "none";
+            }
+
+            document.getElementById("payment_ceo_name").textContent =
+                p.ceo_name || "-";
+
             document.getElementById("payment_ceo_status").textContent =
                 p.ceo_status || "PENDING";
+
+            document.getElementById("payment_ceo_date").textContent =
+                p.ceo_approved_at ? formatDate(p.ceo_approved_at) : "-";
+
+            const ceoImg = document.getElementById("payment_ceo_signature");
+            if (p.ceo_signature) {
+                ceoImg.src = "/static/" + p.ceo_signature;
+                ceoImg.style.display = "block";
+            } else {
+                ceoImg.src = "";
+                ceoImg.style.display = "none";
+            }
 
         })
         .catch(error => {
@@ -3333,7 +3586,188 @@ function loadPaymentDetails(payment_id) {
         });
 }
 
+let selectedPaymentId = null;
+let paymentPendingAction = null;
 
+function confirmPayment(action) {
+    if (!selectedPaymentId) {
+        alert("Please select a payment first");
+        return;
+    }
+
+    paymentPendingAction = action;
+    const paymentNo = document.getElementById("payNumber").innerText || "-";
+
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve payment <b>${paymentNo}</b>?`
+            : `Are you sure you want to reject payment <b>${paymentNo}</b>?`;
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+function approvePayment() {
+    confirmPayment("APPROVED");
+}
+
+function rejectPayment() {
+    confirmPayment("REJECTED");
+}
+
+function executeApproval() {
+    if (paymentPendingAction) {
+        sendPaymentApproval();
+    } else if (invoicePendingAction) {
+        sendInvoiceApproval();
+    } else if (quotationPendingAction) {
+        sendQuotationApproval();
+    } else if (pOpendingAction) {
+        approvePO();
+    } else if (grnPendingAction) {
+        approveGRN();
+    } else if (pendingAction) {
+        setAction(pendingAction);
+        submitApproval();
+    }
+    closeModal();
+}
+
+function sendPaymentApproval() {
+    if (!selectedPaymentId) {
+        alert("Please select a payment first");
+        return;
+    }
+
+    if (!paymentPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
+
+    if (status === "APPROVED") {
+        alert("This payment has already been approved.");
+        return;
+    }
+
+    if (status === "REJECTED") {
+        alert("This payment has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedPaymentId,
+            module_name: "PAYMENT",
+            action: paymentPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Payment approval failed");
+            return;
+        }
+
+        alert("Payment updated successfully.");
+        loadPaymentData();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing payment approval.");
+    });
+}
+
+function sendInvoiceApproval() {
+    if (!selectedInvoiceId) {
+        alert("Please select an invoice first");
+        return;
+    }
+
+    if (!invoicePendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
+
+    if (status === "APPROVED") {
+        alert("This invoice has already been approved.");
+        return;
+    }
+
+    if (status === "REJECTED") {
+        alert("This invoice has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedInvoiceId,
+            module_name: "INVOICE",
+            action: invoicePendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Invoice approval failed");
+            return;
+        }
+
+        alert("Invoice updated successfully.");
+        invoicePendingAction = null;
+        loadInvoices();
+        if (selectedInvoiceId) {
+            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
+            if (radio) selectInvoice(radio);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing invoice approval.");
+    });
+}
+
+function sendQuotationApproval() {
+    if (!selectedQuotationId) {
+        alert("Please select a quotation request first");
+        return;
+    }
+
+    if (!quotationPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedQuotationId,
+            module_name: "QRF",
+            action: quotationPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Quotation approval failed");
+            return;
+        }
+
+        alert("Quotation request updated successfully.");
+        loadQuotationModule();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing quotation approval.");
+    });
+}
 
 function searchPayment() {
 
@@ -3359,6 +3793,171 @@ function searchPayment() {
 document.addEventListener("DOMContentLoaded", () => {
     loadPaymentData();
 });
+
+
+
+// ================================
+// GLOBAL STATE
+// ================================
+let quotations = [];
+
+// ================================
+// LOAD QUOTATION LIST
+// ================================
+async function loadQuotations() {
+    try {
+        const res = await fetch("/hod/quotation_data");
+        const data = await res.json();
+
+        if (!data.success) {
+            console.error(data.message);
+            return;
+        }
+
+        quotations = data.data || [];
+        renderQuotationTable(quotations);
+
+    } catch (err) {
+        console.error("Error loading quotations:", err);
+    }
+}
+
+// ================================
+// RENDER TABLE
+// ================================
+function renderQuotationTable(list) {
+    const body = document.getElementById("quotationBody");
+    body.innerHTML = "";
+
+    list.forEach(q => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>
+                <input type="radio" name="quotationSelect"
+                    onclick="loadQuotationDetails(${q.quotation_id})">
+            </td>
+            <td>${q.quotation_no || "-"}</td>
+            <td>${q.qrf_no || "-"}</td>
+            <td>${q.supplier_name || "-"}</td>
+            <td>${q.status || "-"}</td>
+            <td>${q.department || "-"}</td>
+            <td>${q.created_at || "-"}</td>
+        `;
+
+        body.appendChild(row);
+    });
+}
+
+// ================================
+// LOAD QUOTATION DETAILS
+// ================================
+async function loadQuotationDetails(id) {
+    try {
+        const res = await fetch(`/hod/quotations/api/${id}`);
+        const data = await res.json();
+
+        if (!data.success) {
+            console.error(data.message);
+            return;
+        }
+
+        const q = data.quotation;
+
+        function resolveSignatureSrc(signaturePath) {
+            if (!signaturePath) {
+                return "";
+            }
+            return signaturePath.startsWith("/") ? signaturePath : `/static/${signaturePath}`;
+        }
+
+        // =========================
+        // HEADER (QRF SLIP)
+        // =========================
+        document.getElementById("qrfNumber").innerText = q.qrf_no || "-";
+        document.getElementById("qrfPrs").innerText = q.prs_no || "-";
+        document.getElementById("qrfDate").innerText = q.quotation_date || "-";
+
+        document.getElementById("qr_requester").innerText = q.requester_name || "-";
+        document.getElementById("qr_department").innerText = q.department_name || "-";
+        document.getElementById("qr_contact").innerText = q.requester_email || "-";
+
+        document.getElementById("sp_to").innerText = q.supplier_name || "-";
+        document.getElementById("sp_name").innerText = q.contact_person || "-";
+        document.getElementById("sp_location").innerText = q.address || "-";
+
+        const preparedSig = document.getElementById("qrfPreparedBySig");
+        const preparedName = document.getElementById("qrfPreparedByName");
+        const preparedDate = document.getElementById("qrfPreparedByDate");
+
+        if (q.requester_signature) {
+            preparedSig.src = resolveSignatureSrc(q.requester_signature);
+            preparedSig.style.display = "block";
+            preparedName.innerText = q.requester_name || "-";
+            preparedDate.innerText = q.quotation_date || "-";
+        } else {
+            preparedSig.style.display = "none";
+            preparedName.innerText = q.requester_name || "-";
+            preparedDate.innerText = "-";
+        }
+
+        const hodSig = document.getElementById("qrfHodSig");
+        const hodName = document.getElementById("qrfHodName");
+        const hodDate = document.getElementById("qrfHodDate");
+
+        if (data.hod_signature?.signature) {
+            hodSig.src = resolveSignatureSrc(data.hod_signature.signature);
+            hodSig.style.display = "block";
+            hodName.innerText = data.hod_signature.username || "-";
+            hodDate.innerText = data.hod_signature.hod_approved_at || "-";
+        } else {
+            hodSig.style.display = "none";
+            hodName.innerText = "-";
+            hodDate.innerText = "-";
+        }
+
+        const ceoSig = document.getElementById("qrfCeoSig");
+        const ceoName = document.getElementById("qrfCeoName");
+        const ceoDate = document.getElementById("qrfCeoDate");
+
+        if (data.ceo_signature?.signature) {
+            ceoSig.src = resolveSignatureSrc(data.ceo_signature.signature);
+            ceoSig.style.display = "block";
+            ceoName.innerText = data.ceo_signature.username || "-";
+            ceoDate.innerText = data.ceo_signature.ceo_approved_at || "-";
+        } else {
+            ceoSig.style.display = "none";
+            ceoName.innerText = "-";
+            ceoDate.innerText = "-";
+        }
+
+        // =========================
+        // ITEMS TABLE
+        // =========================
+        const body = document.getElementById("sharedPRS");
+        body.innerHTML = "";
+
+        (data.items || []).forEach(item => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${item.item_name || "-"}</td>
+                <td>${item.description || "-"}</td>
+                <td>${item.quantity || "-"}</td>
+            `;
+
+            body.appendChild(row);
+        });
+
+    } catch (err) {
+        console.error("Error loading quotation details:", err);
+    }
+}
+
+// ================================
+// INIT
+// ================================
+document.addEventListener("DOMContentLoaded", loadQuotations);
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

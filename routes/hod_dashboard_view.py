@@ -32,8 +32,8 @@ def supplier_list():
     return jsonify(suppliers)
 
 
-@hod_dashboard_view_bp.route("/quotation_data")
-def quotation_data():
+@hod_dashboard_view_bp.route("/quotationRequest_data")
+def quotationRequest_data():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
@@ -64,8 +64,8 @@ def quotation_data():
 
     return jsonify(quotations)
 
-@hod_dashboard_view_bp.route("/quotation_details/<int:qrf_id>")
-def quotation_details(qrf_id):
+@hod_dashboard_view_bp.route("/quotationRequest_details/<int:qrf_id>")
+def quotationRequest_details(qrf_id):
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -222,47 +222,7 @@ def quotation_details(qrf_id):
         cursor.close()
         conn.close()
 
-@hod_dashboard_view_bp.route("/quotation_approve/<int:qrf_id>", methods=["POST"])
-def quotation_approve(qrf_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
 
-    try:
-        cursor.execute(
-            "UPDATE quotation_requests SET status = %s WHERE qrf_id = %s",
-            ("Approved", qrf_id)
-        )
-        conn.commit()
-        return jsonify({"success": True, "message": "Quotation approved."})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
-
-
-@hod_dashboard_view_bp.route("/quotation_reject/<int:qrf_id>", methods=["POST"])
-def quotation_reject(qrf_id):
-    data = request.get_json(silent=True) or {}
-    remarks = data.get("remarks", "Rejected by HOD")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute(
-            "UPDATE quotation_requests SET status = %s, remarks = %s WHERE qrf_id = %s",
-            ("Rejected", remarks, qrf_id)
-        )
-        conn.commit()
-        return jsonify({"success": True, "message": "Quotation rejected."})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
 
 
 @hod_dashboard_view_bp.route("/po_data")
@@ -333,7 +293,10 @@ def po_details(po_id):
                 a.ceo_approved_at,
 
                 hod.username AS hod_name,
-                ceo.username AS ceo_name
+                hod.signature AS hod_signature,
+
+                ceo.username AS ceo_name,
+                ceo.signature AS ceo_signature
 
             FROM purchase_orders p
 
@@ -415,7 +378,9 @@ def po_details(po_id):
             "ceo_approved_at": order["ceo_approved_at"],
 
             "hod_name": order["hod_name"],
+            "hod_signature": order["hod_signature"],
             "ceo_name": order["ceo_name"],
+            "ceo_signature": order["ceo_signature"],
 
             # CREATOR
             "created_by": {
@@ -493,6 +458,7 @@ def hod_grn_details(grn_id):
                 s.address AS supplier_address,
 
                 u.username AS received_by,
+                u.signature AS receiver_signature,
 
                 a.hod_status,
                 a.ceo_status,
@@ -644,6 +610,7 @@ def hod_grn_details(grn_id):
             "hod_name": grn.get("hod_name"),
             "ceo_name": grn.get("ceo_name"),
 
+            "receiver_signature": grn.get("receiver_signature"),
             "hod_signature": grn.get("hod_signature"),
             "ceo_signature": grn.get("ceo_signature")
         }
@@ -960,8 +927,17 @@ def payment_details(payment_id):
                 COALESCE(a.hod_status, 'PENDING') AS hod_status,
                 COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
                 COALESCE(a.final_status, 'PENDING') AS final_status,
+                a.hod_approved_at,
+                a.ceo_approved_at,
 
-                u.username AS prepared_by
+                prep.username AS prepared_by,
+                prep.signature AS prepared_signature,
+
+                hod.username AS hod_name,
+                hod.signature AS hod_signature,
+
+                ceo.username AS ceo_name,
+                ceo.signature AS ceo_signature
 
             FROM payments p
 
@@ -980,12 +956,18 @@ def payment_details(payment_id):
             JOIN departments d
                 ON r.department_id = d.department_id
 
-            JOIN users u
-                ON p.paid_by = u.user_id
+            JOIN users prep
+                ON p.paid_by = prep.user_id
 
             LEFT JOIN approvals a
                 ON a.module_name = 'PAYMENT'
                 AND a.document_id = p.payment_id
+
+            LEFT JOIN users hod
+                ON a.hod_user_id = hod.user_id
+
+            LEFT JOIN users ceo
+                ON a.ceo_user_id = ceo.user_id
 
             WHERE p.payment_id = %s
         """, (payment_id,))
@@ -1027,6 +1009,226 @@ def payment_details(payment_id):
             "success": True,
             "data": payment,
             "items": items
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+
+
+
+
+
+#quotation and quotation request.
+
+
+
+
+@hod_dashboard_view_bp.route("/quotation_data")
+def quotation_data():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.quotation_no,
+                qr.qrf_no,
+                s.supplier_name,
+                COALESCE(a.final_status, 'PENDING') AS status,
+                d.department_name AS department,
+                q.quotation_date AS created_at
+
+            FROM quotations q
+
+            LEFT JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
+
+            LEFT JOIN requisitions r
+                ON qr.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            LEFT JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'QUOTATION'
+               AND a.document_id = q.quotation_id
+
+            ORDER BY q.quotation_id DESC
+        """)
+
+        rows = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "data": rows
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@hod_dashboard_view_bp.route("/quotations/api/<int:quotation_id>")
+def quotation_details(quotation_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # =====================================
+        # QUOTATION HEADER
+        # =====================================
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.quotation_no,
+                q.quotation_date,
+                q.qrf_id,
+                q.total_amount,
+                q.delivery_date,
+                q.warranty,
+                q.payment_terms,
+                q.remarks,
+
+                COALESCE(a.final_status, 'PENDING') AS status,
+
+                qr.qrf_no,
+                qr.request_date,
+                qr.deadline_date,
+
+                r.prs_no,
+                d.department_name,
+
+                u.username AS requester_name,
+                u.email AS requester_email,
+                u.signature AS requester_signature,
+
+                s.supplier_name,
+                s.contact_person,
+                s.email AS supplier_email,
+                s.phone,
+                s.address,
+
+                COALESCE(a.hod_status, 'PENDING') AS hod_status,
+                COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+                a.hod_approved_at,
+                a.ceo_approved_at
+
+            FROM quotations q
+
+            LEFT JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
+
+            LEFT JOIN requisitions r
+                ON qr.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            LEFT JOIN users u
+                ON qr.requested_by = u.user_id
+
+            LEFT JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'QUOTATION'
+               AND a.document_id = q.quotation_id
+
+            WHERE q.quotation_id = %s
+        """, (quotation_id,))
+
+        quotation = cursor.fetchone()
+
+        if not quotation:
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found"
+            }), 404
+
+        # =====================================
+        # ITEMS
+        # =====================================
+        cursor.execute("""
+            SELECT
+                item_name,
+                description,
+                quantity,
+                unit_price,
+                amount
+            FROM quotation_records_items
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        items = cursor.fetchall()
+
+        # =====================================
+        # HOD SIGNATURE
+        # =====================================
+        cursor.execute("""
+            SELECT
+                a.hod_status,
+                a.hod_approved_at,
+                u.username,
+                u.signature
+            FROM approvals a
+            LEFT JOIN users u
+                ON u.user_id = a.hod_user_id
+            WHERE a.module_name = 'QUOTATION'
+              AND a.document_id = %s
+            LIMIT 1
+        """, (quotation_id,))
+
+        hod_signature = cursor.fetchone()
+
+        # =====================================
+        # CEO SIGNATURE
+        # =====================================
+        cursor.execute("""
+            SELECT
+                a.ceo_status,
+                a.ceo_approved_at,
+                u.username,
+                u.signature
+            FROM approvals a
+            LEFT JOIN users u
+                ON u.user_id = a.ceo_user_id
+            WHERE a.module_name = 'QUOTATION'
+              AND a.document_id = %s
+            LIMIT 1
+        """, (quotation_id,))
+
+        ceo_signature = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "quotation": quotation,
+            "items": items,
+            "hod_signature": hod_signature,
+            "ceo_signature": ceo_signature
         })
 
     except Exception as e:
