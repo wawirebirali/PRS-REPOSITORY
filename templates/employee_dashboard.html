@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PRS ERP Dashboard</title>
+
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='employee.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+<style>
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGOUT BUTTON -->
+
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+    <h2>
+        PRS SYSTEM <br>
+        EMPLOYEE DASHBOARD
+    </h2>
+
+    <button class="active"
+            onclick="openModule('dashboardModule', this)">
+        dashboard
+    </button>
+
+    <button onclick="openModule('requisition', this)">
+        Requisition
+    </button>
+    <button class="logout-btn" onclick="logoutUser()">
+        Logout
+    </button>
+
+
+
+
+</div>
+
+<div class="main">
+
+
+
+
+
+<!-- =====================================================
+        REQUISITION MODULE
+===================================================== -->
+
+<div id="requisition" class="module active">
+
+
+<div class="container">
+
+
+
+<!-- =====================================================
+                    LEFT PANEL
+===================================================== -->
+
+<div class="left">
+
+
+
+<!-- ================= REQUISITION LIST ================= -->
+
+
+<div id="requisitionList">
+
+
+<div class="header">
+
+    Purchase Requisitions
+
+</div>
+
+
+
+<div class="toolbar">
+
+
+<input
+type="text"
+id="prsSearch"
+placeholder="Search PRS..."
+onkeyup="searchPRS()">
+
+
+
+<button
+type="button"
+class="btn primary"
+onclick="showCreateForm()">
+
++ Create Requisition
+
+</button>
+
+
+
+</div>
+
+
+
+
+<br>
+
+
+
+<div class="action-buttons">
+
+
+<button
+class="btn primary"
+onclick="window.print()">
+
+Print Slip
+
+</button>
+
+
+</div>
+
+
+
+<br>
+
+
+
+
+<table id="prsTable">
+
+
+<thead>
+
+<tr>
+
+<th>Select</th>
+<th>PRS No</th>
+<th>Department</th>
+<th>Status</th>
+<th>Date</th>
+
+
+</tr>
+
+</thead>
+
+
+
+
+<tbody>
+
+
+
+{% for req in requisitions %}
+
+
+<tr
+data-id="{{req.requisition_id}}"
+onclick="loadSlipFromRow(this)">
+
+
+
+<td>
+
+
+<input
+type="radio"
+name="prs_select"
+onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
+
+
+</td>
+
+
+
+<td>
+{{req.prs_no}}
+</td>
+
+
+
+<td>
+{{req.department_name}}
+</td>
+
+
+
+<td>
+{{req.hod_status or 'PENDING'}}
+</td>
+
+
+
+<td>
+{{req.submission_date}}
+</td>
+
+
+
+</tr>
+
+
+
+{% endfor %}
+
+
+
+</tbody>
+
+
+</table>
+
+
+
+</div>
+
+
+
+
+
+<!-- ================= CREATE FORM ================= -->
+
+
+
+<div id="createForm" style="display:none;">
+
+
+
+<div class="form-header">
+
+
+<h2>
+Create Purchase Requisition
+</h2>
+
+
+
+<button
+type="button"
+class="btn danger"
+onclick="hideCreateForm()">
+
+
+Cancel
+
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+<form method="POST"
+action="{{url_for('requisition.submit_requisition')}}">
+
+
+
+
+
+<div class="form-row">
+
+
+<div>
+
+<label>
+Department
+</label>
+
+
+<input
+type="text"
+value="{{session.department}}"
+readonly>
+
+</div>
+
+
+
+
+
+<div>
+
+<label>
+Created By
+</label>
+
+
+<input
+type="text"
+value="{{session.username}}"
+readonly>
+
+
+</div>
+
+
+
+
+
+<div>
+
+
+<label>
+Date
+</label>
+
+
+<input
+type="date"
+id="submission_date"
+name="submission_date"
+required>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+<br>
+
+
+
+
+
+<div class="controls">
+
+
+<button
+type="button"
+class="btn success"
+onclick="addRow()">
+
+
++ Add Item
+
+
+</button>
+
+
+
+
+<button
+type="button"
+class="btn danger"
+onclick="removeRow()">
+
+
+Remove Item
+
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+<br>
+
+
+
+
+
+<table id="reqTable">
+
+
+<thead>
+
+
+<tr>
+
+
+<th>No</th>
+<th>Material</th>
+<th>Description</th>
+<th>UOM</th>
+<th>Qty Stock</th>
+<th>Qty Required</th>
+<th>Required Date</th>
+<th>Remark</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+<tbody>
+
+
+</tbody>
+
+
+
+</table>
+
+
+
+
+
+
+<br>
+
+
+
+
+<button
+type="submit"
+class="submit-btn">
+
+
+Submit Requisition
+
+
+</button>
+
+
+
+
+</form>
+
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<!-- =====================================================
+                    RIGHT PANEL
+===================================================== -->
+
+
+<div class="right">
+
+
+
+
+
+<div id="printArea" class="slip">
+
+
+
+<h2>
+PURCHASE REQUISITION SLIP
+</h2>
+
+
+
+<hr>
+
+
+
+
+
+<div class="info">
+
+
+<p>
+<b>PRS No:</b>
+<span id="prs_no">-</span>
+</p>
+
+
+
+
+<p>
+<b>Department:</b>
+<span id="department_name">-</span>
+</p>
+
+
+
+
+<p>
+<b>Submission:</b>
+<span id="submission">-</span>
+</p>
+
+
+
+
+<p>
+<b>HOD Status:</b>
+<span id="hod_status">-</span>
+</p>
+
+
+
+
+<p>
+<b>CEO Status:</b>
+<span id="ceo_status">-</span>
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+<h3>
+Requested Items
+</h3>
+
+
+
+
+
+<table>
+
+
+<thead>
+
+
+<tr>
+
+<th>No</th>
+<th>Material</th>
+<th>UOM</th>
+<th>Qty</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+<tbody id="items_body">
+
+
+</tbody>
+
+
+
+</table>
+
+
+
+
+
+
+
+<h3>
+Signatures
+</h3>
+
+
+
+
+
+
+<div class="signature-section">
+
+
+
+<div class="sig-box">
+
+
+<h4>
+Prepared By
+</h4>
+
+
+<img
+id="sig_created_by"
+src=""
+style="display:none;height:60px;">
+
+
+
+<p>
+<b>Name:</b>
+<span id="created_by_name">-</span>
+</p>
+
+
+
+<p>
+<b>Date:</b>
+<span id="created_date">-</span>
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="sig-box">
+
+
+<h4>
+HOD Approval
+</h4>
+
+
+
+<img
+id="sig_hod"
+src=""
+style="display:none;height:60px;">
+
+
+
+<p>
+<b>Name:</b>
+<span id="hod_username">-</span>
+</p>
+
+
+
+<p>
+<b>Date:</b>
+<span id="hod_approval_date">-</span>
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+<div class="sig-box">
+
+
+<h4>
+CEO Approval
+</h4>
+
+
+
+<img
+id="sig_ceo"
+src=""
+style="display:none;height:60px;">
+
+
+
+<p>
+<b>Name:</b>
+<span id="ceo_username">-</span>
+</p>
+
+
+
+<p>
+<b>Date:</b>
+<span id="ceo_approval_date">-</span>
+</p>
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+<!-- =====================================================
+        DASHBOARD MODULE
+===================================================== -->
+
+<div id="dashboardModule" class="module">
+
+
+<!-- HEADER -->
+
+<div class="dashboard-header">
+
+<div>
+
+
+<h1>
+STATISTICS FOR MY REQUISITIONS 👋
+</h1>
+
+
+</div>
+
+
+<div class="date-box">
+
+
+<span id="currentDate"></span>
+
+</div>
+
+
+</div>
+
+
+
+
+
+<!-- ================= STATISTICS ================= -->
+
+
+<div class="dashboard-cards">
+
+
+
+<!-- TOTAL -->
+
+<div class="dash-card">
+
+<div class="icon">
+📄
+</div>
+
+<div>
+
+<h3>
+Total Requisitions
+</h3>
+
+<h1>
+25
+</h1>
+
+<p>
+Submitted
+</p>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+<!-- PENDING -->
+
+<div class="dash-card pending">
+
+<div class="icon">
+⏳
+</div>
+
+<div>
+
+<h3>
+Pending
+</h3>
+
+<h1>
+8
+</h1>
+
+<p>
+Awaiting Approval
+</p>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+<!-- APPROVED -->
+
+<div class="dash-card approved">
+
+<div class="icon">
+✅
+</div>
+
+<div>
+
+<h3>
+Approved
+</h3>
+
+<h1>
+14
+</h1>
+
+<p>
+Completed
+</p>
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+<!-- REJECTED -->
+
+<div class="dash-card rejected">
+
+<div class="icon">
+❌
+</div>
+
+
+<div>
+
+<h3>
+Rejected
+</h3>
+
+<h1>
+3
+</h1>
+
+<p>
+Returned
+</p>
+
+
+</div>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ================= CURRENT STAGE ================= -->
+
+
+<div class="dashboard-section">
+
+
+<h2>
+🔄 Current Approval Stage
+</h2>
+
+
+
+<div class="stage-cards">
+
+
+
+
+
+<div class="stage-card">
+
+<h3>
+HOD Approval
+</h3>
+
+<h1>
+5
+</h1>
+
+<p>
+Waiting HOD Review
+</p>
+
+</div>
+
+
+
+
+
+
+<div class="stage-card">
+
+<h3>
+CEO Approval
+</h3>
+
+<h1>
+2
+</h1>
+
+<p>
+Waiting CEO Decision
+</p>
+
+</div>
+
+
+
+
+
+
+
+
+<div class="stage-card">
+
+<h3>
+Procurement
+</h3>
+
+<h1>
+4
+</h1>
+
+<p>
+Processing Purchase
+</p>
+
+</div>
+
+
+
+
+
+
+
+
+<div class="stage-card">
+
+<h3>
+Finance
+</h3>
+
+<h1>
+1
+</h1>
+
+<p>
+Payment Processing
+</p>
+
+</div>
+
+
+
+
+
+
+
+
+<div class="stage-card">
+
+<h3>
+Completed
+</h3>
+
+<h1>
+10
+</h1>
+
+<p>
+Finished Requests
+</p>
+
+</div>
+
+
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='/budget.js') }}"></script>
+<script src="{{ url_for('static', filename='/employee.js') }}"></script>
+<script src="{{ url_for('static', filename='/requisition.js') }}"></script>
+</body>
+</html>
+

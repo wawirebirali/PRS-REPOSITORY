@@ -13,7 +13,107 @@ def procurement_dashboard():
     if session.get("user_role") != "procurement":
         return redirect(url_for("auth.login"))
 
-    return render_template("procurement_dashboard.html")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+
+    # ===============================
+    # LOAD REQUISITIONS FOR QRF
+    # ===============================
+
+    cursor.execute("""
+        SELECT 
+            requisition_id,
+            prs_no
+        FROM requisitions
+        WHERE status != 'REJECTED'
+        ORDER BY requisition_id DESC
+    """)
+
+    requisitions = cursor.fetchall()
+
+
+
+    # ===============================
+    # LOAD SUPPLIERS
+    # ===============================
+
+    cursor.execute("""
+        SELECT
+            supplier_id,
+            supplier_name
+        FROM suppliers
+        ORDER BY supplier_name
+    """)
+
+    suppliers = cursor.fetchall()
+
+
+
+    # ===============================
+    # LOAD PURCHASE ORDERS
+    # ===============================
+
+    cursor.execute("""
+        SELECT
+            purchase_order_id,
+            po_number
+        FROM purchase_orders
+        ORDER BY purchase_order_id DESC
+    """)
+
+    pos = cursor.fetchall()
+
+
+
+    # ===============================
+    # LOAD QUOTATIONS
+    # ===============================
+
+    cursor.execute("""
+        SELECT
+            quotation_id,
+            quotation_no
+        FROM quotations
+        ORDER BY quotation_id DESC
+    """)
+
+    quotations = cursor.fetchall()
+
+
+    cursor.execute("""
+        SELECT 
+            qrf_id,
+            qrf_no
+        FROM quotation_requests
+        ORDER BY qrf_id DESC
+    """)
+
+    qrfs = cursor.fetchall()
+
+
+
+    cursor.close()
+    conn.close()
+
+
+
+    return render_template(
+        "procurement_dashboard.html",
+
+        requisitions=requisitions,
+
+        suppliers=suppliers,
+
+        pos=pos,
+
+        quotations=quotations,
+
+        qrfs=qrfs
+        
+
+    )
 @procurement_dashboard_bp.route("/api/procurement_requisition")
 def procurement_requisition():
 
@@ -59,57 +159,102 @@ def procurement_requisition_details(req_id):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # =========================
-    # HEADER (SLIP INFO)
-    # =========================
-    cursor.execute("""
-        SELECT 
-            r.requisition_id,
-            r.prs_no,
-            d.department_name,
-            r.submission_date,
+    try:
 
-            COALESCE(a.hod_status, 'PENDING') AS hod_status,
-            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+        # =====================================
+        # REQUISITION HEADER
+        # =====================================
+        cursor.execute("""
+            SELECT
 
-            a.hod_approved_at,
-            a.ceo_approved_at
+                r.requisition_id,
+                r.prs_no,
+                r.submission_date,
 
-        FROM requisitions r
+                d.department_name,
 
-        JOIN departments d 
-            ON r.department_id = d.department_id
+                u.username AS requester_name,
+                u.email AS requester_email,
+                u.signature AS requester_signature,
 
-        LEFT JOIN approvals a 
-            ON a.module_name = 'PRS'
-            AND a.document_id = r.requisition_id
+                COALESCE(a.hod_status,'PENDING') AS hod_status,
+                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+                COALESCE(a.final_status,'PENDING') AS status,
 
-        WHERE r.requisition_id = %s
-    """, (req_id,))
+                a.hod_approved_at,
+                a.ceo_approved_at,
 
-    requisition = cursor.fetchone()
+                hod.username AS hod_name,
+                hod.signature AS hod_signature,
 
-    # =========================
-    # ITEMS
-    # =========================
-    cursor.execute("""
-        SELECT 
-            material_name,
-            uom,
-            qty_required
-        FROM requisition_items
-        WHERE requisition_id = %s
-    """, (req_id,))
+                ceo.username AS ceo_name,
+                ceo.signature AS ceo_signature
 
-    items = cursor.fetchall()
+            FROM requisitions r
 
-    cursor.close()
-    conn.close()
+            LEFT JOIN departments d
+                ON d.department_id = r.department_id
 
-    return jsonify({
-        "requisition": requisition,
-        "items": items
-    })
+            LEFT JOIN users u
+                ON u.user_id = r.user_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'PRS'
+               AND a.document_id = r.requisition_id
+
+            LEFT JOIN users hod
+                ON hod.user_id = a.hod_user_id
+
+            LEFT JOIN users ceo
+                ON ceo.user_id = a.ceo_user_id
+
+            WHERE r.requisition_id = %s
+
+        """, (req_id,))
+
+        requisition = cursor.fetchone()
+
+        if not requisition:
+            return jsonify({
+                "success": False,
+                "message": "Requisition not found"
+            }), 404
+
+        # =====================================
+        # ITEMS
+        # =====================================
+        cursor.execute("""
+            SELECT
+                material_name,
+                description,
+                uom,
+                qty_stock,
+                qty_required,
+                required_date,
+                remark
+            FROM requisition_items
+            WHERE requisition_id = %s
+        """, (req_id,))
+
+        items = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "requisition": requisition,
+            "items": items
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 
 
 from flask import request
@@ -459,19 +604,7 @@ def save_qrf():
 
         if conn:
             conn.close()
-from flask import jsonify, render_template, request, url_for
-from datetime import datetime
 
-# =========================
-# QUOTATION PAGE (GET)
-# =========================
-
-
-# =========================
-# GET QRF DETAILS
-# =========================
-from flask import jsonify, render_template, request, url_for
-from datetime import datetime
 
 # =========================
 # QUOTATION PAGE (GET)

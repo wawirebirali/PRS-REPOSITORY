@@ -85,3 +85,13 @@ def ceo_reject(requisition_id):
         flash("Failed to reject requisition", "danger")
 
     return redirect(url_for("ceo.ceo_dashboard"))
+
+
+
+
+# INSERTING BUDGET
+
+
+from flask import Blueprint, request, jsonify, session
+from datetime import datetime
+

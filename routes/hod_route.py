@@ -171,7 +171,6 @@ def requisition_api(requisition_id):
 # =========================================================
 # UNIVERSAL APPROVAL API (HOD + CEO)
 # =========================================================
-
 @hod_dashboard_bp.route("/approve", methods=["POST"])
 def approve_document():
 
@@ -179,7 +178,7 @@ def approve_document():
 
     module_name = data.get("module_name")
     document_id = data.get("document_id")
-    action = data.get("action", "APPROVED")
+    action = data.get("action", "APPROVED").upper()
 
     user_id = session.get("user_id")
     role = session.get("user_role")
@@ -195,11 +194,21 @@ def approve_document():
 
     try:
 
-        # ==========================================
-        # CREATE APPROVAL ROW IF MISSING
-        # ==========================================
+        table_map = {
+            "PRS": ("requisitions", "requisition_id"),
+            "QRF": ("quotation_requests", "qrf_id"),
+            "QUOTATION": ("quotations", "quotation_id"),
+            "PO": ("purchase_orders", "purchase_order_id"),
+            "GRN": ("grn", "grn_id"),
+            "INVOICE": ("invoices", "invoice_id"),
+            "PAYMENT": ("payments", "payment_id")
+        }
+
+        # -----------------------------
+        # Create approval row if missing
+        # -----------------------------
         cursor.execute("""
-            SELECT approval_id
+            SELECT *
             FROM approvals
             WHERE module_name=%s
             AND document_id=%s
@@ -217,10 +226,28 @@ def approve_document():
                 VALUES(%s,%s)
             """, (module_name, document_id))
 
+            conn.commit()
+
+            cursor.execute("""
+                SELECT *
+                FROM approvals
+                WHERE module_name=%s
+                AND document_id=%s
+            """, (module_name, document_id))
+
+            approval = cursor.fetchone()
+
         # ==========================================
-        # HOD APPROVAL
+        # HOD
         # ==========================================
         if role == "hod":
+
+            if approval["hod_status"] in ("APPROVED", "REJECTED"):
+
+                return jsonify({
+                    "success": False,
+                    "message": "This document has already been processed by HOD."
+                })
 
             cursor.execute("""
                 UPDATE approvals
@@ -244,31 +271,34 @@ def approve_document():
                 document_id
             ))
 
+            if action == "REJECTED":
+
+                table, pk = table_map[module_name]
+
+                cursor.execute(f"""
+                    UPDATE {table}
+                    SET status='REJECTED'
+                    WHERE {pk}=%s
+                """, (document_id,))
+
         # ==========================================
-        # CEO APPROVAL
+        # CEO
         # ==========================================
         elif role == "ceo":
 
-            cursor.execute("""
-                SELECT hod_status
-                FROM approvals
-                WHERE module_name=%s
-                AND document_id=%s
-            """, (module_name, document_id))
-
-            row = cursor.fetchone()
-
-            if not row or row["hod_status"] != "APPROVED":
-
-                conn.rollback()
-
-                cursor.close()
-                conn.close()
+            if approval["hod_status"] != "APPROVED":
 
                 return jsonify({
                     "success": False,
-                    "message": "HOD must approve first"
-                }), 400
+                    "message": "HOD must approve first."
+                })
+
+            if approval["ceo_status"] in ("APPROVED", "REJECTED"):
+
+                return jsonify({
+                    "success": False,
+                    "message": "This document has already been processed by CEO."
+                })
 
             cursor.execute("""
                 UPDATE approvals
@@ -287,66 +317,18 @@ def approve_document():
                 document_id
             ))
 
-            # ==========================================
-            # UPDATE MODULE STATUS
-            # ==========================================
-            table_map = {
+            table, pk = table_map[module_name]
 
-                "PRS": (
-                    "requisitions",
-                    "requisition_id"
-                ),
-
-                "PO": (
-                    "purchase_orders",
-                    "purchase_order_id"
-                ),
-
-                "GRN": (
-                    "grn",
-                    "grn_id"
-                ),
-
-                "INVOICE": (
-                    "invoices",
-                    "invoice_id"
-                ),
-
-                "PAYMENT": (
-                    "payments",
-                    "payment_id"
-                ),
-
-                "QRF": (
-                    "quotation_requests",
-                    "qrf_id"
-                ),
-                "QUOTATION": (
-                    "quotations",
-                    "quotation_id"
-                )
-
-            }
-
-            if module_name in table_map:
-
-                table_name, pk = table_map[module_name]
-
-                cursor.execute(f"""
-                    UPDATE {table_name}
-                    SET status=%s
-                    WHERE {pk}=%s
-                """, (
-                    action,
-                    document_id
-                ))
+            cursor.execute(f"""
+                UPDATE {table}
+                SET status=%s
+                WHERE {pk}=%s
+            """, (
+                action,
+                document_id
+            ))
 
         else:
-
-            conn.rollback()
-
-            cursor.close()
-            conn.close()
 
             return jsonify({
                 "success": False,
@@ -355,27 +337,24 @@ def approve_document():
 
         conn.commit()
 
-        cursor.close()
-        conn.close()
-
         return jsonify({
             "success": True,
-            "message": f"{role.upper()} {action}"
+            "message": f"{role.upper()} {action} successfully."
         })
 
     except Exception as e:
 
         conn.rollback()
 
-        cursor.close()
-        conn.close()
-
         return jsonify({
             "success": False,
             "message": str(e)
         }), 500
 
+    finally:
 
+        cursor.close()
+        conn.close()
 # =========================================================
 # SIGNATURE API
 # =========================================================
@@ -496,4 +475,190 @@ def qrf_data():
 
 
 
+#inserting budget
 
+
+
+@hod_dashboard_bp.route("/api/departments", methods=["GET"])
+def get_departments():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT department_id, department_name
+            FROM departments
+            ORDER BY department_name
+        """)
+
+        departments = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "data": departments
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+def insert_budget(
+    budget_no,
+    department_id,
+    budget_item,
+    budget_type,
+    budget_amount,
+    start_date,
+    end_date,
+    created_by
+):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO budgets(
+            budget_no,
+            department_id,
+            budget_item,
+            budget_type,
+            budget_amount,
+            start_date,
+            end_date,
+            created_by
+        )
+        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
+    """,(
+        budget_no,
+        department_id,
+        budget_item,
+        budget_type,
+        budget_amount,
+        start_date,
+        end_date,
+        created_by
+    ))
+
+    conn.commit()
+
+    budget_id = cursor.lastrowid
+
+    cursor.close()
+    conn.close()
+
+    return budget_id
+
+
+from flask import request, jsonify, session
+from datetime import datetime
+
+@hod_dashboard_bp.route("/api/budget/create", methods=["POST"])
+def create_budget():
+
+    if "user_id" not in session:
+        return jsonify({
+            "success": False,
+            "message": "Please login first."
+        }), 401
+
+    try:
+        data = request.get_json()
+
+        budget_no = "BUD-" + datetime.now().strftime("%Y%m%d%H%M%S")
+
+        budget_id = insert_budget(
+            budget_no=budget_no,
+            department_id=data["department_id"],
+            budget_item=data["budget_item"],
+            budget_type=data["budget_type"],
+            budget_amount=data["budget_amount"],
+            start_date=data["start_date"],
+            end_date=data["end_date"],
+            created_by=session["user_id"]      # Logged in user
+        )
+
+        return jsonify({
+            "success": True,
+            "budget_id": budget_id,
+            "budget_no": budget_no,
+            "message": "Budget created successfully."
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+
+
+
+
+@hod_dashboard_bp.route("/api/budgets", methods=["GET"])
+def get_budgets():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                b.budget_id,
+                b.budget_no,
+                b.created_at,
+                d.department_name,
+                b.budget_item,
+                b.budget_type,
+                b.start_date,
+                b.end_date,
+                b.budget_amount,
+
+                COALESCE(b.spent_amount,0) AS spent,
+
+                (b.budget_amount - COALESCE(b.spent_amount,0)) AS balance,
+
+                DATEDIFF(b.end_date,CURDATE()) AS due_days,
+
+                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+                a.ceo_approved_at
+
+            FROM budgets b
+
+            LEFT JOIN departments d
+                ON b.department_id = d.department_id
+
+            LEFT JOIN approvals a
+                ON a.module_name='BUDGET'
+               AND a.document_id=b.budget_id
+
+            ORDER BY b.created_at DESC
+        """)
+
+        budgets = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "data": budgets
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }),500
+
+    finally:
+        cursor.close()
+        conn.close()

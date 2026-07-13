@@ -1,108 +1,414 @@
-body{
-margin:0;
-font-family:Arial;
-background:#f4f6fb;
-display:flex;
+/* =========================*/
+ body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#eef2f7;
+    display:flex;
 }
 
-.sidebar{
-width:220px;
-background:#2C7A7B;
-color:white;
-height:100vh;
-position:fixed;
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
+    color: #ffffff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    /* 👇 modern look improvements */
+    border-right: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    padding-top: 10px;
 }
 
-.sidebar h2{
-text-align:center;
-padding:20px 0;
-border-bottom:1px solid #444;
+/* Sidebar title */
+.sidebar h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* nice bottom separation line */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sidebar button{
-width:100%;
-padding:14px;
-border:none;
-background:none;
-color:white;
-text-align:left;
-padding-left:20px;
-cursor:pointer;
+/* Sidebar buttons */
+.sidebar button {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    border-left: 3px solid transparent;
 }
 
-.sidebar button:hover{
-background:#1f5f61;
+/* Hover effect */
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #F97316; /* orange highlight */
+    padding-left: 18px;
 }
 
-.sidebar button.active{
-background:#2C7A7B;
+/* Active button */
+.sidebar button.active {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #D4AF37; /* gold active indicator */
+    color: #ffffff;
 }
 
+/* =========================
+   MAIN LAYOUT
+========================= */
 .main{
-margin-left:220px;
-display:flex;
-width:100%;
+    margin-left:230px;
+    width:calc(100% - 230px);
+    padding:15px;
 }
 
-.module{
-display:none;
-width:60%;
-padding:15px;
+/* =========================
+   MODULES
+========================= */
+.module {
+    display: none;
 }
 
-.module.active{
-display:block;
+.module.active {
+    display: block;
+}
+
+/* =========================
+   MODAL
+========================= */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+    max-width: 420px;
+    width: 90%;
+}
+
+/* =========================
+   MODULE LAYOUT
+========================= */
+.container{
+    display:flex;
+    gap:20px;
+    align-items:flex-start;
+    flex-wrap:nowrap; /* prevents moving below */
+}
+
+.left{
+    flex:0 0 65%;
 }
 
 .right{
-width:40%;
-padding:20px;
-border-left:2px solid #ddd;
-background:#f9f9f9;
+    flex:0 0 35%;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+/* SEARCH */
+.search input{
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
 }
 
-.header{
-background:#2C7A7B;
-color:white;
-padding:12px;
-border-radius:4px;
-margin-bottom:15px;
+/* BUTTONS */
+.btn{
+    padding:8px 12px;
+    border:none;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    margin-right:5px;
 }
 
+.primary{ background:#2C7A7B; }
+.success{ background:#16a34a; }
+.danger{ background:#dc2626; }
+
+/* =========================
+   GLOBAL TABLE STYLE
+========================= */
 table{
-width:100%;
-border-collapse:collapse;
-background:white;
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
 
 th{
-background:#eef2ff;
-padding:10px;
-text-align:left;
+    background:#f1f5f9;
+    padding:10px 12px;
+    text-align:left;
+    font-size:14px;
+    font-weight:600;
+    white-space:nowrap;
 }
 
 td{
-padding:10px;
-border-bottom:1px solid #eee;
-cursor:pointer;
+    padding:10px 12px;
+    border-bottom:1px solid #eee;
+    font-size:13px;
+    white-space:nowrap;
+    vertical-align:middle;
+    cursor:pointer;
 }
 
-.btn{
-padding:8px 12px;
-border:none;
-cursor:pointer;
-color:white;
-margin-right:5px;
-border-radius:3px;
+tr{
+    height:40px;
 }
 
-.primary{background:#2C7A7B;}
-.success{background:#28a745;}
-.danger{background:#dc3545;}
+tbody tr:hover{
+    background:#f8fafc;
+}
 
-.slip{
-background:white;
-padding:20px;
-border-radius:5px;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+/* =========================
+   ALL ERP TABLES
+========================= */
+#prsTable th,
+#prsTable td,
+#quotationTable th,
+#quotationTable td,
+#supplierTable th,
+#supplierTable td,
+#poTable th,
+#poTable td,
+#grnTable th,
+#grnTable td,
+#invoiceTable th,
+#invoiceTable td,
+#paymentTable th,
+#paymentTable td,
+#budgetTable th,
+#budgetTable td{
+    padding:10px 12px;
+    font-size:13px;
+}
+
+#prsTable tr,
+#quotationTable tr,
+#supplierTable tr,
+#poTable tr,
+#grnTable tr,
+#invoiceTable tr,
+#paymentTable tr,
+#budgetTable tr{
+    height:40px;
+}
+
+/* Radio button column */
+#prsTable td:first-child,
+#prsTable th:first-child{
+    width:40px;
+    text-align:center;
+}
+
+/* SELECTED ROW */
+.selected{
+    background:#dbeafe !important;
+    color:#000;
+}
+
+/* SLIP HEADER */
+.slip h2{
+    background:#2C7A7B;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    text-align:center;
+}
+
+/* INFO */
+.info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:15px 0;
+}
+
+.info p{
+    background:#f3f4f6;
+    padding:10px;
+    border-radius:6px;
+    font-size:13px;
+}
+
+.info-section{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+.box{
+    flex:1;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    background:#fafafa;
+}
+
+.box p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.supplier-section{
+    margin-top:10px;
+    margin-bottom:20px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.supplier-section p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+.buttons{
+    margin-top:20px;
+    text-align:center;
+}
+
+.buttons .btn{
+    margin:0 4px;
+}
+
+/* ITEMS TABLE */
+.items-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+.items-table th,
+.items-table td{
+    border:1px solid #ddd;
+    padding:8px;
+}
+
+/* SIGNATURE */
+.signature-section{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+}
+
+.sig-box{
+    text-align:center;
+    width:30%;
+}
+
+.signature{
+    margin-top:25px;
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+}
+
+.sig{
+    width:30%;
+    border-top:1px solid #333;
+    padding-top:5px;
+    text-align:center;
+}
+
+.action-buttons{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* remove default form spacing */
+.action-buttons form{
+    margin: 0;
+}
+
+/* PRINT */
+@media print{
+    body *{
+        visibility:hidden;
+    }
+
+    #printArea, #printArea *{
+        visibility:visible;
+    }
+
+    #printArea{
+        position:absolute;
+        top:0;
+        left:0;
+        width:100%;
+    }
+}
+
+.search input{
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
+    background:white;
+    font-family:Segoe UI, Arial, sans-serif;
+    font-size:14px;
+    outline:none;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    transition:0.2s ease;
+}
+
+
+.top-bar{
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.logout-btn {
+    padding: 10px 18px;
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background: #c53030;
 }

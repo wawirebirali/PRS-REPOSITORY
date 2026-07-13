@@ -38,37 +38,7 @@ def supplier_data():
     return jsonify(data)
 
 
-@procurement_view_bp.route("/quotation_request_data")
-def quotation_request_data():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            q.qrf_id,
-            q.qrf_no,
-            r.prs_no,
-            s.supplier_name,
-            qrs.supplier_response,
-            d.department_name AS department,
-            q.request_date
-        FROM quotation_requests q
-        JOIN requisitions r ON q.requisition_id = r.requisition_id
-        JOIN departments d ON r.department_id = d.department_id
-        JOIN quotation_request_suppliers qrs ON q.qrf_id = qrs.qrf_id
-        JOIN suppliers s ON qrs.supplier_id = s.supplier_id
-        ORDER BY q.qrf_id DESC
-    """)
-
-    data = cursor.fetchall()
-    for item in data:
-        if item.get("request_date") is not None:
-            item["request_date"] = item["request_date"].isoformat()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(data)
 
 
 @procurement_view_bp.route("/supplier_details/<int:qrf_id>")
@@ -336,6 +306,8 @@ def procurementPOdetails(po_id):
     })
 
 
+
+
 @procurement_view_bp.route("/quotation_data")
 def quotation_data():
 
@@ -343,81 +315,44 @@ def quotation_data():
     cursor = conn.cursor(dictionary=True)
 
     try:
+
         cursor.execute("""
             SELECT
                 q.quotation_id,
                 q.quotation_no,
                 qr.qrf_no,
                 s.supplier_name,
-                q.status AS quotation_status,
-                d.department_name,
-                q.created_at,
-
-                i.item_name,
-                i.description,
-                i.quantity,
-                i.unit_price
+                COALESCE(a.final_status, 'PENDING') AS status,
+                d.department_name AS department,
+                q.quotation_date AS created_at
 
             FROM quotations q
 
-            JOIN quotation_request_suppliers qrs
-                ON qrs.quotation_id = q.quotation_id
+            LEFT JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
 
-            JOIN suppliers s
-                ON s.supplier_id = qrs.supplier_id
+            LEFT JOIN requisitions r
+                ON qr.requisition_id = r.requisition_id
 
-            JOIN quotation_requests qr
-                ON qr.qrf_id = qrs.qrf_id
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
 
-            JOIN requisitions r
-                ON r.requisition_id = qr.requisition_id
+            LEFT JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
 
-            JOIN departments d
-                ON d.department_id = r.department_id
+            LEFT JOIN approvals a
+                ON a.module_name = 'QUOTATION'
+               AND a.document_id = q.quotation_id
 
-            LEFT JOIN quotation_records_items i
-                ON i.quotation_id = q.quotation_id
-
-            ORDER BY q.created_at DESC
+            ORDER BY q.quotation_id DESC
         """)
 
         rows = cursor.fetchall()
 
-        # If nothing found, return empty list safely
-        if not rows:
-            return jsonify([])
-
-        # ==================================================
-        # GROUP ITEMS BY QUOTATION
-        # ==================================================
-        grouped = {}
-
-        for row in rows:
-
-            qid = row["quotation_id"]
-
-            if qid not in grouped:
-                grouped[qid] = {
-                    "quotation_id": row["quotation_id"],
-                    "quotation_no": row["quotation_no"],
-                    "qrf_no": row["qrf_no"],
-                    "supplier_name": row["supplier_name"],
-                    "quotation_status": row["quotation_status"],
-                    "department_name": row["department_name"],
-                    "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-                    "items": []
-                }
-
-            # Only add items if they exist (important fix)
-            if row["item_name"] is not None:
-                grouped[qid]["items"].append({
-                    "item_name": row["item_name"],
-                    "description": row["description"],
-                    "quantity": row["quantity"],
-                    "unit_price": row["unit_price"]
-                })
-
-        return jsonify(list(grouped.values()))
+        return jsonify({
+            "success": True,
+            "data": rows
+        })
 
     except Exception as e:
         return jsonify({
@@ -429,74 +364,164 @@ def quotation_data():
         cursor.close()
         conn.close()
 
+
+@procurement_view_bp.route("/quotations/api/<int:quotation_id>")
+def quotation_details(quotation_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # =====================================
+        # QUOTATION HEADER
+        # =====================================
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.quotation_no,
+                q.quotation_date,
+                q.qrf_id,
+                q.total_amount,
+                q.delivery_date,
+                q.warranty,
+                q.payment_terms,
+                q.remarks,
+
+                COALESCE(a.final_status, 'PENDING') AS status,
+
+                qr.qrf_no,
+                qr.request_date,
+                qr.deadline_date,
+
+                r.prs_no,
+                d.department_name,
+
+                u.username AS requester_name,
+                u.email AS requester_email,
+                u.signature AS requester_signature,
+
+                s.supplier_name,
+                s.contact_person,
+                s.email AS supplier_email,
+                s.phone,
+                s.address,
+
+                COALESCE(a.hod_status, 'PENDING') AS hod_status,
+                COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+                a.hod_approved_at,
+                a.ceo_approved_at
+
+            FROM quotations q
+
+            LEFT JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
+
+            LEFT JOIN requisitions r
+                ON qr.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            LEFT JOIN users u
+                ON qr.requested_by = u.user_id
+
+            LEFT JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'QUOTATION'
+               AND a.document_id = q.quotation_id
+
+            WHERE q.quotation_id = %s
+        """, (quotation_id,))
+
+        quotation = cursor.fetchone()
+
+        if not quotation:
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found"
+            }), 404
+
+        # =====================================
+        # ITEMS
+        # =====================================
+        cursor.execute("""
+            SELECT
+                item_name,
+                description,
+                quantity,
+                unit_price,
+                amount
+            FROM quotation_records_items
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+        items = cursor.fetchall()
+
+        # =====================================
+        # HOD SIGNATURE
+        # =====================================
+        cursor.execute("""
+            SELECT
+                a.hod_status,
+                a.hod_approved_at,
+                u.username,
+                u.signature
+            FROM approvals a
+            LEFT JOIN users u
+                ON u.user_id = a.hod_user_id
+            WHERE a.module_name = 'QUOTATION'
+              AND a.document_id = %s
+            LIMIT 1
+        """, (quotation_id,))
+
+        hod_signature = cursor.fetchone()
+
+        # =====================================
+        # CEO SIGNATURE
+        # =====================================
+        cursor.execute("""
+            SELECT
+                a.ceo_status,
+                a.ceo_approved_at,
+                u.username,
+                u.signature
+            FROM approvals a
+            LEFT JOIN users u
+                ON u.user_id = a.ceo_user_id
+            WHERE a.module_name = 'QUOTATION'
+              AND a.document_id = %s
+            LIMIT 1
+        """, (quotation_id,))
+
+        ceo_signature = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "quotation": quotation,
+            "items": items,
+            "hod_signature": hod_signature,
+            "ceo_signature": ceo_signature
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # ==========================================
 # QUOTATION DETAILS
 # ==========================================
 
 
-@procurement_view_bp.route("/quotation_details/<int:id>")
-def quotation_details(id):
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # header
-    cursor.execute("""
-        SELECT
-            q.quotation_id,
-            q.quotation_no,
-            qr.qrf_no,
-            q.created_at,
-            s.supplier_name,
-            d.department_name AS department,
-
-            COALESCE(a.hod_status, 'PENDING') AS hod_status,
-            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
-            a.hod_approved_at,
-            a.ceo_approved_at,
-
-            hod.username AS hod_name,
-            hod.signature AS hod_signature,
-            ceo.username AS ceo_name,
-            ceo.signature AS ceo_signature
-        FROM quotations q
-        JOIN quotation_request_suppliers qrs ON qrs.quotation_id = q.quotation_id
-        JOIN quotation_requests qr ON qr.qrf_id = qrs.qrf_id
-        JOIN requisitions r ON r.requisition_id = qr.requisition_id
-        JOIN departments d ON d.department_id = r.department_id
-        JOIN suppliers s ON s.supplier_id = qrs.supplier_id
-        LEFT JOIN approvals a
-            ON a.module_name = 'QUOTATION'
-           AND a.document_id = q.quotation_id
-        LEFT JOIN users hod
-            ON a.hod_user_id = hod.user_id
-        LEFT JOIN users ceo
-            ON a.ceo_user_id = ceo.user_id
-        WHERE q.quotation_id = %s
-    """, (id,))
-
-    header = cursor.fetchone()
-
-    # items
-    cursor.execute("""
-        SELECT item_name, description, quantity, unit_price
-        FROM quotation_records_items
-        WHERE quotation_id = %s
-    """, (id,))
-
-    items = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    if header and header.get("created_at"):
-        header["created_at"] = header["created_at"].isoformat()
-
-    return jsonify({
-        "success": True,
-        "header": header,
-        "items": items
-    })
 @procurement_view_bp.route("/Grnprocurementdata")
 def Grnprocurementdata():
     conn = get_db_connection()
@@ -706,10 +731,6 @@ def procurementgrn_details(grn_id):
 
 # QUOTATION REQUESTS DETAILS
 
-from flask import jsonify
-
-from flask import jsonify
-
 @procurement_view_bp.route("/procurementquotation_request_data")
 def procurementquotationrequestdata():
 
@@ -766,8 +787,6 @@ def procurementquotationrequestdata():
         conn.close()
 
 
-
-from flask import jsonify
 
 @procurement_view_bp.route("/procurementquotation_request_details/<int:qrf_id>")
 def procurementquotationrequestdetails(qrf_id):
@@ -904,3 +923,197 @@ def procurementquotationrequestdetails(qrf_id):
     finally:
         cursor.close()
         conn.close()
+
+
+
+
+    
+
+
+
+
+
+
+
+
+@procurement_view_bp.route("/dashboard_data")
+def dashboard_data():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+
+    # ================= KPI =================
+
+
+    cursor.execute("""
+        SELECT COUNT(*) total
+        FROM requisitions
+    """)
+
+    total_pr = cursor.fetchone()["total"]
+
+
+
+    cursor.execute("""
+        SELECT COUNT(*) total
+        FROM requisitions
+        WHERE status IN ('PENDING','PENDING_HOD','PENDING_CEO')
+    """)
+
+    pending_pr = cursor.fetchone()["total"]
+
+
+
+
+
+    cursor.execute("""
+        SELECT COUNT(*) total
+        FROM quotation_requests
+    """)
+
+    total_qrf = cursor.fetchone()["total"]
+
+
+
+
+
+    cursor.execute("""
+        SELECT COUNT(*) total
+        FROM purchase_orders
+    """)
+
+    total_po = cursor.fetchone()["total"]
+
+
+
+
+
+    cursor.execute("""
+        SELECT COUNT(*) total
+        FROM grn
+    """)
+
+    total_grn = cursor.fetchone()["total"]
+
+
+
+
+
+    # ================= MONTHLY DATA =================
+
+
+    cursor.execute("""
+        SELECT 
+            MONTH(submission_date) month,
+            COUNT(*) total
+
+        FROM requisitions
+
+        GROUP BY MONTH(submission_date)
+
+        ORDER BY month
+    """)
+
+
+    pr_rows = cursor.fetchall()
+
+
+
+    months=[]
+    pr_monthly=[]
+
+
+    for row in pr_rows:
+
+        months.append(
+            row["month"]
+        )
+
+        pr_monthly.append(
+            row["total"]
+        )
+
+
+
+
+
+    # ================= STATUS =================
+
+
+    cursor.execute("""
+        SELECT 
+        status,
+        COUNT(*) total
+
+        FROM requisitions
+
+        GROUP BY status
+    """)
+
+
+    status_rows = cursor.fetchall()
+
+
+    status=[]
+
+
+    for row in status_rows:
+
+        status.append(
+            row["total"]
+        )
+
+
+
+
+
+    cursor.close()
+    conn.close()
+
+
+
+    return jsonify({
+
+        "total_pr":total_pr,
+
+        "pending_pr":pending_pr,
+
+        "total_qrf":total_qrf,
+
+        "total_po":total_po,
+
+        "total_grn":total_grn,
+
+
+        "months":months,
+
+        "pr_monthly":pr_monthly,
+
+        "po_monthly":[],
+
+
+        "grn_monthly":[],
+
+
+        "status":status,
+
+
+        "departments":[],
+
+
+        "department_count":[],
+
+
+        "suppliers":[],
+
+
+        "supplier_orders":[],
+
+
+        "materials":[],
+
+
+        "material_qty":[]
+
+    })

@@ -1,0 +1,538 @@
+
+/* =========================
+   GLOBAL
+========================= */
+body{
+    margin:0;
+    font-family:Segoe UI, Arial, sans-serif;
+    background:#eef2f7;
+    display:flex;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
+    color: #ffffff;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    /* 👇 modern look improvements */
+    border-right: 2px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    padding-top: 10px;
+}
+
+/* Sidebar title */
+.sidebar h2 {
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+
+    font-size: 18px;
+    letter-spacing: 1px;
+    font-weight: 600;
+
+    color: #ffffff;
+
+    /* nice bottom separation line */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Sidebar buttons */
+.sidebar button {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #f1f5f9;
+    text-align: left;
+    cursor: pointer;
+
+    font-size: 14px;
+    transition: all 0.3s ease;
+
+    border-left: 3px solid transparent;
+}
+
+/* Hover effect */
+.sidebar button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-left: 3px solid #F97316; /* orange highlight */
+    padding-left: 18px;
+}
+
+/* Active button */
+.sidebar button.active {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #D4AF37; /* gold active indicator */
+    color: #ffffff;
+}
+/* =========================
+   MAIN LAYOUT
+========================= */
+.main{
+    margin-left:230px;
+    width:calc(100% - 230px);
+}
+/* =========================
+   MODULES
+========================= */
+.module{
+    display:none;
+}
+
+.module.active{
+    display:block;
+}
+
+/* =========================
+   MODULE LAYOUT
+========================= */
+.container{
+    display:flex;
+    gap:15px;
+    align-items:flex-start;
+    padding:15px;
+}
+
+/* LEFT PANEL */
+.left{
+    width:65%;
+}
+
+/* RIGHT PANEL */
+.right{
+    width:35%;
+    min-width:300px;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   HEADER
+========================= */
+.header{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    font-weight:bold;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   SEARCH INPUT
+========================= */
+.search input{
+    padding:10px;
+    width:60%;
+    border-radius:6px;
+    border:1px solid #ddd;
+    background:white;
+    font-family:Segoe UI, Arial, sans-serif;
+    font-size:14px;
+    outline:none;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);
+    transition:0.2s ease;
+}
+
+.search input:focus{
+    border-color:#2C7A7B;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.btn{
+    padding:8px 12px;
+    border:none;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+    margin-right:5px;
+}
+
+.primary{ background:#2C7A7B; }
+.success{ background:#16a34a; }
+.danger{ background:#dc2626; }
+
+/* =========================
+   TABLE
+========================= */
+/* =========================================
+   GLOBAL TABLE STYLE
+========================================= */
+/* =========================
+   GLOBAL TABLE STYLE
+========================= */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05);
+}
+
+th{
+    background:#f1f5f9;
+    padding:10px 12px;
+    text-align:left;
+    font-size:14px;
+    font-weight:600;
+    white-space:nowrap;
+}
+
+td{
+    padding:10px 12px;
+    border-bottom:1px solid #eee;
+    font-size:13px;
+    white-space:nowrap;
+    vertical-align:middle;
+    cursor:pointer;
+}
+
+tr{
+    height:40px;
+}
+
+tbody tr:hover{
+    background:#f8fafc;
+}
+
+/* =========================
+   ALL ERP TABLES
+========================= */
+#prsTable th,
+#prsTable td,
+#quotationTable th,
+#quotationTable td,
+#supplierTable th,
+#supplierTable td,
+#poTable th,
+#poTable td,
+#grnTable th,
+#grnTable td,
+#invoiceTable th,
+#invoiceTable td,
+#paymentTable th,
+#paymentTable td,
+#budgetTable th,
+#budgetTable td{
+    padding:10px 12px;
+    font-size:13px;
+}
+
+#prsTable tr,
+#quotationTable tr,
+#supplierTable tr,
+#poTable tr,
+#grnTable tr,
+#invoiceTable tr,
+#paymentTable tr,
+#budgetTable tr{
+    height:40px;
+}
+
+/* Radio button column */
+#prsTable td:first-child,
+#prsTable th:first-child{
+    width:40px;
+    text-align:center;
+}
+
+/* =========================
+   SLIP HEADER
+========================= */
+.slip h2{
+    background:#2C7A7B;
+    color:white;
+    padding:12px;
+    border-radius:8px;
+    text-align:center;
+}
+
+/* =========================
+   INFO GRID
+========================= */
+.info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:15px 0;
+}
+
+.info p{
+    background:#f3f4f6;
+    padding:10px;
+    border-radius:6px;
+    font-size:13px;
+}
+
+/* =========================
+   ITEMS TABLE
+========================= */
+.items-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+.items-table th,
+.items-table td{
+    border:1px solid #ddd;
+    padding:8px;
+}
+
+#invoiceTable th,
+#invoiceTable td{
+    padding:6px 8px;
+    font-size:13px;
+    line-height:16px;
+}
+
+#invoiceTable tr{
+    height:28px;
+    min-height:28px;
+}
+
+#invoicePrintArea .items-table th,
+#invoicePrintArea .items-table td{
+    padding:6px 8px;
+    font-size:13px;
+    line-height:16px;
+}
+
+#invoicePrintArea .items-table tr{
+    height:26px;
+    min-height:26px;
+}
+
+/* =========================
+   SIGNATURE SECTION
+========================= */
+.signature-section{
+    display:flex;
+    justify-content:space-between;
+    margin-top:40px;
+}
+
+.sig-box{
+    text-align:center;
+    width:30%;
+}
+
+.signature{
+    margin-top:25px;
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+}
+
+.sig{
+    width:30%;
+    border-top:1px solid #333;
+    padding-top:5px;
+    text-align:center;
+}
+
+/* =========================
+   ACTION BUTTONS
+========================= */
+.action-buttons{
+    display:flex;
+    gap:10px;
+    align-items:center;
+}
+
+.action-buttons form{
+    margin:0;
+}
+
+/* =========================
+   PRINT SETTINGS
+========================= */
+@media print{
+
+    body *{
+        visibility:hidden;
+    }
+
+    #printArea,
+    #grnPrintArea,
+    #invoicePrintArea,
+    #printArea *,
+    #grnPrintArea *,
+    #invoicePrintArea *{
+        visibility:visible;
+    }
+
+    #printArea,
+    #grnPrintArea,
+    #invoicePrintArea{
+        position:absolute;
+        top:0;
+        left:0;
+        width:100%;
+    }
+
+}
+
+/* =========================
+   QUOTATION REQUEST SLIP
+========================= */
+
+/* SLIP HEADER */
+.slip .header{
+    text-align:center;
+    border-bottom:2px solid #2C7A7B;
+    padding-bottom:10px;
+    margin-bottom:20px;
+    background:none;
+    box-shadow:none;
+}
+
+.slip .header h2{
+    margin:0;
+    color:#2C7A7B;
+    background:none;
+    padding:0;
+}
+
+/* INFO SECTION */
+.info-section{
+    display:flex;
+    gap:15px;
+    margin-bottom:20px;
+}
+
+/* INFO BOX */
+.box{
+    flex:1;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    background:#fafafa;
+}
+
+.box p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+/* SUPPLIER SECTION */
+.supplier-section{
+    margin-top:10px;
+    margin-bottom:20px;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    background:#fafafa;
+}
+
+.supplier-section p{
+    margin:8px 0;
+    font-size:14px;
+}
+
+/* FOOTER */
+.footer{
+    margin-top:25px;
+    font-size:14px;
+    line-height:1.7;
+}
+
+/* BUTTON AREA */
+.buttons{
+    margin-top:20px;
+    text-align:center;
+}
+
+/* BUTTON COLORS */
+.print{
+    background:#444;
+}
+
+.whatsapp{
+    background:#25D366;
+}
+
+.email{
+    background:#2C7A7B;
+}
+
+/* =========================
+   PRINT MODE
+========================= */
+@media print{
+
+    .buttons{
+        display:none;
+    }
+
+    .sidebar,
+    .left,
+    .search,
+    .header,
+    .btn{
+        display:none !important;
+    }
+
+    .right{
+        width:100%;
+        box-shadow:none;
+        padding:0;
+    }
+
+    .slip{
+        box-shadow:none;
+        border:none;
+    }
+
+}
+.top-bar{
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.logout-btn {
+    padding: 10px 18px;
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: bold;
+}
+
+
+.quotation-list{
+    margin-bottom:25px;
+}
+
+
+.create-qrf-form{
+    width:100%;
+    border-top:2px solid #ddd;
+    padding-top:20px;
+}
+
+
+
+.left{
+    display:block;
+}
+
+.logout-btn:hover {
+    background: #c53030;
+}

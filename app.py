@@ -7,7 +7,9 @@ from routes.auth_route import create_default_admin
 from routes.auth_route import auth_bp
 from routes.maindashboard import maindashboard_bp
 from routes.hod_route import hod_dashboard_bp
+from routes.employee_route import employee_dashboard_bp
 from routes.hod_dashboard_view import hod_dashboard_view_bp
+from routes.ceo_dashboard_view import ceo_dashboard_view_bp
 from routes.ceo_route import ceo_dashboard_bp
 from routes.procurement_route import procurement_dashboard_bp
 from routes.procurement_view import procurement_view_bp
@@ -32,6 +34,8 @@ app.secret_key = os.environ.get(
 app.register_blueprint(auth_bp)
 app.register_blueprint(maindashboard_bp)
 app.register_blueprint(hod_dashboard_bp, url_prefix="/hod")
+app.register_blueprint(employee_dashboard_bp, url_prefix="/employee")
+app.register_blueprint(ceo_dashboard_view_bp, url_prefix="/ceo")
 app.register_blueprint(hod_dashboard_view_bp, url_prefix="/hod")
 app.register_blueprint(ceo_dashboard_bp, url_prefix="/ceo")
 app.register_blueprint(procurement_dashboard_bp, url_prefix="/procurement")

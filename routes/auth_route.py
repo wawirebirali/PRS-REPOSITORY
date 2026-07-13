@@ -54,7 +54,7 @@ def user_login():
             return redirect(url_for("admin_dashboard.admin_dashboard"))
 
         elif role == "employee":
-            return redirect(url_for("maindashboard.home"))
+            return redirect(url_for("employee_dashboard.employee_dashboard"))
 
         else:
             flash("Unauthorized role", "danger")

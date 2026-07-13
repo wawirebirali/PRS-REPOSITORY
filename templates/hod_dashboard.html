@@ -5,387 +5,12 @@
 <title>PRS ERP Dashboard</title>
 
 
-
+<link rel="stylesheet" href="{{ url_for('static', filename='budget.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
 <style>
-/* =========================*/
- body{
-    margin:0;
-    font-family:Segoe UI, Arial, sans-serif;
-    background:#eef2f7;
-    display:flex;
-}
 
-/* =========================
-   SIDEBAR
-========================= */
-.sidebar {
-    width: 230px;
-    background: linear-gradient(180deg, #2C7A7B, #1f5f61);
-    color: #ffffff;
-    height: 100vh;
-    position: fixed;
-    left: 0;
-    top: 0;
-
-    /* 👇 modern look improvements */
-    border-right: 2px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
-    padding-top: 10px;
-}
-
-/* Sidebar title */
-.sidebar h2 {
-    text-align: center;
-    padding: 20px;
-    margin: 0;
-
-    font-size: 18px;
-    letter-spacing: 1px;
-    font-weight: 600;
-
-    color: #ffffff;
-
-    /* nice bottom separation line */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Sidebar buttons */
-.sidebar button {
-    width: 100%;
-    padding: 14px 20px;
-    border: none;
-    background: transparent;
-    color: #f1f5f9;
-    text-align: left;
-    cursor: pointer;
-
-    font-size: 14px;
-    transition: all 0.3s ease;
-
-    border-left: 3px solid transparent;
-}
-
-/* Hover effect */
-.sidebar button:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-left: 3px solid #F97316; /* orange highlight */
-    padding-left: 18px;
-}
-
-/* Active button */
-.sidebar button.active {
-    background: rgba(0, 0, 0, 0.2);
-    border-left: 3px solid #D4AF37; /* gold active indicator */
-    color: #ffffff;
-}
-
-/* =========================
-   MAIN LAYOUT
-========================= */
-.main{
-    margin-left:230px;
-    width:calc(100% - 230px);
-    padding:15px;
-}
-
-/* =========================
-   MODULES
-========================= */
-.module {
-    display: none;
-}
-
-.module.active {
-    display: block;
-}
-
-/* =========================
-   MODAL
-========================= */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.45);
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-}
-
-.modal-content {
-    background: #fff;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-    max-width: 420px;
-    width: 90%;
-}
-
-/* =========================
-   MODULE LAYOUT
-========================= */
-.container{
-    display:flex;
-    gap:20px;
-    align-items:flex-start;
-    flex-wrap:nowrap; /* prevents moving below */
-}
-
-.left{
-    flex:0 0 65%;
-}
-
-.right{
-    flex:0 0 35%;
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 2px 10px rgba(0,0,0,0.08);
-}
-/* SEARCH */
-.search input{
-    padding:10px;
-    width:60%;
-    border-radius:6px;
-    border:1px solid #ddd;
-}
-
-/* BUTTONS */
-.btn{
-    padding:8px 12px;
-    border:none;
-    color:white;
-    border-radius:6px;
-    cursor:pointer;
-    margin-right:5px;
-}
-
-.primary{ background:#2C7A7B; }
-.success{ background:#16a34a; }
-.danger{ background:#dc2626; }
-
-/* TABLE */
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 2px 10px rgba(0,0,0,0.05);
-}
-
-th{
-    background:#f1f5f9;
-    padding:12px;
-    text-align:left;
-}
-
-td{
-    padding:12px;
-    border-bottom:1px solid #eee;
-    cursor:pointer;
-}
-
-tr:hover{
-    background:#f1f5f9;
-}
-
-/* PRS TABLE */
-#prsTable th,
-#prsTable td{
-    padding:6px 8px;
-    font-size:14px;
-    white-space:nowrap;
-}
-
-#prsTable tr{
-    height:35px;
-}
-
-#prsTable td:first-child,
-#prsTable th:first-child{
-    width:40px;
-    text-align:center;
-}
-
-/* SELECTED ROW */
-.selected{
-    background:#dbeafe !important;
-    color:#000;
-}
-
-/* SLIP HEADER */
-.slip h2{
-    background:#2C7A7B;
-    color:white;
-    padding:12px;
-    border-radius:8px;
-    text-align:center;
-}
-
-/* INFO */
-.info{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-    margin:15px 0;
-}
-
-.info p{
-    background:#f3f4f6;
-    padding:10px;
-    border-radius:6px;
-    font-size:13px;
-}
-
-.info-section{
-    display:flex;
-    gap:15px;
-    margin-bottom:20px;
-}
-
-.box{
-    flex:1;
-    border:1px solid #ddd;
-    border-radius:8px;
-    padding:12px;
-    background:#fafafa;
-}
-
-.box p{
-    margin:8px 0;
-    font-size:14px;
-}
-
-.supplier-section{
-    margin-top:10px;
-    margin-bottom:20px;
-    padding:12px;
-    border:1px solid #ddd;
-    border-radius:8px;
-    background:#fafafa;
-}
-
-.supplier-section p{
-    margin:8px 0;
-    font-size:14px;
-}
-
-.buttons{
-    margin-top:20px;
-    text-align:center;
-}
-
-.buttons .btn{
-    margin:0 4px;
-}
-
-/* ITEMS TABLE */
-.items-table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-}
-
-.items-table th,
-.items-table td{
-    border:1px solid #ddd;
-    padding:8px;
-}
-
-/* SIGNATURE */
-.signature-section{
-    display:flex;
-    justify-content:space-between;
-    margin-top:40px;
-}
-
-.sig-box{
-    text-align:center;
-    width:30%;
-}
-
-.signature{
-    margin-top:25px;
-    display:flex;
-    justify-content:space-between;
-    font-size:12px;
-}
-
-.sig{
-    width:30%;
-    border-top:1px solid #333;
-    padding-top:5px;
-    text-align:center;
-}
-
-.action-buttons{
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-/* remove default form spacing */
-.action-buttons form{
-    margin: 0;
-}
-
-/* PRINT */
-@media print{
-    body *{
-        visibility:hidden;
-    }
-
-    #printArea, #printArea *{
-        visibility:visible;
-    }
-
-    #printArea{
-        position:absolute;
-        top:0;
-        left:0;
-        width:100%;
-    }
-}
-
-.search input{
-    padding:10px;
-    width:60%;
-    border-radius:6px;
-    border:1px solid #ddd;
-    background:white;
-    font-family:Segoe UI, Arial, sans-serif;
-    font-size:14px;
-    outline:none;
-    box-shadow:0 2px 6px rgba(0,0,0,0.05);
-    transition:0.2s ease;
-}
-
-
-.top-bar{
-    position: fixed;
-    top: 10px;
-    right: 20px;
-    z-index: 1000;
-}
-
-.logout-btn {
-    padding: 10px 18px;
-    background: #e53e3e;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.3s;
-    font-weight: bold;
-}
-
-.logout-btn:hover {
-    background: #c53030;
-}
 </style>
 </head>
 
@@ -400,249 +25,1833 @@ tr:hover{
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-<h2>PRS SYSTEM <br>HOD DASHBOARD</h2>
 
-<button class="active" onclick="openModule('requisition',this)">Requisition</button>
-<button class="active" onclick="openModule('supplier',this)">Supplier</button>
-<button class="active" onclick="openModule('quotationRequest',this)">Quotation Requests</button>
-<button class="active" onclick="openModule('quotation',this)">Quotations</button>
-<button class="active" onclick="openModule('purchaseOrder',this)">Purchase Order</button>
-<button class="active" onclick="openModule('grn',this)">GRN</button>
-<button class="active" onclick="openModule('invoice',this)">Invoice</button>
-<button class="active" onclick="openModule('payment',this)">Payment</button>
+    <h2>
+        PRS SYSTEM <br>
+        HOD DASHBOARD
+    </h2>
+    <button class="active"
+            onclick="openModule('dashboard', this)">
+        Homepage
+    </button>
+
+
+    <button class="active"
+            onclick="openModule('budgetModule', this)">
+        Budget
+    </button>
+
+    <button onclick="openModule('requisition', this)">
+        Requisition
+    </button>
+
+    <button onclick="openModule('supplier', this)">
+        Supplier
+    </button>
+
+    <button class="active" onclick="openModule('quotationRequest',this)">Quotation Requests</button>
+
+    <button onclick="openModule('quotation', this)">
+        Quotations
+    </button>
+
+    <button onclick="openModule('purchaseOrder', this)">
+        Purchase Order
+    </button>
+
+    <button onclick="openModule('grn', this)">
+        GRN
+    </button>
+
+    <button onclick="openModule('invoice', this)">
+        Invoice
+    </button>
+
+    <button onclick="openModule('payment', this)">
+        Payment
+    </button>
+
+
 </div>
-
 
 <div class="main">
 
-<div id="requisition" class="module active">
-<div class="container">
 
-<!-- ===================== LEFT ===================== -->
-<div class="left">
 
-    <div class="header">Purchase Requisitions</div>
 
-    <input type="text" id="prsSearch" placeholder="Search PRS..."
-           onkeyup="searchPRS()"
-           style="padding:10px;width:250px;border:1px solid #ddd;border-radius:6px;">
 
-    <br><br>
 
-    <!-- ACTION BUTTONS -->
-    <div class="action-buttons">
 
-        <button class="btn success" onclick="confirmApproval('APPROVED')">
-       Approve
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ==========================================================
+                     HOD DASHBOARD MODULE
+=========================================================== -->
+
+<div id="dashboard" class="module">
+
+<div class="dashboard-wrapper">
+
+    <!-- ==========================================
+                    HEADER
+    =========================================== -->
+
+    <div class="dashboard-header">
+
+        <div>
+
+            <h1>
+                HOD Dashboard
+            </h1>
+
+            <p>
+                Department Procurement Overview
+            </p>
+
+        </div>
+
+        <div class="dashboard-date">
+
+            <span id="currentDate"></span>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+                    ALERT
+    =========================================== -->
+
+    <div class="dashboard-alert">
+
+        📢 Welcome
+        <strong>{{ session.username }}</strong>.
+
+        You currently have
+
+        <strong id="pendingApprovalCount">0</strong>
+
+        pending approvals.
+
+    </div>
+
+
+    <!-- ==========================================
+                    QUICK ACTIONS
+    =========================================== -->
+
+    <div class="quick-actions">
+
+        <button class="quick-btn"
+                onclick="openModule('requisition',this)">
+
+            📄 View Requisitions
+
         </button>
 
-        <button class="btn danger" onclick="confirmApproval('REJECTED')">
-            Reject
+        <button class="quick-btn"
+                onclick="showPendingApprovals()">
+
+            ✔ Pending Approvals
+
         </button>
 
-        <button class="btn primary" onclick="window.print()">
-            Print
+        <button class="quick-btn"
+                onclick="printDashboard()">
+
+            🖨 Print Report
+
+        </button>
+
+        <button class="quick-btn"
+                onclick="exportDashboard()">
+
+            📊 Export Report
+
         </button>
 
     </div>
 
-    <br><br>
 
-    <!-- TABLE -->
-    <table id="prsTable">
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>PRS No</th>
-                <th>Department</th>
-                <th>HOD Status</th>
-                <th>Date</th>
-                <th>HOD Approval</th>
-            </tr>
-        </thead>
+    <!-- ==========================================
+                    KPI CARDS
+    =========================================== -->
 
-        <tbody>
-        {% for req in requisitions %}
-        <tr data-id="{{ req.requisition_id }}"
-            onclick="loadSlipFromRow(this)">
+    <div class="kpi-container">
 
-            <td>
-                <input type="radio"
-                       name="select"
-                       onchange="loadSlipFromRow(this.closest('tr'))">
-            </td>
+        <div class="kpi-card blue">
 
-            <td>{{ req.prs_no }}</td>
-            <td>{{ req.department_name }}</td>
-            <td>{{ req.hod_status or 'PENDING' }}</td>
-            <td>{{ req.submission_date }}</td>
-            <td>{{ req.hod_approved_at or '-' }}</td>
+            <div class="kpi-icon">
+                📄
+            </div>
 
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            <div>
 
-</div>
+                <h4>Total Requisitions</h4>
 
-<!-- ===================== RIGHT ===================== -->
-    <div class="right">
+                <h2 id="totalRequisitions">
 
-    <div id="printArea" class="slip">
+                    0
 
-        <h2>PURCHASE REQUISITION SLIP</h2>
+                </h2>
 
-        <!-- HEADER -->
-        <div class="info">
-
-            <p><b>PRS No:</b> <span id="prs_no">-</span></p>
-            <p><b>Department:</b> <span id="department_name">-</span></p>
-            <p><b>Submission:</b> <span id="submission">-</span></p>
-
-            <p><b>HOD Status:</b> <span id="hod_status">-</span></p>
-            <p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
+            </div>
 
         </div>
 
-        <!-- ITEMS -->
-        <h3>Items</h3>
 
-        <table>
+        <div class="kpi-card orange">
+
+            <div class="kpi-icon">
+                ⏳
+            </div>
+
+            <div>
+
+                <h4>Pending Approval</h4>
+
+                <h2 id="pendingApprovals">
+
+                    0
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="kpi-card green">
+
+            <div class="kpi-icon">
+                ✔
+            </div>
+
+            <div>
+
+                <h4>Approved</h4>
+
+                <h2 id="approvedCount">
+
+                    0
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="kpi-card red">
+
+            <div class="kpi-icon">
+                ✖
+            </div>
+
+            <div>
+
+                <h4>Rejected</h4>
+
+                <h2 id="rejectedCount">
+
+                    0
+
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="kpi-card purple">
+
+            <div class="kpi-icon">
+                💰
+            </div>
+
+            <div>
+
+                <h4>Department Budget</h4>
+
+                <h2 id="departmentBudget">
+
+                    UGX 0
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==========================================
+                CHART ROW ONE
+    =========================================== -->
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+
+            <h3>
+
+                Monthly Requisitions
+
+            </h3>
+
+            <canvas id="monthlyRequisitionChart">
+
+            </canvas>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+
+                Approval Status
+
+            </h3>
+
+            <canvas id="approvalChart">
+
+            </canvas>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ==========================================
+                CHART ROW TWO
+    =========================================== -->
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+
+            <h3>
+
+                Budget Utilization
+
+            </h3>
+
+            <canvas id="budgetChart">
+
+            </canvas>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>
+
+                Top Requested Materials
+
+            </h3>
+
+            <canvas id="materialChart">
+
+            </canvas>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ==========================================
+                    FULL WIDTH CHART
+    =========================================== -->
+
+    <div class="dashboard-card full">
+
+        <h3>
+
+            Department Monthly Spending
+
+        </h3>
+
+        <canvas id="spendingChart">
+
+        </canvas>
+
+    </div>
+
+
+
+    <!-- ==========================================
+                PENDING APPROVALS
+    =========================================== -->
+
+    <div class="dashboard-card">
+
+        <h3>
+
+            Pending Approval Queue
+
+        </h3>
+
+        <table class="dashboard-table">
+
             <thead>
+
                 <tr>
-                    <th>No</th>
-                    <th>Material</th>
-                    <th>UOM</th>
-                    <th>Qty</th>
+
+                    <th>PRS No</th>
+
+                    <th>Department</th>
+
+                    <th>Requested By</th>
+
+                    <th>Date</th>
+
+                    <th>Status</th>
+
                 </tr>
+
             </thead>
-            <tbody id="items_body"></tbody>
+
+            <tbody id="pendingApprovalTable">
+
+            </tbody>
+
         </table>
 
-        <!-- SIGNATURES -->
-        <h3>Signatures</h3>
+    </div>
 
-        <div class="signature-section">
 
-            <!-- CREATED BY -->
-            <div class="sig-box">
-                <p>Prepared By</p>
-                <p><span id="created_by_name">-</span></p>
-                <img id="sig_created_by" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="created_date">-</span></p>
-            </div>
-            
 
-            <!-- HOD -->
-            <div class="sig-box">
-                <p>HOD Approval</p>
-                <p><span id="hod_username">-</span></p>
-                <img id="sig_hod" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="hod_approval_date">-</span></p>
-            </div>
+    <!-- ==========================================
+                RECENT REQUISITIONS
+    =========================================== -->
 
-            <!-- CEO -->
-            <div class="sig-box">
-                <p>CEO Approval</p>
-                <p><span id="ceo_username">-</span></p>
-                <img id="sig_ceo" style="height:60px; display:none;">
-                <p><b>Date:</b> <span id="ceo_approval_date">-</span></p>
-            </div>
+    <div class="dashboard-card">
+
+        <h3>
+
+            Recent Requisitions
+
+        </h3>
+
+        <table class="dashboard-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>PRS No</th>
+
+                    <th>Department</th>
+
+                    <th>User</th>
+
+                    <th>Status</th>
+
+                    <th>Date</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="recentRequisitionTable">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+<!-- ===========================
+        BUDGET MODULE
+=========================== -->
+<!-- ===========================
+<!-- ===========================================================
+                        BUDGET MODULE
+=========================================================== -->
+<div id="budgetModule" class="module">
+
+    <!-- ================= HEADER ================= -->
+    <div class="module-header">
+
+        <h2>Budget Management</h2>
+
+        <div class="header-actions">
+
+            <input
+                type="text"
+                id="budgetSearch"
+                placeholder="Search Budget..."
+                onkeyup="searchBudget()"
+            >
+
+            <button class="predict-btn" onclick="togglePredictBudget()">
+                📈 Predict Budget
+            </button>
+
+            <button class="create-btn" onclick="openCreateBudget()">
+                + Create Budget
+            </button>
 
         </div>
 
     </div>
 
+    <!-- ================= BUDGET TABLE ================= -->
+    <div class="table-container">
+
+        <table class="budget-table">
+
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Budget No</th>
+                    <th>Budget Date</th>
+                    <th>Department</th>
+                    <th>Budget Item</th>
+                    <th>Budget Type</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Due</th>
+                    <th>Budget Amount</th>
+                    <th>Spent</th>
+                    <th>Balance</th>
+                    <th>CEO Approval Date</th>
+                    <th>CEO Status</th>
+                </tr>
+            </thead>
+
+            <!-- Loaded dynamically -->
+            <tbody id="budgetBody">
+
+            </tbody>
+
+        </table>
+
     </div>
-</div>
+
+    <!-- =======================================================
+                    PREDICT BUDGET PANEL
+    ======================================================== -->
+    <div id="predictBudgetTab"
+         class="predict-budget-card"
+         style="display:none;">
+
+        <div class="predict-header">
+            <h2>Budget Prediction</h2>
+        </div>
+
+        <div class="predict-grid">
+
+            <!-- Department -->
+            <div class="form-group">
+                <label>Department</label>
+
+                <select id="predictDepartment">
+                    <option value="">Loading departments...</option>
+                </select>
+            </div>
+
+            <!-- Budget Items -->
+            <div class="form-group">
+
+                <label>Select Budget Items</label>
+
+                <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <input
+                        type="checkbox"
+                        id="selectAllItems"
+                        onchange="toggleSelectAllItems()">
+                    Select All Items
+                </label>
+
+                <select
+                    id="predictItems"
+                    multiple
+                    size="7">
+
+                </select>
+
+                <small>
+                    Hold CTRL (Windows) or CMD (Mac) to select multiple items.
+                </small>
+
+            </div>
+
+            <!-- Start Date -->
+            <div class="form-group">
+                <label>Start Date</label>
+                <input
+                    type="date"
+                    id="predictStart">
+            </div>
+
+            <!-- End Date -->
+            <div class="form-group">
+                <label>End Date</label>
+                <input
+                    type="date"
+                    id="predictEnd">
+            </div>
+
+        </div>
+
+        <div class="button-area">
+
+            <button
+                class="predict-btn"
+                onclick="predictBudget()">
+                Predict Budget
+            </button>
+
+            <button
+                class="cancel-btn"
+                onclick="togglePredictBudget()">
+                Close
+            </button>
+
+        </div>
+
+        <!-- Prediction Result -->
+        <div
+            id="predictionResult"
+            class="prediction-result"
+            style="display:none;">
+
+            <div class="result-header">
+                <h3>Prediction Summary</h3>
+            </div>
+
+            <div id="predictionContent"></div>
+
+        </div>
+
+    </div>
+
+    <!-- =======================================================
+                    CREATE BUDGET PANEL
+    ======================================================== -->
+    <div id="createBudgetTab"
+         class="create-budget-card"
+         style="display:none;">
+
+        <div class="predict-header">
+            <h2>Create Budget</h2>
+        </div>
+
+        <div class="predict-grid">
+
+            <!-- Department -->
+            <div class="form-group">
+
+                <label>Department</label>
+
+                <select id="budgetDepartment">
+                    <option value="">Loading departments...</option>
+                </select>
+
+            </div>
+
+            <!-- Budget Item -->
+            <div class="form-group">
+
+                <label>Budget Item</label>
+
+                <input
+                    type="text"
+                    id="budgetItem"
+                    placeholder="Enter Budget Item">
+
+            </div>
+
+            <!-- Budget Type -->
+            <div class="form-group">
+
+                <label>Budget Type</label>
+
+                <select id="budgetType">
+                    <option value="">Select Type</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Quarterly">Quarterly</option>
+                    <option value="Half Year">Half Year</option>
+                    <option value="Yearly">Yearly</option>
+                </select>
+
+            </div>
+
+            <!-- Amount -->
+            <div class="form-group">
+
+                <label>Budget Amount</label>
+
+                <input
+                    type="number"
+                    id="budgetAmount"
+                    placeholder="Enter Amount">
+
+            </div>
+
+            <!-- Start Date -->
+            <div class="form-group">
+
+                <label>Start Date</label>
+
+                <input
+                    type="date"
+                    id="budgetStart">
+
+            </div>
+
+            <!-- End Date -->
+            <div class="form-group">
+
+                <label>End Date</label>
+
+                <input
+                    type="date"
+                    id="budgetEnd">
+
+            </div>
+
+        </div>
+
+        <div class="button-area">
+
+            <button
+                class="predict-btn"
+                onclick="submitBudget()">
+                Save Budget
+            </button>
+
+            <button
+                class="cancel-btn"
+                onclick="closeCreateBudget()">
+                Cancel
+            </button>
+
+        </div>
+
+        <!-- Success/Error Message -->
+        <div
+            id="budgetMessage"
+            style="margin-top:15px;">
+        </div>
+
+    </div>
 
 </div>
 
+<!-- ==========================================================
+        PURCHASE REQUISITION MODULE
+=========================================================== -->
+
+<div id="requisition" class="module active">
 
 
+    <div class="container">
+
+
+        <!-- ======================================================
+                        LEFT PANEL
+        ======================================================= -->
+
+        <div class="left">
+
+
+
+            <!-- ======================================================
+                        REQUISITION LIST
+            ======================================================= -->
+
+            <div id="requisitionList">
+
+
+                <div class="header">
+                    Purchase Requisitions
+                </div>
+
+
+
+                <div class="toolbar">
+
+
+                    <input
+                        type="text"
+                        id="prsSearch"
+                        placeholder="Search PRS..."
+                        onkeyup="searchPRS">
+
+
+
+                    <button
+                        type="button"
+                        class="btn primary"
+                        onclick="showCreateForm()">
+
+                        + Create Requisition
+
+                    </button>
+
+
+                </div>
+
+
+
+
+                <br>
+
+
+
+                <div class="action-buttons">
+
+
+                    <button
+                        class="btn success"
+                        onclick="confirmApproval('APPROVED')">
+
+                        Approve
+
+                    </button>
+
+
+
+                    <button
+                        class="btn danger"
+                        onclick="confirmApproval('REJECTED')">
+
+                        Reject
+
+                    </button>
+
+
+
+                    <button
+                        class="btn primary"
+                        onclick="window.print()">
+
+                        Print
+
+                    </button>
+
+
+                </div>
+
+
+
+
+                <br>
+
+
+
+                <table id="prsTable">
+
+
+                    <thead>
+
+                        <tr>
+
+                            <th>Select</th>
+                            <th>PRS No</th>
+                            <th>Department</th>
+                            <th>HOD Status</th>
+                            <th>Date</th>
+                            <th>Approval Date</th>
+
+                        </tr>
+
+                    </thead>
+
+
+
+
+                    <tbody>
+
+
+                        {% for req in requisitions %}
+
+
+                        <tr
+                            data-id="{{req.requisition_id}}"
+                            onclick="loadSlipFromRow(this)">
+
+
+
+                            <td>
+
+                                <input
+                                    type="radio"
+                                    name="selected_prs"
+                                    onclick="event.stopPropagation();
+                                    loadSlipFromRow(this.closest('tr'))">
+
+                            </td>
+
+
+
+                            <td>
+                                {{req.prs_no}}
+                            </td>
+
+
+                            <td>
+                                {{req.department_name}}
+                            </td>
+
+
+                            <td>
+                                {{req.hod_status or 'PENDING'}}
+                            </td>
+
+
+                            <td>
+                                {{req.submission_date}}
+                            </td>
+
+
+                            <td>
+                                {{req.hod_approved_at or '-'}}
+                            </td>
+
+
+
+                        </tr>
+
+
+                        {% endfor %}
+
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+
+
+
+
+
+
+
+            <!-- ======================================================
+                        CREATE REQUISITION FORM
+            ======================================================= -->
+
+
+            <div id="createForm" style="display:none;">
+
+
+
+                <div class="form-header">
+
+
+                    <h2>
+                        Create Purchase Requisition
+                    </h2>
+
+
+
+                    <button
+                        type="button"
+                        class="btn secondary"
+                        onclick="hideCreateForm()">
+
+
+                        ← Back
+
+
+                    </button>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <form
+                    method="POST"
+                    action="{{url_for('requisition.submit_requisition')}}">
+
+
+
+
+
+                    <div class="form-row">
+
+
+
+                        <div>
+
+                            <label>
+                                Department
+                            </label>
+
+
+                            <input
+                                type="text"
+                                value="{{session.department}}"
+                                readonly>
+
+                        </div>
+
+
+
+
+
+                        <div>
+
+                            <label>
+                                Created By
+                            </label>
+
+
+                            <input
+                                type="text"
+                                value="{{session.username}}"
+                                readonly>
+
+                        </div>
+
+
+
+
+
+
+                        <div>
+
+                            <label>
+                                Submission Date
+                            </label>
+
+
+                            <input
+                                type="date"
+                                id="submission_date"
+                                name="submission_date"
+                                required>
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+
+
+
+                    <br>
+
+
+
+
+
+
+                    <div class="controls">
+
+
+                        <button
+                            type="button"
+                            class="btn success"
+                            onclick="addRow()">
+
+
+                            + Add Item
+
+
+                        </button>
+
+
+
+
+
+                        <button
+                            type="button"
+                            class="btn danger"
+                            onclick="removeRow()">
+
+
+
+                            Remove Item
+
+
+                        </button>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+                    <br>
+
+
+
+
+
+
+                    <table id="reqTable">
+
+
+                        <thead>
+
+
+                            <tr>
+
+                                <th>No</th>
+                                <th>Material</th>
+                                <th>Description</th>
+                                <th>UOM</th>
+                                <th>Qty Stock</th>
+                                <th>Qty Required</th>
+                                <th>Required Date</th>
+                                <th>Remark</th>
+
+                            </tr>
+
+
+                        </thead>
+
+
+
+
+                        <tbody>
+
+
+                        </tbody>
+
+
+
+                    </table>
+
+
+
+
+
+
+
+                    <br>
+
+
+
+
+
+
+                    <div style="text-align:right;">
+
+
+
+                        <button
+                            type="submit"
+                            class="btn primary">
+
+
+                            Submit Requisition
+
+
+                        </button>
+
+
+
+
+
+
+                        <button
+                            type="button"
+                            class="btn danger"
+                            onclick="hideCreateForm()">
+
+
+
+                            Cancel
+
+
+                        </button>
+
+
+
+
+                    </div>
+
+
+
+
+
+
+                </form>
+
+
+
+            </div>
+
+
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <!-- ======================================================
+                        RIGHT PANEL
+        ======================================================= -->
+
+        <div class="right">
+
+
+
+            <div id="printArea" class="slip">
+
+
+
+                <h2>
+                    PURCHASE REQUISITION SLIP
+                </h2>
+
+
+
+
+
+                <div class="info">
+
+
+                    <p>
+                        <strong>PRS No:</strong>
+                        <span id="prs_no">-</span>
+                    </p>
+
+
+
+                    <p>
+                        <strong>Department:</strong>
+                        <span id="department_name">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>Submission:</strong>
+                        <span id="submission">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>HOD Status:</strong>
+                        <span id="hod_status">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>CEO Status:</strong>
+                        <span id="ceo_status">-</span>
+                    </p>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <h3>
+                    Items
+                </h3>
+
+
+
+
+
+
+                <table>
+
+
+                    <thead>
+
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Material</th>
+                            <th>UOM</th>
+                            <th>Qty</th>
+
+                        </tr>
+
+
+
+                    </thead>
+
+
+
+
+
+                    <tbody id="items_body">
+
+
+                    </tbody>
+
+
+
+
+                </table>
+
+
+
+
+
+
+
+
+                <h3>
+                    Signatures
+                </h3>
+
+
+
+
+
+
+
+                <div class="signature-section">
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            Prepared By
+                        </h4>
+
+
+
+                        <img
+                            id="sig_created_by"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="created_by_name">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="created_date">-</span>
+                        </p>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            HOD Approval
+                        </h4>
+
+
+
+
+                        <img
+                            id="sig_hod"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="hod_username">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="hod_approval_date">-</span>
+                        </p>
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            CEO Approval
+                        </h4>
+
+
+
+
+                        <img
+                            id="sig_ceo"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="ceo_username">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="ceo_approval_date">-</span>
+                        </p>
+
+
+
+                    </div>
+
+
+
+
+
+                </div>
+
+
+
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+    </div>
 
 
 </div>
-<!-- SUPPLIER MODULE -->
+
+
+
+
+<!-- =========================================================
+                    SUPPLIER MODULE
+========================================================= -->
 <div id="supplier" class="module">
 
-<div class="container">
+    <div class="container">
 
-<!-- LEFT PANEL -->
-<div class="left">
+        <!-- ================= LEFT PANEL ================= -->
+        <div class="left">
 
-<div class="header">Supplier Management</div>
+            <div class="header">
+                <h2>Supplier Management</h2>
+            </div>
 
-<button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
-    Add Supplier
-</button>
+            <!-- ACTION BUTTONS -->
+            <div class="button-group">
 
-<div class="search" style="margin-top:12px;">
-    <input id="supplierSearch" type="text" onkeyup="searchSupplier()" placeholder="Search suppliers by name, phone, or location...">
-</div>
+                <button class="btn primary"
+                        onclick="window.location.href='/procurement/add_supplier'">
+                    + Add Supplier
+                </button>
 
-<table id="supplierTable">
-<thead>
-<tr>
-    <th>Supplier</th>
-    <th>Contact</th>
-    <th>Phone</th>
-    <th>Location</th>
-    <th>Email</th>
-</tr>
-</thead>
-<tbody id="supplierBody"></tbody>
-</table>
+                <button class="btn ai-btn"
+                        onclick="toggleAISupplierSearch()">
+                    🤖 AI Supplier Search
+                </button>
 
-</div>
+            </div>
 
-<!-- RIGHT PANEL -->
-<div class="right">
+            <!-- NORMAL SEARCH -->
+            <div class="search" style="margin-top:15px;">
+                <input
+                    id="supplierSearch"
+                    type="text"
+                    placeholder="Search suppliers by name, phone, or location..."
+                    onkeyup="searchSupplier()"
+                >
+            </div>
 
-<div class="slip">
+            <!-- =========================================
+                    AI SUPPLIER SEARCH PANEL
+            ========================================== -->
+            <div id="aiSupplierModule"
+                 class="ai-supplier-module"
+                 style="display:none; margin-top:15px;">
 
-    <div class="header">
-        <h2>Supplier Details</h2>
-        <p><b>Live supplier data loaded from backend</b></p>
-    </div>
+                <div class="card">
 
-    <div class="info-section">
+                    <h3>🤖 AI Supplier Search</h3>
 
-        <div class="box">
-            <p><b>Name:</b> <span id="supName">-</span></p>
-            <p><b>Contact Person:</b> <span id="supContact">-</span></p>
-            <p><b>Phone:</b> <span id="supPhone">-</span></p>
+                    <p>
+                        Search suppliers from external sources using AI
+                    </p>
+
+                    <div class="form-group">
+
+                        <label>Product / Service</label>
+
+                        <input
+                            type="text"
+                            id="aiSupplierQuery"
+                            placeholder="Example: Laptops, Fuel, Cement, Printers"
+                        >
+
+                    </div>
+
+                    <div class="button-group">
+
+                        <button class="btn primary"
+                                onclick="searchSupplierAI()">
+                            Search Suppliers
+                        </button>
+
+                        <button class="btn danger"
+                                onclick="toggleAISupplierSearch()">
+                            Close
+                        </button>
+
+                    </div>
+
+                    <!-- RESULTS -->
+                    <div id="aiSupplierResults"
+                         style="margin-top:20px;">
+
+                        <div class="empty-state">
+                            Enter a product or service to begin searching.
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- =========================================
+                    SUPPLIER TABLE
+            ========================================== -->
+            <table id="supplierTable">
+
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Contact</th>
+                        <th>Phone</th>
+                        <th>Location</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+
+                <tbody id="supplierBody">
+                    <!-- Loaded from backend -->
+                </tbody>
+
+            </table>
+
         </div>
 
-        <div class="box">
-            <p><b>Email:</b> <span id="supEmail">-</span></p>
-            <p><b>Location:</b> <span id="supAddress">-</span></p>
-            <p><b>TIN #:</b> <span id="supTin">-</span></p>
+        <!-- ================= RIGHT PANEL ================= -->
+        <div class="right">
+
+            <div class="slip">
+
+                <div class="header">
+                    <h2>Supplier Details</h2>
+                    <p><b>Supplier information</b></p>
+                </div>
+
+                <div class="info-section">
+
+                    <div class="box">
+                        <p><b>Name:</b> <span id="supName">-</span></p>
+                        <p><b>Contact Person:</b> <span id="supContact">-</span></p>
+                        <p><b>Phone:</b> <span id="supPhone">-</span></p>
+                    </div>
+
+                    <div class="box">
+                        <p><b>Email:</b> <span id="supEmail">-</span></p>
+                        <p><b>Location:</b> <span id="supAddress">-</span></p>
+                        <p><b>TIN:</b> <span id="supTin">-</span></p>
+                    </div>
+
+                </div>
+
+                <div class="supplier-section">
+                    <p><b>Registration Number:</b> <span id="supReg">-</span></p>
+                    <p><b>Bank:</b> <span id="supBank">-</span></p>
+                    <p><b>Account Number:</b> <span id="supAccount">-</span></p>
+                </div>
+
+                <div class="buttons">
+
+                    <button class="btn primary"
+                            onclick="window.location.href='/procurement/add_supplier'">
+                        Add Supplier
+                    </button>
+
+                </div>
+
+            </div>
+
         </div>
 
     </div>
 
-    <div class="supplier-section">
-        <p><b>Registration #:</b> <span id="supReg">-</span></p>
-        <p><b>Bank:</b> <span id="supBank">-</span></p>
-        <p><b>Account #:</b> <span id="supAccount">-</span></p>
-    </div>
-
-    <div class="buttons">
-        <button class="btn primary" onclick="window.location.href='/procurement/add_supplier'">
-            Add Supplier
-        </button>
-    </div>
-
 </div>
 
-</div>
+<script>
 
-</div>
+/////////////////////////////////////////////////////////
+// TOGGLE AI SEARCH PANEL
+/////////////////////////////////////////////////////////
+function toggleAISupplierSearch() {
 
-</div>
+    const panel = document.getElementById("aiSupplierModule");
 
-</div>
+    if (panel.style.display === "block") {
+        panel.style.display = "none";
+    } else {
+        panel.style.display = "block";
+    }
+}
+
+/////////////////////////////////////////////////////////
+// SEARCH SUPPLIERS USING BACKEND AI
+/////////////////////////////////////////////////////////
+async function searchSupplierAI() {
+
+    const query =
+        document.getElementById("aiSupplierQuery")
+        .value
+        .trim();
+
+    if (!query) {
+        alert("Please enter a product or service.");
+        return;
+    }
+
+    const resultDiv =
+        document.getElementById("aiSupplierResults");
+
+    resultDiv.innerHTML =
+        "<p>Searching suppliers from external sources...</p>";
+
+    try {
+
+        const response = await fetch(
+            "/procurement/ai_supplier_search",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    query: query
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!data.suppliers ||
+            data.suppliers.length === 0) {
+
+            resultDiv.innerHTML =
+                "<p>No suppliers found.</p>";
+
+            return;
+        }
+
+        let html = `
+            <table class="supplier-table">
+
+                <thead>
+                    <tr>
+                        <th>Supplier</th>
+                        <th>Location</th>
+                        <th>Website</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+        `;
+
+        data.suppliers.forEach(supplier => {
+
+            html += `
+                <tr>
+
+                    <td>${supplier.name}</td>
+
+                    <td>${supplier.location || "-"}</td>
+
+                    <td>
+                        <a href="${supplier.website}"
+                           target="_blank">
+                           Visit
+                        </a>
+                    </td>
+
+                    <td>${supplier.score || 0}%</td>
+
+                    <td>
+
+                        <button class="btn primary"
+                            onclick="selectSupplier(
+                                '${supplier.name}',
+                                '${supplier.email || ''}',
+                                '${supplier.phone || ''}',
+                                '${supplier.location || ''}'
+                            )">
+
+                            Select
+
+                        </button>
+
+                    </td>
+
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        resultDiv.innerHTML = html;
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        resultDiv.innerHTML =
+            "<p>Failed to search suppliers.</p>";
+    }
+}
+
+/////////////////////////////////////////////////////////
+// SELECT SUPPLIER
+/////////////////////////////////////////////////////////
+function selectSupplier(
+    name,
+    email,
+    phone,
+    location
+) {
+
+    document.getElementById("supName").textContent =
+        name || "-";
+
+    document.getElementById("supEmail").textContent =
+        email || "-";
+
+    document.getElementById("supPhone").textContent =
+        phone || "-";
+
+    document.getElementById("supAddress").textContent =
+        location || "-";
+
+    alert(name + " selected successfully.");
+}
+
+</script>
+
+
+
+
 
 
 
@@ -739,34 +1948,6 @@ tr:hover{
             </div>
 
             <!-- SIGNATURE SECTION -->
-            <div class="signature-section" style="margin-top:20px; padding-top:10px; border-top:1px solid #ccc;">
-
-                <h4>Approval & Signatures</h4>
-
-                <div style="display:flex; justify-content:space-between; margin-top:15px;">
-
-                    <div style="text-align:center; width:30%;">
-                        <p>Prepared By</p>
-                        <br><br>
-                        
-                        <p>Name & Signature</p>
-                    </div
-
-                    <div style="text-align:center; width:30%;">
-                        <p>HOD Approval</p>
-                        <br><br>
-                        <p>_____________________</p>
-                        <p>Signature & Date</p>
-                    </div>
-
-                    <div style="text-align:center; width:30%;">
-                        <p>CEO Approval</p>
-                        <br><br>
-                        <p>_____________________</p>
-                        <p>Signature & Date</p>
-                    </div>
-
-                </div>
 
                 <div style="display:flex; justify-content:space-between; margin-top:20px; gap:16px;">
 
@@ -815,9 +1996,6 @@ tr:hover{
 </div>
 
 </div>
-
-
-
 
 
 <!-- ================= PURCHASE ORDER MODULE ================= -->
@@ -1659,2388 +2837,14 @@ tr:hover{
 
 
 
-<script >
 
-let quotationViewMode = "request";
-
-function openModule(id,btn){
-
-    if (id === "quotationRequest") {
-        quotationViewMode = "request";
-        id = "quotation";
-    } else if (id === "quotation") {
-        quotationViewMode = "quotation";
-    }
-
-    selectedQuotationId = null;
-    selectedQuotationMode = null;
-
-    document.querySelectorAll(".module").forEach(m=>m.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-
-    document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-
-    if(id === "supplier"){
-        loadSupplierModule();
-    }
-
-    if(id === "quotation"){
-        if (quotationViewMode === "request") {
-            loadQuotationRequests();
-        } else {
-            loadQuotations();
-        }
-    }
-
-    if(id === "purchaseOrder"){
-        loadPOModule();
-    }
-    if(id === "invoice"){
-        loadInvoices();
-    }
-
-    if(id === "grn"){
-        loadGRNData();
-    }
-}
-
-// ================= REQUISITION MODULE =================
-
-let selectedDocumentId = null;
-let selectedAction = null;
-let selectedQuotationId = null;
-let quotationPendingAction = null;
-let selectedQuotationMode = null;
-
-// ================= ACTION =================
-function setAction(action) {
-    selectedAction = action;
-}
-
-// ================= LOAD SLIP =================
-function loadSlipFromRow(row) {
-
-    const id = row.getAttribute("data-id");
-
-    if (!id) {
-        alert("Invalid selection");
-        return;
-    }
-
-    selectedDocumentId = id;
-
-    document.querySelectorAll("#prsTable tbody tr")
-        .forEach(r => r.classList.remove("selected"));
-
-    row.classList.add("selected");
-
-    fetch("/hod/requisition/api/" + id)
-        .then(res => res.json())
-        .then(data => {
-
-            if (!data.success) {
-                alert("Failed to load requisition");
-                return;
-            }
-
-            const r = data.requisition;
-
-            // ================= HEADER =================
-            document.getElementById("prs_no").innerText = r.prs_no || "-";
-            document.getElementById("department_name").innerText = r.department_name || "-";
-            document.getElementById("submission").innerText = r.submission_date || "-";
-
-            document.getElementById("hod_status").innerText = r.hod_status || "PENDING";
-            document.getElementById("ceo_status").innerText = r.ceo_status || "PENDING";
-            
-
-            // ================= ITEMS =================
-            const body = document.getElementById("items_body");
-            body.innerHTML = "";
-
-            data.items.forEach((item, i) => {
-                body.innerHTML += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${item.material_name}</td>
-                        <td>${item.uom}</td>
-                        <td>${item.qty_required}</td>
-                    </tr>
-                `;
-            });
-
-            // ================= SIGNATURES =================
-
-            // CREATED BY
-            document.getElementById("created_by_name").innerText =
-                r.creator_name || data.created_by?.name || "-";
-            document.getElementById("created_date").innerText =
-    r.submission_date || "-";
-
-            if (data.created_by?.signature) {
-                const img = document.getElementById("sig_created_by");
-                img.src = "/static/" + data.created_by.signature;
-                img.style.display = "block";
-            }
-
-            // HOD
-            document.getElementById("hod_username").innerText =
-                data.hod_signature?.username || "-";
-
-            document.getElementById("hod_approval_date").innerText =
-                data.hod_signature?.hod_approved_at || "-";
-
-            if (data.hod_signature?.signature) {
-                const img = document.getElementById("sig_hod");
-                img.src = "/static/" + data.hod_signature.signature;
-                img.style.display = "block";
-            }
-
-            // CEO
-            document.getElementById("ceo_username").innerText =
-                data.ceo_signature?.username || "-";
-
-            document.getElementById("ceo_approval_date").innerText =
-                data.ceo_signature?.ceo_approved_at || "-";
-
-            if (data.ceo_signature?.signature) {
-                const img = document.getElementById("sig_ceo");
-                img.src = "/static/" + data.ceo_signature.signature;
-                img.style.display = "block";
-            }
-
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Server error while loading requisition");
-        });
-}
-
-// ================= APPROVAL =================
-function submitApproval() {
-
-    if (!selectedDocumentId || !selectedAction) {
-        alert("Select document and action first");
-        return;
-    }
-
-    // Get current status from the slip
-    const hodStatus = document.getElementById("hod_status").innerText.trim();
-
-    // Prevent approving twice
-    if (hodStatus === "APPROVED") {
-        alert("This requisition has already been approved.");
-        return;
-    }
-
-    // Prevent rejecting after approval
-    if (hodStatus === "REJECTED") {
-        alert("This requisition has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedDocumentId,
-            module_name: "PRS",
-            action: selectedAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message);
-            return;
-        }
-
-        alert("Success");
-        location.reload();
-
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error");
-    });
-}
-
-let pendingAction = null;
-
-function confirmApproval(action) {
-    pendingAction = action;
-
-    const prsNo = document.getElementById("prs_no").innerText || "-";
-
-    if (action === "APPROVED") {
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${prsNo}</b>?`;
-    } else {
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${prsNo}</b>?`;
-    }
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function confirmQuotationApproval(action) {
-    if (!selectedQuotationId) {
-        alert("Please select a quotation first");
-        return;
-    }
-
-    quotationPendingAction = action;
-    const documentNo = document.getElementById("qrfNumber").innerText || "-";
-    const moduleLabel = quotationViewMode === "quotation" ? "quotation" : "quotation request";
-
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve ${moduleLabel} <b>${documentNo}</b>?`
-            : `Are you sure you want to reject ${moduleLabel} <b>${documentNo}</b>?`;
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function approveQuotation() {
-    confirmQuotationApproval("APPROVED");
-}
-
-function rejectQuotation() {
-    confirmQuotationApproval("REJECTED");
-}
-
-function printQuotation() {
-    window.print();
-}
-
-function autoLoadFirstRequisition() {
-
-    const firstRow = document.querySelector("#prsTable tbody tr");
-
-    if (firstRow) {
-        loadSlipFromRow(firstRow);
-    }
-}
-
-
-
-
-function searchQuotation(){
-    let input = document.getElementById("quotationSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#quotationTable tbody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-function searchSupplier(){
-    let input = document.getElementById("supplierSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#supplierBody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-
-
-
-
-function searchPO(){
-    let input = document.getElementById("poSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#poBody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-function printPO(){
-    window.print();
-}
-
-// =======================================================
-// PURCHASE ORDER APPROVAL SYSTEM
-// =======================================================
-
-// GLOBAL VARIABLES
-let selectedPOId = null;
-let pOpendingAction = null;
-
-
-// =======================================================
-// APPROVE / REJECT BUTTON CLICK
-// =======================================================
-function confirmPoApproval(action) {
-
-    // Ensure a PO is selected
-    if (!selectedPOId) {
-        alert("Please select a purchase order first");
-        return;
-    }
-
-    pOpendingAction = action;
-
-    const poNumber =
-        document.getElementById("poNumber").innerText || "-";
-
-    if (action === "APPROVED") {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${poNumber}</b>?`;
-
-    } else {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${poNumber}</b>?`;
-
-    }
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-
-// =======================================================
-// CLOSE MODAL
-// =======================================================
-function closeModal() {
-    document.getElementById("confirmModal").style.display = "none";
-}
-
-
-// =======================================================
-// CONFIRM BUTTON IN MODAL
-// =======================================================
-
-
-
-// =======================================================
-// SEND APPROVAL TO SERVER
-// =======================================================
-function approvePO() {
-
-    // Ensure PO selected
-    if (!selectedPOId) {
-        alert("Please select a purchase order first");
-        return;
-    }
-
-    // Ensure action selected
-    if (!pOpendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const hodStatus =
-        document.getElementById("po_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
-
-    // Prevent double approval
-    if (hodStatus === "APPROVED") {
-        alert("This purchase order has already been approved.");
-        return;
-    }
-
-    // Prevent double rejection
-    if (hodStatus === "REJECTED") {
-        alert("This purchase order has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedPOId,
-            module_name: "PO",
-            action: pOpendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message || "Approval failed");
-            return;
-        }
-
-        alert("Purchase Order updated successfully.");
-
-        // Refresh PO details
-        loadPOModule();
-
-        if (selectedPOId) {
-            const radio = document.querySelector(
-                `input[data-po-id="${selectedPOId}"]`
-            );
-
-            if (radio) {
-                selectPO(radio);
-            }
-        }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
-}
-
-// =======================================================
-// LOAD PO DETAILS
-// =======================================================
-function selectPO(radio) {
-
-    if (!radio || !radio.dataset.poId) {
-        alert("Please select a purchase order");
-        return;
-    }
-
-    const poId = radio.dataset.poId;
-
-    // IMPORTANT
-    selectedPOId = poId;
-
-    fetch(`/hod/po_details/${poId}`)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(
-                    `PO details request failed: ${res.status}`
-                );
-            }
-            return res.json();
-        })
-        .then(data => {
-
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            // ================= BASIC INFO =================
-            document.getElementById("poNumber").innerText =
-                data.po_number || "-";
-
-            document.getElementById("poDepartment").innerText =
-                data.department_name || "-";
-
-            document.getElementById("poPRS").innerText =
-                data.prs_no || "-";
-
-            document.getElementById("poSupplier").innerText =
-                data.supplier_name || "-";
-
-            document.getElementById("poDate").innerText =
-                data.order_date || "-";
-
-            document.getElementById("poTotal").innerText =
-                data.total_amount || "0";
-
-            // ================= STATUS =================
-            document.getElementById("po_hod_Status").innerText =
-                data.hod_status || "PENDING";
-
-            document.getElementById("po_ceo_Status").innerText =
-                data.ceo_status || "PENDING";
-
-            // ================= ITEMS =================
-            let itemsBody =
-                document.getElementById("poItemsBody");
-
-            itemsBody.innerHTML = "";
-
-            if (data.items && data.items.length > 0) {
-
-                data.items.forEach(item => {
-
-                    itemsBody.innerHTML += `
-                        <tr>
-                            <td>${item.item_name || "-"}</td>
-                            <td>${item.quantity || "-"}</td>
-                            <td>${item.unit_price || "-"}</td>
-                            <td>${item.total_price || "-"}</td>
-                        </tr>
-                    `;
-                });
-
-            } else {
-
-                itemsBody.innerHTML = `
-                    <tr>
-                        <td colspan="4">
-                            No items found
-                        </td>
-                    </tr>
-                `;
-            }
-
-            const resolveSignatureSrc = signaturePath => {
-                if (!signaturePath) return "";
-                if (signaturePath.startsWith("/")) return signaturePath;
-                if (signaturePath.startsWith("static/")) return `/${signaturePath}`;
-                return `/static/${signaturePath}`;
-            };
-
-            // ================= PREPARED BY =================
-            document.getElementById("poPreparedBy").innerText =
-                data.created_by?.username || "-";
-
-            const preparedBySig = document.getElementById("poPreparedBySig");
-            if (data.created_by?.signature) {
-                preparedBySig.src = resolveSignatureSrc(data.created_by.signature);
-                preparedBySig.style.display = "block";
-            } else {
-                preparedBySig.src = "";
-                preparedBySig.style.display = "none";
-            }
-
-            // ================= HOD =================
-            document.getElementById("po_hod_Approval").innerText =
-                data.hod_name || "-";
-
-            document.getElementById("po_hod_ApprovalDate").innerText =
-                data.hod_approved_at || "-";
-
-            const hodSig = document.getElementById("poHodSig");
-            if (data.hod_signature) {
-                hodSig.src = resolveSignatureSrc(data.hod_signature);
-                hodSig.style.display = "block";
-            } else {
-                hodSig.src = "";
-                hodSig.style.display = "none";
-            }
-
-            // ================= CEO =================
-            document.getElementById("po_ceo_Approval").innerText =
-                data.ceo_name || "-";
-
-            document.getElementById("po_ceo_ApprovalDate").innerText =
-                data.ceo_approved_at || "-";
-
-            const ceoSig = document.getElementById("poCeoSig");
-            if (data.ceo_signature) {
-                ceoSig.src = resolveSignatureSrc(data.ceo_signature);
-                ceoSig.style.display = "block";
-            } else {
-                ceoSig.src = "";
-                ceoSig.style.display = "none";
-            }
-
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load purchase order details.");
-        });
-}
-
-
-// =======================================================
-// LOAD PO LIST
-// =======================================================
-function loadPOModule() {
-
-    fetch("/hod/po_data")
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(
-                    `PO list request failed: ${res.status}`
-                );
-            }
-
-            return res.json();
-        })
-        .then(data => {
-
-            const body =
-                document.getElementById("poBody");
-
-            body.innerHTML = "";
-
-            if (!data || data.length === 0) {
-
-                body.innerHTML = `
-                    <tr>
-                        <td colspan="7"
-                            style="text-align:center;">
-                            No purchase orders found.
-                        </td>
-                    </tr>
-                `;
-
-                return;
-            }
-
-            data.forEach((item, index) => {
-
-                const row =
-                    document.createElement("tr");
-
-                row.innerHTML = `
-                    <td>
-                        <input
-                            type="radio"
-                            name="poSelect"
-                            data-po-id="${item.purchase_order_id}">
-                    </td>
-
-                    <td>${item.po_number || "-"}</td>
-                    <td>${item.prs_no || "-"}</td>
-                    <td>${item.supplier_name || "-"}</td>
-                    <td>${item.status || "-"}</td>
-                    <td>${item.department || "-"}</td>
-                    <td>${item.order_date || "-"}</td>
-                `;
-
-                row.addEventListener("click", () => {
-
-                    const radio =
-                        row.querySelector(
-                            "input[name='poSelect']"
-                        );
-
-                    radio.checked = true;
-
-                    document
-                        .querySelectorAll("#poBody tr")
-                        .forEach(r =>
-                            r.classList.remove("selected")
-                        );
-
-                    row.classList.add("selected");
-
-                    selectPO(radio);
-                });
-
-                body.appendChild(row);
-
-                // Auto-load first PO
-                if (index === 0) {
-
-                    const radio =
-                        row.querySelector(
-                            "input[name='poSelect']"
-                        );
-
-                    radio.checked = true;
-
-                    row.classList.add("selected");
-
-                    selectPO(radio);
-                }
-
-            });
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load purchase orders.");
-        });
-}
-// =======================================================
-// SAFE HELPERS
-// =======================================================
-function setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = value || "-";
-}
-
-function setImage(id, src) {
-    const el = document.getElementById(id);
-
-    if (!el) return;
-
-    if (src) {
-        el.src = "/static/" + src;
-        el.style.display = "block";
-    } else {
-        el.style.display = "none";
-    }
-}
-
-function sharePOWhatsAppPDF() {
-
-    const element = document.getElementById("poPrintArea");
-
-    if (!element) {
-        alert("PO slip not found");
-        return;
-    }
-
-    // ================= PDF OPTIONS =================
-    const opt = {
-        margin: 0.5,
-        filename: `PO_${document.getElementById("poNumber")?.innerText || "document"}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    // ================= CREATE PDF =================
-    html2pdf().set(opt).from(element).outputPdf('blob').then(function (pdfBlob) {
-
-        // Convert blob → file URL
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-        // WhatsApp message (with link)
-        const message = `
-📦 Purchase Order Document
-
-PO Number: ${document.getElementById("poNumber").innerText}
-Supplier: ${document.getElementById("poSupplier").innerText}
-
-👉 View/Download PDF:
-${pdfUrl}
-        `;
-
-        const whatsappUrl =
-            "https://wa.me/?text=" + encodeURIComponent(message);
-
-        window.open(whatsappUrl, "_blank");
-    });
-}
-
-
-
-
-// =======================================================
-// LOAD ALL GRN DATA
-// =======================================================
-async function loadGRNData() {
-
-    try {
-
-        const response = await fetch("/hod/hod_grn_data");
-
-        const data = await response.json();
-
-        const tbody = document.getElementById("grnBody");
-
-        tbody.innerHTML = "";
-
-        data.forEach(grn => {
-
-            tbody.innerHTML += `
-
-                <tr onclick="loadGRNDetails(${grn.grn_id})">
-
-                    <td>
-                        <input 
-                            type="radio"
-                            name="selectedGRN"
-                            data-grn-id="${grn.grn_id}"
-                            value="${grn.grn_id}"
-                        >
-                    </td>
-
-                    <td>${grn.grn_no || ''}</td>
-
-                    <td>${grn.prs_no || ''}</td>
-
-                    <td>${grn.supplier_name || ''}</td>
-
-                    <td>${grn.status || ''}</td>
-
-                    <td>${grn.department || ''}</td>
-
-                    <td>${formatDate(grn.received_date)}</td>
-
-                </tr>
-
-            `;
-        });
-
-    }
-    catch (error) {
-
-        console.error("Error loading GRN data:", error);
-    }
-}
-
-
-// =======================================================
-// LOAD SINGLE GRN DETAILS
-// =======================================================
-async function loadGRNDetails(grnId) {
-
-    selectedGRNId = grnId;
-
-    document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
-    const radio = document.querySelector(`input[data-grn-id="${grnId}"]`);
-    if (radio) {
-        radio.checked = true;
-        radio.closest('tr')?.classList.add('selected');
-    }
-
-    try {
-
-        const response = await fetch(`/hod/hod_grn_details/${grnId}`);
-
-        const data = await response.json();
-
-        // ===================================================
-        // HEADER
-        // ===================================================
-        document.getElementById("grnNumber").innerText =
-            data.grn_no || "-";
-
-        document.getElementById("grnDate").innerText =
-            formatDate(data.received_date);
-
-        document.getElementById("grnPO").innerText =
-            data.po_number || "-";
-
-        document.getElementById("grnSupplier").innerText =
-            data.supplier_name || "-";
-
-        document.getElementById("grnReceiver").innerText =
-            data.received_by || "-";
-
-        document.getElementById("grnStatus").innerText =
-            data.inspection_status || "-";
-
-        document.getElementById("grn_hod_Status").innerText =
-            data.hod_status || "PENDING";
-
-        document.getElementById("grn_ceo_Status").innerText =
-            data.ceo_status || "PENDING";
-
-        document.getElementById("grnLocation").innerText =
-            data.supplier_address || "-";
-
-        document.getElementById("grnReceivingDate").innerText =
-            formatDate(data.received_date);
-
-        document.getElementById("grnTotal").innerText =
-            data.total_received || 0;
-
-        // ===================================================
-        // SIGNATURES
-        // ===================================================
-        document.getElementById("grnReceiverNameSigText").innerText =
-            data.received_by || "-";
-
-        const receiverImg = document.getElementById("grnReceivedBySig");
-        if (data.receiver_signature) {
-            receiverImg.src = "/static/" + data.receiver_signature;
-            receiverImg.style.display = "block";
-        } else {
-            receiverImg.src = "";
-            receiverImg.style.display = "none";
-        }
-
-        document.getElementById("grnHodName").innerText =
-            data.hod_name || "-";
-
-        document.getElementById("grnHodDate").innerText =
-            data.hod_approved_at ? formatDate(data.hod_approved_at) : "-";
-
-        const hodImg = document.getElementById("grnHodSig");
-        if (data.hod_signature) {
-            hodImg.src = "/static/" + data.hod_signature;
-            hodImg.style.display = "block";
-        } else {
-            hodImg.src = "";
-            hodImg.style.display = "none";
-        }
-
-        document.getElementById("grnCeoName").innerText =
-            data.ceo_name || "-";
-
-        document.getElementById("grnCeoDate").innerText =
-            data.ceo_approved_at ? formatDate(data.ceo_approved_at) : "-";
-
-        const ceoImg = document.getElementById("grnCeoSig");
-        if (data.ceo_signature) {
-            ceoImg.src = "/static/" + data.ceo_signature;
-            ceoImg.style.display = "block";
-        } else {
-            ceoImg.src = "";
-            ceoImg.style.display = "none";
-        }
-
-        // ===================================================
-        // ITEMS
-        // ===================================================
-        const tbody = document.getElementById("grnItemsBody");
-
-        tbody.innerHTML = "";
-
-        data.items.forEach(item => {
-
-            tbody.innerHTML += `
-
-                <tr>
-
-                    <td>${item.material_name || ''}</td>
-
-                    <td>${item.description || ''}</td>
-
-                    <td>${item.quantity_ordered || 0}</td>
-
-                    <td>${item.quantity_received || 0}</td>
-
-                    <td>${item.balance || 0}</td>
-
-                </tr>
-
-            `;
-        });
-
-    }
-    catch (error) {
-
-        console.error("Error loading GRN details:", error);
-    }
-}
-
-function selectGRN(radio) {
-    if (!radio || !radio.dataset.grnId) {
-        alert("Please select a goods receipt note first");
-        return;
-    }
-
-    selectedGRNId = radio.dataset.grnId;
-
-    document.querySelectorAll("#grnBody tr").forEach(r => r.classList.remove("selected"));
-    radio.checked = true;
-    radio.closest('tr')?.classList.add('selected');
-
-    loadGRNDetails(selectedGRNId);
-}
-
-
-
-
-
-
-// GLOBAL VARIABLES
-let selectedGRNId = null;
-let grnPendingAction = null;
-
-
-// =======================================================
-// APPROVE / REJECT BUTTON CLICK
-// =======================================================
-function confirmGRNApproval(action) {
-
-    // Ensure a GRN is selected
-    if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
-        return;
-    }
-
-    grnPendingAction = action;
-
-    const grnNumber =
-        document.getElementById("grnNumber").innerText || "-";
-
-    if (action === "APPROVED") {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${grnNumber}</b>?`;
-
-    } else {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${grnNumber}</b>?`;
-
-    }
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-
-// =======================================================
-// CLOSE MODAL
-// =======================================================
-function closeModal() {
-    document.getElementById("confirmModal").style.display = "none";
-
-    pendingAction = null;
-    quotationPendingAction = null;
-    invoicePendingAction = null;
-    pOpendingAction = null;
-    grnPendingAction = null;
-    paymentPendingAction = null;
-}
-
-
-// =======================================================
-// CONFIRM BUTTON IN MODAL
-// =======================================================
-
-
-
-// =======================================================
-// SEND APPROVAL TO SERVER
-// =======================================================
-function approveGRN() {
-
-    // Ensure GRN selected
-    if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
-        return;
-    }
-
-    // Ensure action selected
-    if (!grnPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const hodStatus =
-        document.getElementById("grn_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
-
-    // Prevent double approval
-    if (hodStatus === "APPROVED") {
-        alert("This goods receipt note has already been approved.");
-        return;
-    }
-
-    // Prevent double rejection
-    if (hodStatus === "REJECTED") {
-        alert("This goods receipt note has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedGRNId,
-            module_name: "GRN",
-            action: grnPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message || "Approval failed");
-            return;
-        }
-
-        alert("Goods Receipt Note updated successfully.");
-
-        // Refresh GRN details
-        loadGRNData();
-
-        if (selectedGRNId) {
-            const radio = document.querySelector(
-                `input[data-grn-id="${selectedGRNId}"]`
-            );
-
-            if (radio) {
-                selectGRN(radio);
-            }
-        }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
-}
-
-
-// =======================================================
-// SEARCH GRN
-// =======================================================
-function searchGRN() {
-
-    const input = document
-        .getElementById("grnSearch")
-        .value
-        .toLowerCase();
-
-    const rows = document.querySelectorAll("#grnTable tbody tr");
-
-    rows.forEach(row => {
-
-        const text = row.innerText.toLowerCase();
-
-        row.style.display =
-            text.includes(input)
-            ? ""
-            : "none";
-    });
-}
-
-
-// =======================================================
-// GET SELECTED GRN ID
-// =======================================================
-function getSelectedGRN() {
-
-    const selected = document.querySelector(
-        'input[name="selectedGRN"]:checked'
-    );
-
-    if (!selected) {
-
-        alert("Please select a GRN");
-
-        return null;
-    }
-
-    return selected.value;
-}
-
-
-
-
-// =======================================================
-// PRINT GRN
-// =======================================================
-function printGRN() {
-
-    const content = document.getElementById(
-        "grnPrintArea"
-    ).innerHTML;
-
-    const win = window.open("", "", "width=1000,height=700");
-
-    win.document.write(`
-
-        <html>
-
-        <head>
-
-            <title>Print GRN</title>
-
-            <style>
-
-                body{
-                    font-family:Arial;
-                    padding:20px;
-                }
-
-                table{
-                    width:100%;
-                    border-collapse:collapse;
-                }
-
-                table,th,td{
-                    border:1px solid #000;
-                }
-
-                th,td{
-                    padding:8px;
-                    text-align:left;
-                }
-
-            </style>
-
-        </head>
-
-        <body>
-
-            ${content}
-
-        </body>
-
-        </html>
-
-    `);
-
-    win.document.close();
-
-    win.print();
-}
-
-
-
-
-// =======================================================
-// SHARE EMAIL
-// =======================================================
-function shareGRNEmail() {
-
-    const grnNo =
-        document.getElementById("grnNumber").innerText;
-
-    const supplier =
-        document.getElementById("grnSupplier").innerText;
-
-    const body = `
-
-GRN Number: ${grnNo}
-Supplier: ${supplier}
-
-Goods Received Successfully.
-
-    `;
-
-    window.location.href =
-        `mailto:?subject=GRN ${grnNo}&body=${encodeURIComponent(body)}`;
-}
-
-
-// =======================================================
-// FORMAT DATE
-// =======================================================
-function formatDate(dateString) {
-
-    if (!dateString) return "-";
-
-    const date = new Date(dateString);
-
-    return date.toLocaleDateString();
-}
-
-
-// =======================================================
-// LOAD ON PAGE OPEN
-// =======================================================
-document.addEventListener(
-    "DOMContentLoaded",
-    loadGRNData
-);
-
-
-
-function selectQuotation(radio){
-    if(!radio || !radio.dataset.qrfId){
-        alert("Please select a quotation request");
-        return;
-    }
-
-    let qrfId = radio.dataset.qrfId;
-    selectedQuotationId = qrfId;
-    selectedQuotationMode = "request";
-    quotationViewMode = "request";
-
-    fetch(`/hod/quotationRequest_details/${qrfId}`)
-        .then(res => {
-            if (!res.ok) throw new Error(`Quotation details request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            if(data.error){
-                alert(data.error);
-                return;
-            }
-
-            const selectedSupplier = (Array.isArray(data.suppliers) ? data.suppliers.find(s => s.selected_supplier == 1) : null) ||
-                (Array.isArray(data.suppliers) && data.suppliers[0]) || {};
-
-            const resolveSignatureSrc = signaturePath => {
-                if (!signaturePath) return "";
-                return signaturePath.startsWith("/") ? signaturePath : `/static/${signaturePath}`;
-            };
-
-            document.getElementById("qrfNumber").innerText = data.qrf_no || "-";
-            document.getElementById("qrfPrs").innerText = data.prs_no || "-";
-            document.getElementById("qrfDate").innerText = data.request_date || "-";
-            document.getElementById("qr_requester").innerText = data.requester_name || "-";
-            document.getElementById("qr_department").innerText = data.department || "-";
-            document.getElementById("qr_contact").innerText = data.requester_email || "-";
-            document.getElementById("sp_to").innerText = selectedSupplier.supplier_name || "-";
-            document.getElementById("sp_name").innerText = selectedSupplier.supplier_name || "-";
-            document.getElementById("sp_location").innerText = selectedSupplier.address || "-";
-            document.getElementById("sp_item").innerText = data.items.length > 0 ? data.items[0].material_name : "-";
-
-            let itemsBody = document.getElementById("sharedPRS");
-            itemsBody.innerHTML = "";
-
-            data.items.forEach(item => {
-                let itemRow = document.createElement("tr");
-                itemRow.innerHTML = `
-                    <td>${item.material_name || "-"}</td>
-                    <td>${item.description || "-"}</td>
-                    <td>${item.quantity || "-"}</td>
-                `;
-                itemsBody.appendChild(itemRow);
-            });
-
-            const preparedSig = document.getElementById("qrfPreparedBySig");
-            const preparedName = document.getElementById("qrfPreparedByName");
-            const preparedDate = document.getElementById("qrfPreparedByDate");
-
-            if (data.requester_signature) {
-                preparedSig.src = resolveSignatureSrc(data.requester_signature);
-                preparedSig.style.display = "block";
-                preparedName.innerText = data.requester_name || "-";
-                preparedDate.innerText = data.request_date || "-";
-            } else {
-                preparedSig.style.display = "none";
-                preparedName.innerText = data.requester_name || "-";
-                preparedDate.innerText = "-";
-            }
-
-            const hodSig = document.getElementById("qrfHodSig");
-            const hodName = document.getElementById("qrfHodName");
-            const hodDate = document.getElementById("qrfHodDate");
-
-            if (data.hod_signature) {
-                hodSig.src = resolveSignatureSrc(data.hod_signature);
-                hodSig.style.display = "block";
-                hodName.innerText = data.hod_name || "-";
-                hodDate.innerText = data.hod_approved_at || "-";
-            } else {
-                hodSig.style.display = "none";
-                hodName.innerText = "-";
-                hodDate.innerText = "-";
-            }
-
-            const ceoSig = document.getElementById("qrfCeoSig");
-            const ceoName = document.getElementById("qrfCeoName");
-            const ceoDate = document.getElementById("qrfCeoDate");
-
-            if (data.ceo_signature) {
-                ceoSig.src = resolveSignatureSrc(data.ceo_signature);
-                ceoSig.style.display = "block";
-                ceoName.innerText = data.ceo_name || "-";
-                ceoDate.innerText = data.ceo_approved_at || "-";
-            } else {
-                ceoSig.style.display = "none";
-                ceoName.innerText = "-";
-                ceoDate.innerText = "-";
-            }
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load quotation details.");
-        });
-}
-
-function loadQuotationRequests(){
-    selectedQuotationId = null;
-    selectedQuotationMode = "request";
-    quotationViewMode = "request";
-
-    fetch("/hod/quotationRequest_data")
-        .then(res => {
-            if (!res.ok) throw new Error(`Quotation request list request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            let body = document.getElementById("quotationBody");
-            body.innerHTML = "";
-
-            if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotation requests found.</td></tr>`;
-                return;
-            }
-
-            data.forEach(item => {
-                let row = document.createElement("tr");
-                row.style.cursor = "pointer";
-                row.innerHTML = `
-                    <td><input type="radio" name="quotationSelect" data-qrf-id="${item.qrf_id}"></td>
-                    <td>${item.qrf_no || "-"}</td>
-                    <td>${item.prs_no || "-"}</td>
-                    <td>${item.supplier_name || "-"}</td>
-                    <td>${item.status || "-"}</td>
-                    <td>${item.department || "-"}</td>
-                    <td>${item.request_date || "-"}</td>
-                `;
-                row.addEventListener("click", () => {
-                    const radio = row.querySelector("input[name='quotationSelect']");
-                    if (radio) {
-                        radio.checked = true;
-                        document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
-                        row.classList.add("selected");
-                        quotationViewMode = "request";
-                        selectQuotation(radio);
-                    }
-                });
-                body.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load quotation request list.");
-        });
-}
-
-function showSupplierDetails(supplier){
-    document.getElementById("supName").innerText = supplier.supplier_name || "-";
-    document.getElementById("supContact").innerText = supplier.contact_person || "-";
-    document.getElementById("supPhone").innerText = supplier.phone || "-";
-    document.getElementById("supEmail").innerText = supplier.email || "-";
-    document.getElementById("supAddress").innerText = supplier.address || "-";
-    document.getElementById("supTin").innerText = supplier.tin_number || "-";
-    document.getElementById("supReg").innerText = supplier.registration_number || "-";
-    document.getElementById("supBank").innerText = supplier.bank_name || "-";
-    document.getElementById("supAccount").innerText = supplier.account_number || "-";
-}
-
-function loadSupplierModule(){
-    fetch("/hod/supplier_list")
-        .then(res => {
-            if (!res.ok) throw new Error(`Supplier list request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            let body = document.getElementById("supplierBody");
-            body.innerHTML = "";
-
-            if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;">No suppliers found.</td></tr>`;
-                showSupplierDetails({});
-                return;
-            }
-
-            data.forEach(supplier => {
-                let row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${supplier.supplier_name || "-"}</td>
-                    <td>${supplier.contact_person || "-"}</td>
-                    <td>${supplier.phone || "-"}</td>
-                    <td>${supplier.address || "-"}</td>
-                    <td>${supplier.email || "-"}</td>
-                `;
-                row.addEventListener("click", () => {
-                    document.querySelectorAll("#supplierBody tr").forEach(r => r.classList.remove("selected"));
-                    row.classList.add("selected");
-                    showSupplierDetails(supplier);
-                });
-                body.appendChild(row);
-            });
-
-            showSupplierDetails(data[0]);
-        })
-        .catch(error => {
-            console.error(error);
-            alert("Failed to load suppliers.");
-        });
-}
-
-
-/* inoice*/
-
-
-// =========================================
-// GLOBAL SELECTED INVOICE
-// =========================================
-let selectedInvoiceId = null;
-let invoicePendingAction = null;
-
-// =========================================
-// LOAD INVOICE TABLE
-// =========================================
-async function loadInvoices() {
-
-    try {
-
-        const response = await fetch("/hod/invoice_data");
-
-        console.log("Status:", response.status);
-
-        const text = await response.text();
-
-        if (!text || text.startsWith("<!DOCTYPE")) {
-            console.error("Server returned HTML or empty response");
-            return;
-        }
-
-        const invoices = JSON.parse(text);
-
-        const tbody = document.getElementById("invoiceBody");
-        tbody.innerHTML = "";
-
-        invoices.forEach(inv => {
-
-            tbody.innerHTML += `
-                <tr onclick="selectInvoice(this.querySelector('input'))">
-                    <td>
-                        <input type="radio"
-                            data-invoice-id="${inv.invoice_id}"
-                            name="invoiceSelect"
-                            onclick="event.stopPropagation(); selectInvoice(this)">
-                    </td>
-                    <td>${inv.prs_no || "-"}</td>
-                    <td>${inv.invoice_number || "-"}</td>
-                    <td>${inv.po_number || "-"}</td>
-                    <td>${inv.supplier_name || "-"}</td>
-                    <td>${inv.department_name || "-"}</td>
-                    <td>${inv.status || "-"}</td>
-                    <td>${inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString() : "-"}</td>
-                </tr>
-            `;
-        });
-
-    } catch (err) {
-        console.error("Invoice load error:", err);
-    }
-}
-
-function selectInvoice(radio) {
-    if (!radio || !radio.closest('tr')) {
-        alert("Please select an invoice first.");
-        return;
-    }
-
-    const invoiceId = radio.getAttribute('data-invoice-id');
-    if (!invoiceId) {
-        alert("Invoice missing ID.");
-        return;
-    }
-
-    selectedInvoiceId = invoiceId;
-
-    document.querySelectorAll("#invoiceBody tr").forEach(r => r.classList.remove("selected"));
-    radio.closest('tr').classList.add('selected');
-
-    loadInvoiceDetails(invoiceId);
-}
-
-function confirmInvoice(action) {
-    if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
-        return;
-    }
-
-    invoicePendingAction = action;
-
-    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
-            : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function approveInvoice() {
-    confirmInvoice("APPROVED");
-}
-
-function rejectInvoice() {
-    confirmInvoice("REJECTED");
-}
-
-// =========================================
-// LOAD SINGLE INVOICE
-// =========================================
-async function loadInvoiceDetails(invoiceId) {
-
-    try {
-
-        const response = await fetch(`/hod/hod_invoice_details/${invoiceId}`);
-        const data = await response.json();
-
-        console.log(data);
-
-        if (!data.success) {
-            alert(data.error || "Failed to load invoice.");
-            return;
-        }
-
-        // ================= HEADER =================
-        document.getElementById("i_invoice_number").textContent =
-            data.invoice_number || "-";
-
-        document.getElementById("i_po_number").textContent =
-            data.po_number || "-";
-
-        document.getElementById("i_prs_number").textContent =
-            data.prs_no || "-";
-
-        document.getElementById("i_department").textContent =
-            data.department_name || "-";
-
-        document.getElementById("i_supplier").textContent =
-            data.supplier_name || "-";
-
-        document.getElementById("i_date").textContent =
-            data.invoice_date || "-";
-
-        document.getElementById("i_amount").textContent =
-            data.total_amount || "-";
-
-        document.getElementById("i_status").textContent =
-            data.status || "-";
-
-        // ================= ITEMS =================
-        const itemsBody = document.getElementById("invoiceItemsBody");
-        itemsBody.innerHTML = "";
-
-        data.items.forEach(item => {
-            itemsBody.innerHTML += `
-                <tr>
-                    <td>${item.description}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unit_price}</td>
-                    <td>${item.total_price}</td>
-                </tr>
-            `;
-        });
-
-        // ================= CREATOR =================
-        document.getElementById("invoice_creator_name").textContent =
-            data.creator_name || "-";
-
-        function resolveSignatureSrc(signaturePath) {
-            if (!signaturePath) {
-                return "";
-            }
-
-            if (signaturePath.startsWith("/")) {
-                return signaturePath;
-            }
-
-            return `/static/${signaturePath}`;
-        }
-
-        const creatorSig = document.getElementById(
-            "invoice_creator_signature"
-        );
-
-        if (data.creator_signature) {
-            creatorSig.src = resolveSignatureSrc(data.creator_signature);
-            creatorSig.style.display = "block";
-        } else {
-            creatorSig.style.display = "none";
-        }
-
-        // ================= HOD =================
-        document.getElementById("invoice_hod_name").textContent =
-            data.hod_name || "-";
-
-        document.getElementById("invoice_hod_status").textContent =
-            data.hod_status || "PENDING";
-
-        const hodSig = document.getElementById(
-            "invoice_hod_signature"
-        );
-
-        if (data.hod_signature) {
-            hodSig.src = resolveSignatureSrc(data.hod_signature);
-            hodSig.style.display = "block";
-        } else {
-            hodSig.style.display = "none";
-        }
-
-        // ================= CEO =================
-        document.getElementById("invoice_ceo_name").textContent =
-            data.ceo_name || "-";
-
-        document.getElementById("invoice_ceo_status").textContent =
-            data.ceo_status || "PENDING";
-
-        const ceoSig = document.getElementById(
-            "invoice_ceo_signature"
-        );
-
-        if (data.ceo_signature) {
-            ceoSig.src = resolveSignatureSrc(data.ceo_signature);
-            ceoSig.style.display = "block";
-        } else {
-            ceoSig.style.display = "none";
-        }
-
-    } catch (error) {
-        console.error("Invoice details error:", error);
-    }
-}
-
-
-// =========================================
-// SEARCH TABLE
-// =========================================
-function searchInvoice() {
-
-    const input =
-        document.getElementById("invoiceSearch")
-            .value
-            .toLowerCase();
-
-    const rows =
-        document.querySelectorAll("#invoiceBody tr");
-
-    rows.forEach(row => {
-
-        const text =
-            row.textContent.toLowerCase();
-
-        row.style.display =
-            text.includes(input)
-                ? ""
-                : "none";
-    });
-}
-
-// =========================================
-// DATE FORMAT
-// =========================================
-function formatDate(dateString){
-
-    if(!dateString)
-        return "-";
-
-    const date = new Date(dateString);
-
-    return date.toLocaleDateString(
-        "en-GB",
-        {
-            year:"numeric",
-            month:"short",
-            day:"numeric"
-        }
-    );
-}
-
-// =========================================
-// PRINT
-// =========================================
-function printInvoice(){
-
-    if(!selectedInvoiceId){
-        alert("Select an invoice first.");
-        return;
-    }
-
-    const content =
-        document.getElementById(
-            "invoicePrintArea"
-        ).innerHTML;
-
-    const printWindow =
-        window.open("", "", "width=1000,height=700");
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Invoice Print</title>
-            </head>
-            <body>
-                ${content}
-            </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
-
-// =========================================
-// AUTO LOAD
-// =========================================
-document.addEventListener(
-    "DOMContentLoaded",
-    loadInvoices
-);
-
-
-function logoutUser() {
-    window.location.href = "/logout";
-}
-
-
-
-async function loadPaymentData() {
-
-    try {
-
-        const response = await fetch("/hod/payments_data");
-        const result = await response.json();
-
-        const tableBody = document.getElementById("paymentBody");
-        tableBody.innerHTML = "";
-
-        if (!result.success || !Array.isArray(result.data) || result.data.length === 0) {
-
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align:center;">
-                        No payment records found
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        result.data.forEach(payment => {
-
-            const row = document.createElement("tr");
-
-            const paymentDate = payment.payment_date
-                ? new Date(payment.payment_date).toLocaleDateString()
-                : "-";
-
-            row.innerHTML = `
-                <td>
-                    <input type="radio" name="paymentSelect">
-                </td>
-
-                <td>${payment.payment_no || "-"}</td>
-                <td>${payment.invoice_number || "-"}</td>
-                <td>${payment.supplier_name || "-"}</td>
-                <td>${payment.requisition_department || "-"}</td>
-                <td>${payment.status || "PENDING"}</td>
-                <td>${paymentDate}</td>
-            `;
-
-            row.addEventListener("click", () => {
-
-                document.querySelectorAll("#paymentBody tr")
-                    .forEach(r => r.classList.remove("selected"));
-
-                row.classList.add("selected");
-
-                const radio = row.querySelector("input[type='radio']");
-                if (radio) radio.checked = true;
-
-                selectedPaymentId = payment.payment_id;
-                loadPaymentDetails(payment.payment_id);
-            });
-
-            tableBody.appendChild(row);
-        });
-
-    }
-    catch (error) {
-        console.error("Payment load error:", error);
-        alert("Failed to load payment records.");
-    }
-}
-
-
-
-function loadPaymentDetails(payment_id) {
-
-    selectedPaymentId = payment_id;
-
-    fetch(`/hod/payment_details/${payment_id}`)
-        .then(res => res.json())
-        .then(response => {
-
-            if (!response.success) {
-                console.error("Payment not found");
-                return;
-            }
-
-            const p = response.data;
-            const items = response.items || [];
-
-            // ================= PAYMENT INFO =================
-            document.getElementById("payNumber").textContent = p.payment_no || "-";
-            document.getElementById("payInvoice").textContent = p.invoice_number || "-";
-            document.getElementById("paySupplier").textContent = p.supplier_name || "-";
-
-            // ✅ REQUISITION DEPARTMENT (FIXED)
-            document.getElementById("payDepartment").textContent =
-                p.requisition_department || "-";
-
-            document.getElementById("payAmount").textContent = p.amount || "-";
-            document.getElementById("payAmountPaid").textContent = p.amount_paid || "-";
-            document.getElementById("payBalance").textContent = p.balance || "-";
-
-            document.getElementById("payMethod").textContent = p.payment_method || "-";
-            document.getElementById("payStatus").textContent = p.final_status || "PENDING";
-
-            document.getElementById("payDate").textContent =
-                p.payment_date
-                    ? new Date(p.payment_date).toLocaleDateString()
-                    : "-";
-
-            // ================= ITEMS =================
-            const itemsBody = document.getElementById("paymentItemsBody");
-            itemsBody.innerHTML = "";
-
-            if (items.length === 0) {
-
-                itemsBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align:center;">
-                            No items found
-                        </td>
-                    </tr>
-                `;
-
-            } else {
-
-                items.forEach(item => {
-
-                    itemsBody.innerHTML += `
-                        <tr>
-                            <td>${item.item_name || "-"}</td>
-                            <td>${item.quantity || "-"}</td>
-                            <td>${item.unit_price || "-"}</td>
-                            <td>${item.total_price || "-"}</td>
-                        </tr>
-                    `;
-                });
-            }
-
-            // ================= SIGNATURES =================
-            document.getElementById("payment_prepared_name").textContent =
-                p.prepared_by || "-";
-
-            const preparedImg = document.getElementById("payment_prepared_signature");
-            if (p.prepared_signature) {
-                preparedImg.src = "/static/" + p.prepared_signature;
-                preparedImg.style.display = "block";
-            } else {
-                preparedImg.src = "";
-                preparedImg.style.display = "none";
-            }
-
-            document.getElementById("payment_prepared_date").textContent =
-                p.payment_date ? formatDate(p.payment_date) : "-";
-
-            document.getElementById("payment_finance_name").textContent =
-                p.hod_name || "-";
-
-            document.getElementById("payment_finance_status").textContent =
-                p.hod_status || "PENDING";
-
-            document.getElementById("payment_finance_date").textContent =
-                p.hod_approved_at ? formatDate(p.hod_approved_at) : "-";
-
-            const financeImg = document.getElementById("payment_finance_signature");
-            if (p.hod_signature) {
-                financeImg.src = "/static/" + p.hod_signature;
-                financeImg.style.display = "block";
-            } else {
-                financeImg.src = "";
-                financeImg.style.display = "none";
-            }
-
-            document.getElementById("payment_ceo_name").textContent =
-                p.ceo_name || "-";
-
-            document.getElementById("payment_ceo_status").textContent =
-                p.ceo_status || "PENDING";
-
-            document.getElementById("payment_ceo_date").textContent =
-                p.ceo_approved_at ? formatDate(p.ceo_approved_at) : "-";
-
-            const ceoImg = document.getElementById("payment_ceo_signature");
-            if (p.ceo_signature) {
-                ceoImg.src = "/static/" + p.ceo_signature;
-                ceoImg.style.display = "block";
-            } else {
-                ceoImg.src = "";
-                ceoImg.style.display = "none";
-            }
-
-        })
-        .catch(error => {
-            console.error("Payment details error:", error);
-            alert("Failed to load payment details.");
-        });
-}
-
-let selectedPaymentId = null;
-let paymentPendingAction = null;
-
-function confirmPayment(action) {
-    if (!selectedPaymentId) {
-        alert("Please select a payment first");
-        return;
-    }
-
-    paymentPendingAction = action;
-    const paymentNo = document.getElementById("payNumber").innerText || "-";
-
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve payment <b>${paymentNo}</b>?`
-            : `Are you sure you want to reject payment <b>${paymentNo}</b>?`;
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function approvePayment() {
-    confirmPayment("APPROVED");
-}
-
-function rejectPayment() {
-    confirmPayment("REJECTED");
-}
-
-function executeApproval() {
-    if (paymentPendingAction) {
-        sendPaymentApproval();
-    } else if (invoicePendingAction) {
-        sendInvoiceApproval();
-    } else if (quotationPendingAction) {
-        sendQuotationApproval();
-    } else if (pOpendingAction) {
-        approvePO();
-    } else if (grnPendingAction) {
-        approveGRN();
-    } else if (pendingAction) {
-        setAction(pendingAction);
-        submitApproval();
-    }
-    closeModal();
-}
-
-function sendPaymentApproval() {
-    if (!selectedPaymentId) {
-        alert("Please select a payment first");
-        return;
-    }
-
-    if (!paymentPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
-
-    if (status === "APPROVED") {
-        alert("This payment has already been approved.");
-        return;
-    }
-
-    if (status === "REJECTED") {
-        alert("This payment has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedPaymentId,
-            module_name: "PAYMENT",
-            action: paymentPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Payment approval failed");
-            return;
-        }
-
-        alert("Payment updated successfully.");
-        loadPaymentData();
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing payment approval.");
-    });
-}
-
-function sendInvoiceApproval() {
-    if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
-        return;
-    }
-
-    if (!invoicePendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
-
-    if (status === "APPROVED") {
-        alert("This invoice has already been approved.");
-        return;
-    }
-
-    if (status === "REJECTED") {
-        alert("This invoice has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedInvoiceId,
-            module_name: "INVOICE",
-            action: invoicePendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Invoice approval failed");
-            return;
-        }
-
-        alert("Invoice updated successfully.");
-        invoicePendingAction = null;
-        loadInvoices();
-        if (selectedInvoiceId) {
-            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
-            if (radio) selectInvoice(radio);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing invoice approval.");
-    });
-}
-
-function sendQuotationApproval() {
-    if (!selectedQuotationId) {
-        alert("Please select a quotation first");
-        return;
-    }
-
-    if (!quotationPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const moduleName = quotationViewMode === "quotation" ? "QUOTATION" : "QRF";
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedQuotationId,
-            module_name: moduleName,
-            action: quotationPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Quotation approval failed");
-            return;
-        }
-
-        alert("Quotation updated successfully.");
-        if (quotationViewMode === "quotation") {
-            loadQuotations();
-        } else {
-            loadQuotationRequests();
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing quotation approval.");
-    });
-}
-
-function searchPayment() {
-
-    const input =
-        document.getElementById("paymentSearch")
-        .value
-        .toLowerCase();
-
-    const rows =
-        document.querySelectorAll("#paymentBody tr");
-
-    rows.forEach(row => {
-
-        const match =
-            row.innerText.toLowerCase().includes(input);
-
-        row.style.display = match ? "" : "none";
-    });
-}
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadPaymentData();
-});
-
-
-
-// ================================
-// GLOBAL STATE
-// ================================
-let quotations = [];
-
-// ================================
-// LOAD QUOTATION LIST
-// ================================
-async function loadQuotations() {
-    try {
-        const res = await fetch("/hod/quotation_data");
-        const data = await res.json();
-
-        if (!data.success) {
-            console.error(data.message);
-            return;
-        }
-
-        quotations = data.data || [];
-        renderQuotationTable(quotations);
-
-    } catch (err) {
-        console.error("Error loading quotations:", err);
-    }
-}
-
-// ================================
-// RENDER TABLE
-// ================================
-function renderQuotationTable(list) {
-    const body = document.getElementById("quotationBody");
-    body.innerHTML = "";
-
-    if (!Array.isArray(list) || list.length === 0) {
-        body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotations found.</td></tr>`;
-        return;
-    }
-
-    list.forEach(q => {
-        const row = document.createElement("tr");
-        const radioId = `quotation-${q.quotation_id}`;
-
-        row.innerHTML = `
-            <td>
-                <input type="radio" id="${radioId}" name="quotationSelect">
-            </td>
-            <td>${q.quotation_no || "-"}</td>
-            <td>${q.qrf_no || "-"}</td>
-            <td>${q.supplier_name || "-"}</td>
-            <td>${q.status || "-"}</td>
-            <td>${q.department || "-"}</td>
-            <td>${q.created_at || "-"}</td>
-        `;
-
-        row.addEventListener("click", () => {
-            const radio = row.querySelector(`input[name='quotationSelect']`);
-            if (radio) {
-                radio.checked = true;
-            }
-            document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
-            row.classList.add("selected");
-            quotationViewMode = "quotation";
-            selectedQuotationId = q.quotation_id;
-            loadQuotationDetails(q.quotation_id);
-        });
-
-        body.appendChild(row);
-    });
-}
-
-// ================================
-// LOAD QUOTATION DETAILS
-// ================================
-async function loadQuotationDetails(id) {
-    try {
-        selectedQuotationId = id;
-        selectedQuotationMode = "quotation";
-
-        const res = await fetch(`/hod/quotations/api/${id}`);
-        const data = await res.json();
-
-        if (!data.success) {
-            console.error(data.message);
-            return;
-        }
-
-        const q = data.quotation;
-
-        function resolveSignatureSrc(signaturePath) {
-            if (!signaturePath) {
-                return "";
-            }
-            return signaturePath.startsWith("/") ? signaturePath : `/static/${signaturePath}`;
-        }
-
-        // =========================
-        // HEADER (QRF SLIP)
-        // =========================
-        document.getElementById("qrfNumber").innerText = q.qrf_no || "-";
-        document.getElementById("qrfPrs").innerText = q.prs_no || "-";
-        document.getElementById("qrfDate").innerText = q.quotation_date || "-";
-
-        document.getElementById("qr_requester").innerText = q.requester_name || "-";
-        document.getElementById("qr_department").innerText = q.department_name || "-";
-        document.getElementById("qr_contact").innerText = q.requester_email || "-";
-
-        document.getElementById("sp_to").innerText = q.supplier_name || "-";
-        document.getElementById("sp_name").innerText = q.contact_person || "-";
-        document.getElementById("sp_location").innerText = q.address || "-";
-
-        const preparedSig = document.getElementById("qrfPreparedBySig");
-        const preparedName = document.getElementById("qrfPreparedByName");
-        const preparedDate = document.getElementById("qrfPreparedByDate");
-
-        if (q.requester_signature) {
-            preparedSig.src = resolveSignatureSrc(q.requester_signature);
-            preparedSig.style.display = "block";
-            preparedName.innerText = q.requester_name || "-";
-            preparedDate.innerText = q.quotation_date || "-";
-        } else {
-            preparedSig.style.display = "none";
-            preparedName.innerText = q.requester_name || "-";
-            preparedDate.innerText = "-";
-        }
-
-        const hodSig = document.getElementById("qrfHodSig");
-        const hodName = document.getElementById("qrfHodName");
-        const hodDate = document.getElementById("qrfHodDate");
-
-        if (data.hod_signature?.signature) {
-            hodSig.src = resolveSignatureSrc(data.hod_signature.signature);
-            hodSig.style.display = "block";
-            hodName.innerText = data.hod_signature.username || "-";
-            hodDate.innerText = data.hod_signature.hod_approved_at || "-";
-        } else {
-            hodSig.style.display = "none";
-            hodName.innerText = "-";
-            hodDate.innerText = "-";
-        }
-
-        const ceoSig = document.getElementById("qrfCeoSig");
-        const ceoName = document.getElementById("qrfCeoName");
-        const ceoDate = document.getElementById("qrfCeoDate");
-
-        if (data.ceo_signature?.signature) {
-            ceoSig.src = resolveSignatureSrc(data.ceo_signature.signature);
-            ceoSig.style.display = "block";
-            ceoName.innerText = data.ceo_signature.username || "-";
-            ceoDate.innerText = data.ceo_signature.ceo_approved_at || "-";
-        } else {
-            ceoSig.style.display = "none";
-            ceoName.innerText = "-";
-            ceoDate.innerText = "-";
-        }
-
-        // =========================
-        // ITEMS TABLE
-        // =========================
-        const body = document.getElementById("sharedPRS");
-        body.innerHTML = "";
-
-        (data.items || []).forEach(item => {
-            const row = document.createElement("tr");
-
-            row.innerHTML = `
-                <td>${item.item_name || "-"}</td>
-                <td>${item.description || "-"}</td>
-                <td>${item.quantity || "-"}</td>
-            `;
-
-            body.appendChild(row);
-        });
-
-    } catch (err) {
-        console.error("Error loading quotation details:", err);
-    }
-}
-
-// ================================
-// INIT
-// ================================
-document.addEventListener("DOMContentLoaded", loadQuotations);
-
-</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='/budget.js') }}"></script>
+<script src="{{ url_for('static', filename='/hod_dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='/requisition.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='/hod_homepage.js') }}"></script>
+
 </body>
 </html>
 

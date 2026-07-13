@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Creation</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Segoe UI, Arial, sans-serif;
+}
+
+body{
+    background:#eef2f7;
+    padding:30px;
+}
+
+.budget-card{
+    width:100%;
+    max-width:1200px;
+    margin:auto;
+    background:#fff;
+    border-radius:12px;
+    padding:30px;
+    box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
+
+.budget-card h1{
+    color:#2C7A7B;
+    margin-bottom:10px;
+}
+
+.budget-card p{
+    color:#666;
+    margin-bottom:30px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.form-group label{
+    font-weight:600;
+    margin-bottom:8px;
+    color:#444;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+    padding:12px;
+    border:1px solid #d5dce3;
+    border-radius:8px;
+    font-size:15px;
+    outline:none;
+    transition:0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+    border-color:#2C7A7B;
+    box-shadow:0 0 8px rgba(44,122,123,0.15);
+}
+
+textarea{
+    resize:none;
+    min-height:100px;
+}
+
+.full-width{
+    grid-column:1 / -1;
+}
+
+.button-area{
+    margin-top:30px;
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+}
+
+.btn{
+    border:none;
+    padding:12px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:15px;
+    font-weight:600;
+}
+
+.btn-save{
+    background:#2C7A7B;
+    color:white;
+}
+
+.btn-save:hover{
+    background:#225f60;
+}
+
+.btn-clear{
+    background:#e2e8f0;
+    color:#333;
+}
+
+.btn-clear:hover{
+    background:#cbd5e1;
+}
+
+@media(max-width:768px){
+
+    body{
+        padding:15px;
+    }
+
+    .budget-card{
+        padding:20px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="budget-card">
+
+    <h1>Create Budget</h1>
+    <p>Create a budget allocation for a department.</p>
+
+    <form id="budgetForm">
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Budget Item</label>
+                <input type="text"
+                       id="item"
+                       placeholder="Example: Office Furniture">
+            </div>
+
+            <div class="form-group">
+                <label>Budget Amount (UGX)</label>
+                <input type="number"
+                       id="amount"
+                       placeholder="Enter amount">
+            </div>
+
+            <div class="form-group">
+                <label>Department</label>
+                <select id="department">
+                    <option value="">Select Department</option>
+                    <option>Finance</option>
+                    <option>Procurement</option>
+                    <option>ICT</option>
+                    <option>Human Resource</option>
+                    <option>Administration</option>
+                    <option>Stores</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Budget Type</label>
+                <select id="budgetType">
+                    <option value="">Select Budget Type</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" id="startDate">
+            </div>
+
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" id="endDate">
+            </div>
+
+            <div class="form-group full-width">
+                <label>Remarks</label>
+                <textarea id="remarks"
+                          placeholder="Enter budget description or notes"></textarea>
+            </div>
+
+        </div>
+
+        <div class="button-area">
+            <button type="submit" class="btn btn-save">
+                Create Budget
+            </button>
+
+            <button type="button"
+                    class="btn btn-clear"
+                    onclick="clearForm()">
+                Clear
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+
+document.getElementById("budgetForm").addEventListener("submit", function(e){
+
+    e.preventDefault();
+
+    const item = document.getElementById("item").value.trim();
+    const amount = document.getElementById("amount").value;
+    const department = document.getElementById("department").value;
+    const budgetType = document.getElementById("budgetType").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+    const remarks = document.getElementById("remarks").value;
+
+    if(
+        !item ||
+        !amount ||
+        !department ||
+        !budgetType ||
+        !startDate ||
+        !endDate
+    ){
+        alert("Please fill all required fields.");
+        return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if(end < start){
+        alert("End date cannot be earlier than start date.");
+        return;
+    }
+
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    let valid = true;
+    let message = "";
+
+    switch(budgetType){
+
+        case "daily":
+            if(diffDays !== 1){
+                valid = false;
+                message = "Daily budget must cover exactly 1 day.";
+            }
+            break;
+
+        case "weekly":
+            if(diffDays > 7){
+                valid = false;
+                message = "Weekly budget cannot exceed 7 days.";
+            }
+            break;
+
+        case "monthly":
+            if(diffDays > 31){
+                valid = false;
+                message = "Monthly budget cannot exceed 31 days.";
+            }
+            break;
+
+        case "quarterly":
+            if(diffDays > 92){
+                valid = false;
+                message = "Quarterly budget cannot exceed 92 days (3 months).";
+            }
+            break;
+
+        case "yearly":
+            if(diffDays > 366){
+                valid = false;
+                message = "Yearly budget cannot exceed 1 year.";
+            }
+            break;
+
+        case "custom":
+            valid = true;
+            break;
+    }
+
+    if(!valid){
+        alert(message);
+        return;
+    }
+
+    const budget = {
+        item,
+        amount,
+        department,
+        budgetType,
+        startDate,
+        endDate,
+        remarks
+    };
+
+    console.log("Budget Data:", budget);
+
+    alert("Budget created successfully.");
+
+    clearForm();
+
+});
+
+function clearForm(){
+    document.getElementById("budgetForm").reset();
+}
+
+</script>
+
+</body>
+</html>

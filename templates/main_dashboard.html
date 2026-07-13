@@ -1,180 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<title>PRS Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Purchase Requisition System</title>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='maindashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='main_dashboard2.css') }}">
+
 </head>
+
 
 <body>
 
-<!-- HEADER -->
-<div class="header">
-<div class="logo">PRS</div>
-<div class="title">Purchase Requisition System</div>
-</div>
 
-<!-- MAIN CONTAINER -->
-<div class="container">
+<!-- ================= HEADER ================= -->
 
-<!-- SIDEBAR -->
-<div class="sidebar">
+<header class="header">
 
-<h3>System Access</h3>
 
-<a href="{{ url_for('auth.admin_login') }}" class="role-btn">Admin Login</a>
-<a href="{{ url_for('auth.hod_login') }}" class="role-btn">HOD Login</a>
-<a href="{{ url_for('auth.procurement_login') }}" class="role-btn">Procurement</a>
-<a href="{{ url_for('auth.ceo_login') }}" class="role-btn">CEO Login</a>
-<a href="{{ url_for('auth.finance_login') }}" class="role-btn">Finance Login</a>
+<div class="logo">
+
+<h1>PRS</h1>
+
+<span>
+Purchase Requisition System
+</span>
 
 </div>
 
-<!-- DASHBOARD -->
-<div class="dashboard">
 
-<!-- ACTION BAR -->
-<div class="action-bar">
-<h2>Dashboard</h2>
-<a href="{{ url_for('requisition.requisition_form') }}" class="create-btn">+ Create Requisition</a>
-</div>
 
-<!-- STATS -->
-<div class="stats">
+<div class="user-box">
 
-<div class="card">
-<h3>Total Requisitions</h3>
-<p id="total">0</p>
-</div>
-
-<div class="card pending">
-<h3>Pending</h3>
-<p id="pending">0</p>
-</div>
-
-<div class="card approved">
-<h3>Approved</h3>
-<p id="approved">0</p>
-</div>
-
-<div class="card rejected">
-<h3>Rejected</h3>
-<p id="rejected">0</p>
-</div>
+Welcome User 👤
 
 </div>
 
-<!-- CHARTS -->
-<div class="charts">
 
-<div class="chart-box">
-<h3>Requisition Status</h3>
-<canvas id="statusChart"></canvas>
-</div>
+</header>
 
-<div class="chart-box">
-<h3>Requisition by Department</h3>
-<canvas id="deptChart"></canvas>
-</div>
 
-</div>
 
-<!-- TABLE -->
-<div class="table-box">
 
-<h3>Recent Requisitions</h3>
 
-<table>
-<thead>
-<tr>
-<th>PRS No</th>
-<th>Department</th>
-<th>Date</th>
-<th>Status</th>
-</tr>
-</thead>
 
-<tbody id="prsTable">
-<!-- JS will load data here -->
-</tbody>
+<div class="layout">
 
-</table>
+
+
+<!-- ================= LEFT SIDEBAR ================= -->
+
+
+<aside class="sidebar">
+
+
+<div class="side-title">
+
+<h2>
+System Access
+</h2>
+
+<p>
+Login Portal
+</p>
 
 </div>
 
+
+
+
+
+<a href="{{ url_for('auth.user_login') }}"
+class="login-btn">
+
+👤 Employee Login
+
+</a>
+
+
+
+
+<a href="{{ url_for('auth.hod_login') }}"
+class="login-btn">
+
+👨‍💼 HOD Login
+
+</a>
+
+
+
+
+
+<a href="{{ url_for('auth.ceo_login') }}"
+class="login-btn">
+
+👔 CEO Login
+
+</a>
+
+
+
+
+
+<a href="{{ url_for('auth.procurement_login') }}"
+class="login-btn">
+
+📦 Procurement Login
+
+</a>
+
+
+
+
+
+<a href="{{ url_for('auth.finance_login') }}"
+class="login-btn">
+
+💰 Finance Login
+
+</a>
+
+
+
+
+
+<a href="{{ url_for('auth.admin_login') }}"
+class="login-btn">
+
+⚙ Administrator Login
+
+</a>
+
+
+
+
+</aside>
+
+
+
+
+
+
+
+
+
+
+<!-- ================= MAIN CONTENT ================= -->
+
+
+<main class="container">
+
+
+
+
+
+
+<section class="welcome">
+
+
+<h2>
+
+WELCOME 👋
+
+</h2>
+
+
+
+<p>
+
+Manage your procurement workflow from request submission,
+approval, purchasing and payment through one secure platform.
+
+</p>
+
+
+</section>
+
+
+<h2 class="section-title">
+
+Quick Actions
+
+</h2>
+
+
+
+<section class="quick-actions">
+
+
+
+<div class="action-card">
+
+<div class="icon">
+📝
 </div>
+
+<h3>
+Create PR
+</h3>
+
+<p>
+Submit purchase request
+</p>
+
+
 </div>
 
-<!-- ================= JS ================= -->
-<script>
 
-fetch("/api/dashboard")
-.then(res => res.json())
-.then(data => {
 
-    // STATS
-    document.getElementById("total").innerText = data.stats.total;
-    document.getElementById("pending").innerText = data.stats.pending;
-    document.getElementById("approved").innerText = data.stats.approved;
-    document.getElementById("rejected").innerText = data.stats.rejected;
 
-    // TABLE
-    let table = document.getElementById("prsTable");
-    table.innerHTML = "";
 
-    data.recent.forEach(r => {
 
-        let statusClass = "";
+<div class="action-card">
 
-        if(r.status === "Pending") statusClass = "pending";
-        else if(r.status === "Completed") statusClass = "approved";
-        else if(r.status === "Rejected") statusClass = "rejected";
 
-        table.innerHTML += `
-        <tr>
-            <td>${r.prs_no}</td>
-            <td>${r.department_name}</td>
-            <td>${r.submission_date}</td>
-            <td><span class="status ${statusClass}">${r.status}</span></td>
-        </tr>
-        `;
-    });
+<div class="icon">
+🔍
+</div>
 
-    // STATUS CHART
-    new Chart(document.getElementById("statusChart"),{
-        type:'doughnut',
-        data:{
-            labels:['Approved','Pending','Rejected'],
-            datasets:[{
-                data:[
-                    data.stats.approved,
-                    data.stats.pending,
-                    data.stats.rejected
-                ],
-                backgroundColor:['green','orange','red']
-            }]
-        }
-    });
 
-    // DEPARTMENT CHART
-    new Chart(document.getElementById("deptChart"),{
-        type:'bar',
-        data:{
-            labels:data.departments.labels,
-            datasets:[{
-                label:'Requisitions',
-                data:data.departments.values,
-                backgroundColor:'#2C7A7B'
-            }]
-        }
-    });
+<h3>
+Track PR
+</h3>
 
-});
 
-</script>
+<p>
+Monitor approval status
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+<div class="action-card">
+
+
+<div class="icon">
+📊
+</div>
+
+
+<h3>
+Reports
+</h3>
+
+
+<p>
+View procurement reports
+</p>
+
+
+</div>
+
+
+
+
+
+
+<div class="action-card">
+
+
+<div class="icon">
+✅
+</div>
+
+
+<h3>
+Approvals
+</h3>
+
+
+<p>
+Manage approvals
+</p>
+
+
+</div>
+
+
+
+
+</section>
+
+
+
+
+
+
+
+
+
+<h2 class="section-title">
+
+Approval Workflow
+
+</h2>
+
+
+
+
+
+<section class="workflow">
+
+
+<div class="step">
+
+<span>
+👤
+</span>
+
+Employee
+
+</div>
+
+
+<div class="arrow">
+→
+</div>
+
+
+
+<div class="step">
+
+<span>
+👨‍💼
+</span>
+
+HOD
+
+</div>
+
+
+<div class="arrow">
+→
+</div>
+
+
+
+<div class="step">
+
+<span>
+👔
+</span>
+
+CEO
+
+</div>
+
+
+
+<div class="arrow">
+→
+</div>
+
+
+
+
+<div class="step">
+
+<span>
+📦
+</span>
+
+Procurement
+
+</div>
+
+
+
+
+<div class="arrow">
+→
+</div>
+
+
+
+<div class="step">
+
+<span>
+💰
+</span>
+
+Finance
+
+</div>
+
+
+
+</section>
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+© 2026 Purchase Requisition System | PRS v1.0
+
+</footer>
+
+
+
+
+
+
+</main>
+
+
+
+</div>
+
+
 
 </body>
 </html>

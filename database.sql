@@ -645,3 +645,48 @@ CREATE TABLE approvals (
         ON DELETE SET NULL
         ON UPDATE CASCADE
 );
+
+
+CREATE TABLE budgets (
+
+    budget_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    budget_no VARCHAR(30) UNIQUE NOT NULL,
+
+    department_id INT NOT NULL,
+
+    budget_item VARCHAR(150) NOT NULL,
+
+    budget_type ENUM(
+        'Monthly',
+        'Quarterly',
+        'Yearly'
+    ) NOT NULL,
+
+    budget_amount DECIMAL(18,2) NOT NULL,
+
+    start_date DATE NOT NULL,
+
+    end_date DATE NOT NULL,
+
+    status ENUM(
+        'Pending',
+        'Approved',
+        'Rejected',
+        'Expired'
+    ) DEFAULT 'Pending',
+
+    created_by INT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (department_id)
+        REFERENCES departments(department_id),
+
+    FOREIGN KEY (created_by)
+        REFERENCES users(user_id)
+
+);
