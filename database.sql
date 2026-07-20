@@ -718,3 +718,123 @@ VALUES (
     'QUOTATION',
     15
 );
+
+
+
+CREATE TABLE company_budget (
+
+    company_budget_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    budget_no VARCHAR(30) NOT NULL UNIQUE,
+
+    department_id INT NOT NULL,
+
+    financial_year YEAR NOT NULL,
+
+    budget_type ENUM(
+        'Monthly',
+        'Quarterly',
+        'Yearly'
+    ) NOT NULL,
+
+    allocated_amount DECIMAL(18,2) NOT NULL,
+
+    start_date DATE NOT NULL,
+
+    end_date DATE NOT NULL,
+
+    remarks TEXT,
+
+    created_by INT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_company_budget_department
+        FOREIGN KEY (department_id)
+        REFERENCES departments(department_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_company_budget_created_by
+        FOREIGN KEY (created_by)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+
+CREATE TABLE department_budget (
+
+    department_budget_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    company_budget_id INT NOT NULL,
+
+    budget_no VARCHAR(30) NOT NULL UNIQUE,
+
+    department_id INT NOT NULL,
+
+    budget_item VARCHAR(200) NOT NULL,
+
+    quantity INT NOT NULL DEFAULT 1,
+
+    unit_cost DECIMAL(18,2) NOT NULL,
+
+    total_budget DECIMAL(18,2)
+        GENERATED ALWAYS AS (quantity * unit_cost) STORED,
+
+    budget_type ENUM(
+        'Monthly',
+        'Quarterly',
+        'Yearly'
+    ) NOT NULL,
+
+    start_date DATE NOT NULL,
+
+    end_date DATE NOT NULL,
+
+    remarks TEXT,
+
+    ceo_status ENUM(
+        'Pending',
+        'Approved',
+        'Rejected'
+    ) DEFAULT 'Pending',
+
+    ceo_user_id INT NULL,
+
+    ceo_approval_date DATETIME NULL,
+
+    created_by INT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_department_budget_company
+        FOREIGN KEY (company_budget_id)
+        REFERENCES company_budget(company_budget_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_department_budget_department
+        FOREIGN KEY (department_id)
+        REFERENCES departments(department_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_department_budget_creator
+        FOREIGN KEY (created_by)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_department_budget_ceo
+        FOREIGN KEY (ceo_user_id)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+);

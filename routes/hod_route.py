@@ -478,7 +478,6 @@ def qrf_data():
 #inserting budget
 
 
-
 @hod_dashboard_bp.route("/api/departments", methods=["GET"])
 def get_departments():
 
@@ -487,7 +486,9 @@ def get_departments():
 
     try:
         cursor.execute("""
-            SELECT department_id, department_name
+            SELECT 
+                department_id,
+                department_name
             FROM departments
             ORDER BY department_name
         """)
@@ -509,98 +510,152 @@ def get_departments():
         cursor.close()
         conn.close()
 
-def insert_budget(
+
+
+# =====================================================
+# INSERT DEPARTMENT BUDGET
+# =====================================================
+
+def insert_department_budget(
+    company_budget_id,
     budget_no,
     department_id,
     budget_item,
+    quantity,
+    unit_cost,
     budget_type,
-    budget_amount,
     start_date,
     end_date,
     created_by
 ):
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
+
     cursor.execute("""
-        INSERT INTO budgets(
+        INSERT INTO department_budget
+        (
+            company_budget_id,
             budget_no,
             department_id,
             budget_item,
+            quantity,
+            unit_cost,
             budget_type,
-            budget_amount,
             start_date,
             end_date,
             created_by
         )
-        VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-    """,(
+
+        VALUES
+        (
+            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+        )
+
+    """,
+    (
+        company_budget_id,
         budget_no,
         department_id,
         budget_item,
+        quantity,
+        unit_cost,
         budget_type,
-        budget_amount,
         start_date,
         end_date,
         created_by
     ))
 
+
     conn.commit()
 
     budget_id = cursor.lastrowid
 
+
     cursor.close()
     conn.close()
+
 
     return budget_id
 
 
-from flask import request, jsonify, session
-from datetime import datetime
+
+
+# =====================================================
+# CREATE DEPARTMENT BUDGET API
+# =====================================================
 
 @hod_dashboard_bp.route("/api/budget/create", methods=["POST"])
 def create_budget():
 
     if "user_id" not in session:
+
         return jsonify({
             "success": False,
             "message": "Please login first."
-        }), 401
+        }),401
+
 
     try:
+
         data = request.get_json()
 
-        budget_no = "BUD-" + datetime.now().strftime("%Y%m%d%H%M%S")
 
-        budget_id = insert_budget(
+        budget_no = "DBUD-" + datetime.now().strftime("%Y%m%d%H%M%S")
+
+
+        budget_id = insert_department_budget(
+
+            company_budget_id=data["company_budget_id"],
+
             budget_no=budget_no,
+
             department_id=data["department_id"],
+
             budget_item=data["budget_item"],
+
+            quantity=data.get("quantity",1),
+
+            unit_cost=data["unit_cost"],
+
             budget_type=data["budget_type"],
-            budget_amount=data["budget_amount"],
+
             start_date=data["start_date"],
+
             end_date=data["end_date"],
-            created_by=session["user_id"]      # Logged in user
+
+            created_by=session["user_id"]
+
         )
 
+
         return jsonify({
-            "success": True,
-            "budget_id": budget_id,
-            "budget_no": budget_no,
-            "message": "Budget created successfully."
+
+            "success":True,
+
+            "budget_id":budget_id,
+
+            "budget_no":budget_no,
+
+            "message":"Department budget created successfully."
+
         })
 
+
     except Exception as e:
+
         import traceback
         traceback.print_exc()
 
+
         return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 500
 
+            "success":False,
 
+            "message":str(e)
 
+        }),500
 
 
 

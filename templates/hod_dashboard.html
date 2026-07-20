@@ -36,7 +36,7 @@
     </button>
 
 
-    <button class="active"
+    <button
             onclick="openModule('budgetModule', this)">
         Budget
     </button>
@@ -495,22 +495,22 @@
 
 
 
-
 <!-- ===========================
         BUDGET MODULE
 =========================== -->
-<!-- ===========================
-<!-- ===========================================================
-                        BUDGET MODULE
-=========================================================== -->
+
 <div id="budgetModule" class="module">
 
+
     <!-- ================= HEADER ================= -->
+
     <div class="module-header">
 
-        <h2>Budget Management</h2>
+        <h2>Department Budget Management</h2>
+
 
         <div class="header-actions">
+
 
             <input
                 type="text"
@@ -519,261 +519,744 @@
                 onkeyup="searchBudget()"
             >
 
-            <button class="predict-btn" onclick="togglePredictBudget()">
+
+
+            <button 
+                class="predict-btn"
+                onclick="togglePredictBudget()">
+
                 📈 Predict Budget
+
             </button>
 
-            <button class="create-btn" onclick="openCreateBudget()">
-                + Create Budget
+
+
+            <button 
+                class="create-btn"
+                onclick="openCreateBudget()">
+
+                + Create Department Budget
+
             </button>
+
 
         </div>
 
+
     </div>
 
+
+
+
+
     <!-- ================= BUDGET TABLE ================= -->
+
+
     <div class="table-container">
+
 
         <table class="budget-table">
 
+
             <thead>
+
                 <tr>
+
                     <th>Select</th>
+
                     <th>Budget No</th>
-                    <th>Budget Date</th>
+
+                    <th>Company Budget</th>
+
                     <th>Department</th>
+
                     <th>Budget Item</th>
+
+                    <th>Quantity</th>
+
+                    <th>Unit Cost</th>
+
+                    <th>Total Budget</th>
+
                     <th>Budget Type</th>
+
                     <th>Start Date</th>
+
                     <th>End Date</th>
-                    <th>Due</th>
-                    <th>Budget Amount</th>
+
                     <th>Spent</th>
+
                     <th>Balance</th>
+
                     <th>CEO Approval Date</th>
+
                     <th>CEO Status</th>
+
                 </tr>
+
             </thead>
 
-            <!-- Loaded dynamically -->
+
+
             <tbody id="budgetBody">
 
             </tbody>
 
+
+
         </table>
+
 
     </div>
 
+
+
+
+
+
+
+
     <!-- =======================================================
                     PREDICT BUDGET PANEL
-    ======================================================== -->
+    ======================================================= -->
+
+
     <div id="predictBudgetTab"
          class="predict-budget-card"
          style="display:none;">
 
+
+
         <div class="predict-header">
-            <h2>Budget Prediction</h2>
+
+            <h2>
+                Budget Prediction
+            </h2>
+
+
         </div>
+
+
+
+
 
         <div class="predict-grid">
 
+
+
             <!-- Department -->
+
             <div class="form-group">
-                <label>Department</label>
+
+
+                <label>
+                    Department
+                </label>
+
 
                 <select id="predictDepartment">
-                    <option value="">Loading departments...</option>
+
+
+                    <option value="">
+                        Loading departments...
+                    </option>
+
+
                 </select>
+
+
             </div>
 
-            <!-- Budget Items -->
+
+
+
+
+
+
+            <!-- Items -->
+
             <div class="form-group">
 
-                <label>Select Budget Items</label>
 
-                <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <label>
+                    Select Budget Items
+                </label>
+
+
+
+                <label style="display:flex;gap:8px;">
+
+
                     <input
                         type="checkbox"
                         id="selectAllItems"
                         onchange="toggleSelectAllItems()">
+
+
+
                     Select All Items
+
+
                 </label>
+
+
 
                 <select
                     id="predictItems"
                     multiple
                     size="7">
 
+
                 </select>
 
-                <small>
-                    Hold CTRL (Windows) or CMD (Mac) to select multiple items.
-                </small>
+
 
             </div>
 
+
+
+
+
+
+
             <!-- Start Date -->
+
+
             <div class="form-group">
-                <label>Start Date</label>
+
+
+                <label>
+                    Start Date
+                </label>
+
+
+
                 <input
                     type="date"
                     id="predictStart">
+
+
             </div>
 
+
+
+
+
+
+
             <!-- End Date -->
+
+
             <div class="form-group">
-                <label>End Date</label>
+
+
+                <label>
+                    End Date
+                </label>
+
+
+
                 <input
                     type="date"
                     id="predictEnd">
+
+
             </div>
+
+
+
+
 
         </div>
 
+
+
+
+
+
+
         <div class="button-area">
+
+
 
             <button
                 class="predict-btn"
                 onclick="predictBudget()">
+
+
                 Predict Budget
+
+
             </button>
+
+
+
+
 
             <button
                 class="cancel-btn"
                 onclick="togglePredictBudget()">
+
+
+
                 Close
+
+
             </button>
 
+
+
         </div>
 
-        <!-- Prediction Result -->
-        <div
-            id="predictionResult"
-            class="prediction-result"
-            style="display:none;">
+
+
+
+
+
+
+        <div id="predictionResult"
+             class="prediction-result"
+             style="display:none;">
+
+
 
             <div class="result-header">
-                <h3>Prediction Summary</h3>
+
+
+                <h3>
+                    Prediction Summary
+                </h3>
+
+
             </div>
 
-            <div id="predictionContent"></div>
+
+
+            <div id="predictionContent">
+
+
+            </div>
+
+
 
         </div>
+
+
+
+
 
     </div>
 
+
+
+
+
+
+
+
+
     <!-- =======================================================
-                    CREATE BUDGET PANEL
-    ======================================================== -->
+                    CREATE DEPARTMENT BUDGET
+    ======================================================= -->
+
+
     <div id="createBudgetTab"
          class="create-budget-card"
          style="display:none;">
 
+
+
         <div class="predict-header">
-            <h2>Create Budget</h2>
+
+
+            <h2>
+                Create Department Budget
+            </h2>
+
+
         </div>
+
+
+
+
+
+
 
         <div class="predict-grid">
 
-            <!-- Department -->
+
+
+
+
+
+
+            <!-- Company Budget -->
+
+
             <div class="form-group">
 
-                <label>Department</label>
 
-                <select id="budgetDepartment">
-                    <option value="">Loading departments...</option>
+                <label>
+                    Company Budget
+                </label>
+
+
+
+                <select id="companyBudget">
+
+
+                    <option value="">
+                        Loading Company Budget...
+                    </option>
+
+
+
                 </select>
+
 
             </div>
 
-            <!-- Budget Item -->
+
+
+
+
+
+
+
+
+            <!-- Department -->
+
+
             <div class="form-group">
 
-                <label>Budget Item</label>
+
+                <label>
+                    Department
+                </label>
+
+
+
+                <select id="budgetDepartment">
+
+
+                    <option value="">
+                        Loading Departments...
+                    </option>
+
+
+
+                </select>
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Budget Item -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Budget Item
+                </label>
+
+
 
                 <input
                     type="text"
                     id="budgetItem"
                     placeholder="Enter Budget Item">
 
-            </div>
 
-            <!-- Budget Type -->
-            <div class="form-group">
-
-                <label>Budget Type</label>
-
-                <select id="budgetType">
-                    <option value="">Select Type</option>
-                    <option value="Monthly">Monthly</option>
-                    <option value="Quarterly">Quarterly</option>
-                    <option value="Half Year">Half Year</option>
-                    <option value="Yearly">Yearly</option>
-                </select>
 
             </div>
 
-            <!-- Amount -->
+
+
+
+
+
+
+
+
+            <!-- Quantity -->
+
+
             <div class="form-group">
 
-                <label>Budget Amount</label>
+
+                <label>
+                    Quantity
+                </label>
+
+
 
                 <input
                     type="number"
-                    id="budgetAmount"
-                    placeholder="Enter Amount">
+                    id="budgetQuantity"
+                    value="0"
+                    min="1">
+
+
 
             </div>
 
-            <!-- Start Date -->
+
+
+
+
+
+
+
+
+            <!-- Unit Cost -->
+
+
             <div class="form-group">
 
-                <label>Start Date</label>
+
+                <label>
+                    Unit Cost
+                </label>
+
+
+
+                <input
+                    type="number"
+                    id="budgetUnitCost"
+                    placeholder="Enter Unit Cost">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Budget Type -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Budget Type
+                </label>
+
+
+
+                <select id="budgetType">
+
+
+                    <option value="">
+                        Select Type
+                    </option>
+
+
+                    <option value="Monthly">
+                        Monthly
+                    </option>
+
+
+                    <option value="Quarterly">
+                        Quarterly
+                    </option>
+
+
+                    <option value="Yearly">
+                        Yearly
+                    </option>
+
+
+                </select>
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Start Date -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Start Date
+                </label>
+
+
 
                 <input
                     type="date"
                     id="budgetStart">
 
+
+
             </div>
 
+
+
+
+
+
+
+
+
             <!-- End Date -->
+
+
             <div class="form-group">
 
-                <label>End Date</label>
+
+                <label>
+                    End Date
+                </label>
+
+
 
                 <input
                     type="date"
                     id="budgetEnd">
 
+
+
             </div>
+
+
+
+
+
+
+
+
+
+            <!-- Remarks -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Remarks
+                </label>
+
+
+
+                <textarea
+                    id="budgetRemarks"
+                    placeholder="Enter remarks">
+
+                </textarea>
+
+
+
+            </div>
+
+
+
+
+
+
 
         </div>
 
+
+
+
+
+
+
+
+
         <div class="button-area">
+
+
 
             <button
                 class="predict-btn"
                 onclick="submitBudget()">
+
+
+
                 Save Budget
+
+
+
             </button>
+
+
+
+
+
 
             <button
                 class="cancel-btn"
                 onclick="closeCreateBudget()">
+
+
+
                 Cancel
+
+
+
             </button>
 
+
+
         </div>
 
-        <!-- Success/Error Message -->
-        <div
-            id="budgetMessage"
-            style="margin-top:15px;">
+
+
+
+
+
+
+
+        <div id="budgetMessage"
+             style="margin-top:15px;">
+
+
+
         </div>
+
+
+
+
 
     </div>
 
+
+
+
+
 </div>
+
+
+
+
+
 
 <!-- ==========================================================
         PURCHASE REQUISITION MODULE
@@ -2839,7 +3322,7 @@ function selectSupplier(
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='/budget.js') }}"></script>
+<script src="{{ url_for('static', filename='/hod_budget.js') }}"></script>
 <script src="{{ url_for('static', filename='/hod_dashboard.js') }}"></script>
 <script src="{{ url_for('static', filename='/requisition.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

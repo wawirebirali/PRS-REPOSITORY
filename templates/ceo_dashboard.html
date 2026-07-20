@@ -786,18 +786,22 @@ UGX 530M
 
 </div>
 
-<!-- ===========================
-        BUDGET MODULE
-=========================== -->
+
+<!-- ==========================================================
+                    CEO BUDGET MANAGEMENT MODULE
+========================================================== -->
 <div id="budgetModule" class="module active">
 
-    <!-- ================= HEADER ================= -->
+    <!-- ======================================================
+                            HEADER
+    ======================================================= -->
     <div class="module-header">
 
         <h2>Budget Management</h2>
 
         <div class="header-actions">
 
+            <!-- Search -->
             <input
                 type="text"
                 id="budgetSearch"
@@ -805,74 +809,112 @@ UGX 530M
                 onkeyup="searchBudget()"
             >
 
-            <button class="predict-btn" onclick="togglePredictBudget()">
+            <!-- Predict Budget -->
+            <button
+                class="predict-btn"
+                onclick="togglePredictBudget()">
+
                 📈 Predict Budget
+
             </button>
 
-            <button class="create-btn" onclick="openCreateBudget()">
+            <!-- Create Company Budget -->
+            <button
+                class="create-btn"
+                onclick="openCreateBudget()">
+
                 + Create Budget
+
             </button>
 
-            <button class="create-btn" onclick="toggleDepartmentBudget()">
+            <!-- Department Budget Summary -->
+            <button
+                class="create-btn"
+                onclick="toggleDepartmentBudget()">
+
                 🏢 Department Budget
+
+            </button>
+
+            <!-- CEO Approve -->
+            <button
+                class="approve-btn"
+                onclick="approveCompanyBudget()">
+
+                ✅ Approve
+
+            </button>
+
+            <!-- CEO Reject -->
+            <button
+                class="reject-btn"
+                onclick="rejectCompanyBudget()">
+
+                ❌ Reject
+
             </button>
 
         </div>
+
     </div>
 
-    <!-- ================= BUDGET TABLE ================= -->
+    <!-- ======================================================
+                        COMPANY BUDGET TABLE
+    ======================================================= -->
     <div class="table-container">
 
         <table class="budget-table">
 
             <thead>
+
                 <tr>
-                    <th>Budget Date</th>
+
+                    <th>
+                        <input
+                            type="checkbox"
+                            id="selectAllBudget"
+                            onclick="selectAllBudgets(this)">
+                    </th>
+
+                    <th>Budget No</th>
+
+                    <th>Financial Year</th>
+
                     <th>Department</th>
+
                     <th>Budget Item</th>
+
+                    <th>Quantity</th>
+
+                    <th>Unit Cost</th>
+
+                    <th>Total Budget</th>
+
                     <th>Budget Type</th>
+
                     <th>Start Date</th>
+
                     <th>End Date</th>
-                    <th>Due</th>
-                    <th>Budget Amount</th>
+
                     <th>Spent</th>
+
                     <th>Balance</th>
+
+                    <th>Created By</th>
+
+                    <th>Created Date</th>
+
                     <th>CEO Approval Date</th>
+
                     <th>CEO Status</th>
+
                 </tr>
+
             </thead>
 
             <tbody id="budgetBody">
 
-                <tr>
-                    <td>03/07/2026</td>
-                    <td>ICT</td>
-                    <td>ICT Equipment</td>
-                    <td>Yearly</td>
-                    <td>01/01/2026</td>
-                    <td>31/12/2026</td>
-                    <td>181 Days</td>
-                    <td>50,000,000</td>
-                    <td>18,500,000</td>
-                    <td>31,500,000</td>
-                    <td>03/07/2026</td>
-                    <td><span class="approved">Approved</span></td>
-                </tr>
-
-                <tr>
-                    <td>01/07/2026</td>
-                    <td>Finance</td>
-                    <td>Fuel Budget</td>
-                    <td>Monthly</td>
-                    <td>01/07/2026</td>
-                    <td>31/07/2026</td>
-                    <td>28 Days</td>
-                    <td>2,000,000</td>
-                    <td>750,000</td>
-                    <td>1,250,000</td>
-                    <td>-</td>
-                    <td><span class="pending">Pending</span></td>
-                </tr>
+                <!-- Loaded dynamically -->
 
             </tbody>
 
@@ -880,180 +922,588 @@ UGX 530M
 
     </div>
 
-    <!-- ================= PREDICT BUDGET PANEL ================= -->
-    <div id="predictBudgetTab" class="predict-budget-card" style="display:none;">
+        <!-- ======================================================
+                    BUDGET PREDICTION PANEL
+    ======================================================= -->
+    <div
+        id="predictBudgetTab"
+        class="predict-budget-card"
+        style="display:none;">
 
         <div class="predict-header">
-            <h2>Budget Prediction</h2>
+
+            <h2>
+                Budget Prediction
+            </h2>
+
+            <p>
+                Predict future departmental budget requirements using historical expenditure.
+            </p>
+
         </div>
 
         <div class="predict-grid">
 
+            <!-- Department -->
             <div class="form-group">
-                <label>Department</label>
-                <select id="predictDepartment">
-                    <option value="Finance">Finance</option>
-                    <option value="ICT">ICT</option>
-                    <option value="Procurement">Procurement</option>
-                    <option value="Stores">Stores</option>
-                    <option value="Administration">Administration</option>
-                </select>
-            </div>
 
-            <div class="form-group">
-                <label>Select Budget Items</label>
-
-                <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <input type="checkbox" id="selectAllItems" onchange="toggleSelectAllItems()">
-                    Select All Items
+                <label>
+                    Department
                 </label>
 
-                <select id="predictItems" multiple size="6">
-                    <option value="Fuel">Fuel</option>
-                    <option value="ICT Equipment">ICT Equipment</option>
-                    <option value="Stationery">Stationery</option>
-                    <option value="Travel">Travel</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Utilities">Utilities</option>
+                <select id="budgetDepartment">
+
+                    <option value="">
+                        Loading Departments...
+                    </option>
+
                 </select>
 
-                <small style="color:#666;">
-                    Hold CTRL (Windows) or CMD (Mac) to select multiple
+            </div>
+
+            <!-- Budget Period -->
+            <div class="form-group">
+
+                <label>
+                    Budget Period
+                </label>
+
+                <select id="predictPeriod">
+
+                    <option value="Monthly">
+                        Monthly
+                    </option>
+
+                    <option value="Quarterly">
+                        Quarterly
+                    </option>
+
+                    <option value="Half Year">
+                        Half Year
+                    </option>
+
+                    <option value="Yearly">
+                        Yearly
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- Budget Items -->
+            <div class="form-group">
+
+                <label>
+                    Budget Items
+                </label>
+
+                <label
+                    style="display:flex;
+                           align-items:center;
+                           gap:8px;
+                           margin-bottom:10px;">
+
+                    <input
+                        type="checkbox"
+                        id="selectAllItems"
+                        onchange="toggleSelectAllItems()">
+
+                    Select All
+
+                </label>
+
+                <select
+                    id="predictItems"
+                    multiple
+                    size="8">
+
+                </select>
+
+                <small>
+
+                    Hold CTRL (Windows) or CMD (Mac)
+                    to select multiple items.
+
                 </small>
+
             </div>
 
+            <!-- Start Date -->
             <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" id="predictStart">
+
+                <label>
+                    Start Date
+                </label>
+
+                <input
+                    type="date"
+                    id="predictStart">
+
             </div>
 
+            <!-- End Date -->
             <div class="form-group">
-                <label>End Date</label>
-                <input type="date" id="predictEnd">
+
+                <label>
+                    End Date
+                </label>
+
+                <input
+                    type="date"
+                    id="predictEnd">
+
             </div>
 
         </div>
 
+        <!-- Buttons -->
         <div class="button-area">
 
-            <button class="predict-btn" onclick="predictBudget()">
-                Predict Budget
+            <button
+                class="predict-btn"
+                onclick="predictBudget()">
+
+                📈 Predict Budget
+
             </button>
 
-            <button class="cancel-btn" onclick="togglePredictBudget()">
+            <button
+                class="cancel-btn"
+                onclick="togglePredictBudget()">
+
                 Close
+
             </button>
 
         </div>
 
-        <div id="predictionResult" class="prediction-result" style="display:none;">
+        <!-- Prediction Result -->
+        <div
+            id="predictionResult"
+            class="prediction-result"
+            style="display:none;">
+
             <div class="result-header">
-                <h3>Prediction Summary</h3>
+
+                <h3>
+                    Prediction Summary
+                </h3>
+
             </div>
 
-            <div id="predictionContent"></div>
+            <div id="predictionContent">
+
+                <!-- Prediction generated here -->
+
+            </div>
+
         </div>
 
     </div>
-
-    <!-- ================= CREATE BUDGET PANEL ================= -->
-    <div id="createBudgetTab" class="create-budget-card" style="display:none;">
+        <!-- ======================================================
+                    CREATE COMPANY BUDGET PANEL
+    ======================================================= -->
+    <div
+        id="createBudgetTab"
+        class="create-budget-card"
+        style="display:none;">
 
         <div class="predict-header">
-            <h2>Create Budget</h2>
+
+            <h2>
+                Create Company Budget
+            </h2>
+
+            <p>
+                Create a new company budget that departments will allocate against.
+            </p>
+
         </div>
 
         <div class="predict-grid">
 
+            <!-- Budget Number -->
             <div class="form-group">
-                <label>Department</label>
+
+                <label>
+                    Budget No
+                </label>
+
+                <input
+                    type="text"
+                    id="budgetNo"
+                    placeholder="Auto Generated"
+                    readonly>
+
+            </div>
+
+            <!-- Financial Year -->
+            <div class="form-group">
+
+                <label>
+                    Financial Year
+                </label>
+
+                <select id="financialYear">
+
+                    <option value="">
+                        Select Financial Year
+                    </option>
+
+                    <option value="2026/2027">
+                        2026/2027
+                    </option>
+
+                    <option value="2027/2028">
+                        2027/2028
+                    </option>
+
+                    <option value="2028/2029">
+                        2028/2029
+                    </option>
+
+                </select>
+
+            </div>
+
+            <!-- Department -->
+             <div class="form-group">
+
+                <label>
+                    Department
+                </label>
+
                 <select id="budgetDepartment">
-                    <option value="Finance">Finance</option>
-                    <option value="ICT">ICT</option>
-                    <option value="Procurement">Procurement</option>
-                    <option value="Stores">Stores</option>
-                    <option value="Administration">Administration</option>
+
+                    <option value="">
+                        Loading Departments...
+                    </option>
+
                 </select>
+
             </div>
 
+
+            
+            
+
+            
+
+            <!-- Total Budget -->
             <div class="form-group">
-                <label>Budget Type</label>
+
+                <label>
+                    Total Budget
+                </label>
+
+                <input
+                    type="number"
+                    id="budgetAmount"
+                    readonly>
+
+            </div>
+
+            <!-- Budget Type -->
+            <div class="form-group">
+
+                <label>
+                    Budget Type
+                </label>
+
                 <select id="budgetType">
-                    <option value="Monthly">Monthly</option>
-                    <option value="Quarterly">Quarterly</option>
-                    <option value="Yearly">Yearly</option>
+
+                    <option value="">
+                        Select Budget Type
+                    </option>
+
+                    <option value="Monthly">
+                        Monthly
+                    </option>
+
+                    <option value="Quarterly">
+                        Quarterly
+                    </option>
+
+                    <option value="Half Year">
+                        Half Year
+                    </option>
+
+                    <option value="Yearly">
+                        Yearly
+                    </option>
+
                 </select>
+
             </div>
 
+            <!-- Start Date -->
             <div class="form-group">
-                <label>Total Budget (Amount)</label>
-                <input type="number" id="budgetAmount" placeholder="Enter amount">
+
+                <label>
+                    Start Date
+                </label>
+
+                <input
+                    type="date"
+                    id="budgetStart">
+
             </div>
 
+            <!-- End Date -->
             <div class="form-group">
-                <label>Start Date</label>
-                <input type="date" id="budgetStart">
+
+                <label>
+                    End Date
+                </label>
+
+                <input
+                    type="date"
+                    id="budgetEnd">
+
             </div>
 
-            <div class="form-group">
-                <label>End Date</label>
-                <input type="date" id="budgetEnd">
+            <!-- Remarks -->
+            <div class="form-group full-width">
+
+                <label>
+                    Remarks
+                </label>
+
+                <textarea
+                    id="budgetRemarks"
+                    rows="4"
+                    placeholder="Enter remarks..."></textarea>
+
             </div>
 
         </div>
 
         <div class="button-area">
 
-            <button class="predict-btn" onclick="submitBudget()">
-                Create Budget
+            <button
+                class="predict-btn"
+                onclick="submitBudget()">
+
+                💾 Save Budget
+
             </button>
 
-            <button class="cancel-btn" onclick="closeCreateBudget()">
+            <button
+                class="cancel-btn"
+                onclick="closeCreateBudget()">
+
                 Cancel
+
             </button>
+
+        </div>
+
+        <div
+            id="budgetMessage"
+            class="message-area">
 
         </div>
 
     </div>
 
-    <!-- ================= DEPARTMENT BUDGET PANEL ================= -->
-    <div id="departmentBudgetTab" class="department-budget-card" style="display:none;">
+        <!-- ======================================================
+                DEPARTMENT BUDGET SUMMARY
+    ======================================================= -->
+    <div
+        id="departmentBudgetTab"
+        class="department-budget-card"
+        style="display:none;">
 
         <div class="predict-header">
-            <h2>Department Budget Summary</h2>
+
+            <h2>
+                Department Budget Summary
+            </h2>
+
+            <p>
+                View departmental budget allocation, expenditure and remaining balance.
+            </p>
+
         </div>
 
         <div class="form-group">
-            <label>Select Department</label>
 
-            <select id="deptSelect" onchange="loadDepartmentBudget()">
-                <option value="">-- Select Department --</option>
-                <option value="Finance">Finance</option>
-                <option value="ICT">ICT</option>
-                <option value="Procurement">Procurement</option>
-                <option value="Stores">Stores</option>
-                <option value="Administration">Administration</option>
+            <label>
+                Select Department
+            </label>
+
+            <select
+                id="deptSelect"
+                onchange="loadDepartmentBudget()">
+
+                <option value="">
+                    Select Department
+                </option>
+
             </select>
+
         </div>
 
-        <div id="departmentSummary" class="department-summary">
+        <div class="department-summary">
 
-            <p><strong>Department:</strong> <span id="summaryDepartment">-</span></p>
+            <div class="summary-item">
 
-            <p><strong>Total Budget:</strong> UGX <span id="summaryBudget">0</span></p>
+                <strong>Department</strong>
 
-            <p><strong>Total Spent:</strong> UGX <span id="summarySpent">0</span></p>
+                <span id="summaryDepartment">
+                    -
+                </span>
 
-            <p><strong>Remaining Balance:</strong> UGX <span id="summaryBalance">0</span></p>
+            </div>
 
-            <p><strong>CEO Status:</strong> <span id="summaryStatus">-</span></p>
+            <div class="summary-item">
+
+                <strong>Total Budget</strong>
+
+                <span id="summaryBudget">
+                    UGX 0
+                </span>
+
+            </div>
+
+            <div class="summary-item">
+
+                <strong>Total Spent</strong>
+
+                <span id="summarySpent">
+                    UGX 0
+                </span>
+
+            </div>
+
+            <div class="summary-item">
+
+                <strong>Remaining Balance</strong>
+
+                <span id="summaryBalance">
+                    UGX 0
+                </span>
+
+            </div>
+
+            <div class="summary-item">
+
+                <strong>CEO Status</strong>
+
+                <span id="summaryStatus">
+                    Pending
+                </span>
+
+            </div>
 
         </div>
 
         <div class="button-area">
 
-            <button class="cancel-btn" onclick="toggleDepartmentBudget()">
+            <button
+                class="cancel-btn"
+                onclick="toggleDepartmentBudget()">
+
                 Close
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ======================================================
+                    CEO APPROVAL PANEL
+    ======================================================= -->
+    <div
+        id="budgetApprovalTab"
+        class="approval-card"
+        style="display:none;">
+
+        <div class="predict-header">
+
+            <h2>
+                Company Budget Approval
+            </h2>
+
+            <p>
+                Review and approve or reject the selected company budget.
+            </p>
+
+        </div>
+
+        <div id="approvalDetails">
+
+            <table class="approval-table">
+
+                <tr>
+                    <th>Budget No</th>
+                    <td id="approvalBudgetNo">-</td>
+                </tr>
+
+                <tr>
+                    <th>Department</th>
+                    <td id="approvalDepartment">-</td>
+                </tr>
+
+                <tr>
+                    <th>Financial Year</th>
+                    <td id="approvalFinancialYear">-</td>
+                </tr>
+
+                <tr>
+                    <th>Budget Type</th>
+                    <td id="approvalBudgetType">-</td>
+                </tr>
+
+                <tr>
+                    <th>Total Budget</th>
+                    <td id="approvalAmount">UGX 0</td>
+                </tr>
+
+                <tr>
+                    <th>Start Date</th>
+                    <td id="approvalStartDate">-</td>
+                </tr>
+
+                <tr>
+                    <th>End Date</th>
+                    <td id="approvalEndDate">-</td>
+                </tr>
+
+                <tr>
+                    <th>Remarks</th>
+                    <td id="approvalRemarks">-</td>
+                </tr>
+
+            </table>
+
+        </div>
+
+        <div class="button-area">
+
+            <button
+                class="approve-btn"
+                onclick="approveCompanyBudget()">
+
+                ✅ Approve Budget
+
+            </button>
+
+            <button
+                class="reject-btn"
+                onclick="rejectCompanyBudget()">
+
+                ❌ Reject Budget
+
+            </button>
+
+            <button
+                class="cancel-btn"
+                onclick="document.getElementById('budgetApprovalTab').style.display='none'">
+
+                Close
+
             </button>
 
         </div>
@@ -1061,8 +1511,6 @@ UGX 530M
     </div>
 
 </div>
-
-
 
 
 
@@ -2292,7 +2740,7 @@ UGX 530M
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='/budget.js') }}"></script>
+<script src="{{ url_for('static', filename='/ceo_budget.js') }}"></script>
 <script src="{{ url_for('static', filename='/ceo_dashboard.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='/ceo_insight.js') }}"></script>
