@@ -888,74 +888,53 @@
 
 
 
-
-
-            <!-- Company Budget -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Company Budget
-                </label>
-
-
-
-                <select id="companyBudget">
-
-
-                    <option value="">
-                        Loading Company Budget...
-                    </option>
-
-
-
-                </select>
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Department -->
-
+            <!-- ==========================================
+                DEPARTMENT
+            ========================================== -->
 
             <div class="form-group">
 
-
-                <label>
+                <label for="budgetDepartment">
                     Department
                 </label>
 
-
-
                 <select id="budgetDepartment">
 
-
                     <option value="">
-                        Loading Departments...
+                        Select Department
                     </option>
 
-
-
                 </select>
-
-
 
             </div>
 
 
+            <!-- ==========================================
+                COMPANY BUDGET NUMBER
+            ========================================== -->
+
+            <div class="form-group">
+
+                <label for="companyBudget">
+                    Company Budget
+                </label>
+
+                <input
+                    type="text"
+                    id="companyBudget"
+                    placeholder="Select department first"
+                    readonly>
+
+            </div>
 
 
+            <!-- ==========================================
+                HIDDEN COMPANY BUDGET ID
+            ========================================== -->
 
-
+            <input
+                type="hidden"
+                id="companyBudgetId">
 
 
 

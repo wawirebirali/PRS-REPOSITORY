@@ -1,504 +1,113 @@
-////////////////////////////////////////////////////////////
-// CEO BUDGET MANAGEMENT
-////////////////////////////////////////////////////////////
+/* ==========================================================
+        CEO COMPANY BUDGET MANAGEMENT
+========================================================== */
 
-let companyBudgets = [];
+
+/* ==========================================================
+        GLOBAL VARIABLE
+        Stores the currently selected budget
+========================================================== */
+
 let selectedBudgetId = null;
 
-////////////////////////////////////////////////////////////
-// SEARCH BUDGET
-////////////////////////////////////////////////////////////
 
-function searchBudget() {
-
-    const keyword = document
-        .getElementById("budgetSearch")
-        .value
-        .toLowerCase();
-
-    const filtered = companyBudgets.filter(item =>
-
-        (item.budget_no || "")
-            .toLowerCase()
-            .includes(keyword)
-
-        ||
-
-        (item.department_name || "")
-            .toLowerCase()
-            .includes(keyword)
-
-        ||
-
-        (item.financial_year || "")
-            .toLowerCase()
-            .includes(keyword)
-
-        ||
-
-        (item.budget_type || "")
-            .toLowerCase()
-            .includes(keyword)
-
-    );
-
-    renderBudgetTable(filtered);
-
-}
-
-////////////////////////////////////////////////////////////
-// TOGGLE PREDICT PANEL
-////////////////////////////////////////////////////////////
-
-function togglePredictBudget() {
-
-    const panel = document.getElementById("predictBudgetTab");
-
-    if (!panel) return;
-
-    const visible = panel.style.display === "block";
-
-    panel.style.display = visible ? "none" : "block";
-
-    if (!visible) {
-        panel.scrollIntoView({
-            behavior: "smooth"
-        });
-    }
-}
-
-////////////////////////////////////////////////////////////
-// TOGGLE CREATE PANEL
-////////////////////////////////////////////////////////////
+/* ==========================================================
+        OPEN CREATE BUDGET PANEL
+========================================================== */
+/* ==========================================================
+        OPEN CREATE BUDGET
+========================================================== */
 
 function openCreateBudget() {
 
+    // Show Create Budget panel
     document.getElementById(
         "createBudgetTab"
     ).style.display = "block";
 
-}
 
-function closeCreateBudget() {
-
+    // Hide Prediction panel
     document.getElementById(
-        "createBudgetTab"
+        "predictBudgetTab"
     ).style.display = "none";
 
-}
 
-////////////////////////////////////////////////////////////
-// TOGGLE DEPARTMENT PANEL
-////////////////////////////////////////////////////////////
+    // Hide Department Summary
+    document.getElementById(
+        "departmentBudgetTab"
+    ).style.display = "none";
 
-function toggleDepartmentBudget() {
 
-    const panel =
-        document.getElementById(
-            "departmentBudgetTab"
-        );
-
-    panel.style.display =
-        panel.style.display === "block"
-        ? "none"
-        : "block";
-
-}
-
-////////////////////////////////////////////////////////////
-// SELECT ALL
-////////////////////////////////////////////////////////////
-
-function selectAllBudgets(source) {
-
-    document
-        .querySelectorAll(".budget-checkbox")
-        .forEach(box => {
-
-            box.checked = source.checked;
-
-        });
-
-}
-
-////////////////////////////////////////////////////////////
-// LOAD COMPANY BUDGETS
-////////////////////////////////////////////////////////////
-
-async function loadBudgets() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/ceo/api/company-budgets"
-            );
-
-        const result =
-            await response.json();
-
-        if (result.success) {
-
-            companyBudgets =
-                result.data;
-
-            renderBudgetTable(
-                companyBudgets
-            );
-
-        }
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-    }
-
-}
-
-////////////////////////////////////////////////////////////
-// RENDER TABLE
-////////////////////////////////////////////////////////////
-
-function renderBudgetTable(data) {
-
-    const body =
-        document.getElementById(
-            "budgetBody"
-        );
-
-    body.innerHTML = "";
-
-    data.forEach(item => {
-
-        body.innerHTML += `
-
-        <tr>
-
-            <td>
-
-                <input
-                    type="checkbox"
-                    class="budget-checkbox"
-                    value="${item.company_budget_id}"
-                    onchange="selectBudget(${item.company_budget_id})">
-
-            </td>
-
-            <td>${item.budget_no}</td>
-
-            <td>${item.financial_year}</td>
-
-            <td>${item.department_name}</td>
-
-            <td>${item.budget_item}</td>
-
-            <td>${Number(item.total_budget).toLocaleString()}</td>
-
-            <td>${item.budget_type}</td>
-
-            <td>${item.start_date}</td>
-
-            <td>${item.end_date}</td>
-
-            <td>${Number(item.spent || 0).toLocaleString()}</td>
-
-            <td>${Number(item.balance || 0).toLocaleString()}</td>
-
-            <td>${item.created_by}</td>
-
-            <td>${item.created_at}</td>
-
-            <td>${item.ceo_approval_date || "-"}</td>
-
-            <td>
-
-                <span class="${item.ceo_status.toLowerCase()}">
-
-                    ${item.ceo_status}
-
-                </span>
-
-            </td>
-
-        </tr>
-
-        `;
-
-    });
-
-}
-
-////////////////////////////////////////////////////////////
-// SELECT BUDGET
-////////////////////////////////////////////////////////////
-
-function selectBudget(id) {
-
-    selectedBudgetId = id;
-
-}
-
-
-
-
-
-
-
-//////////////////////////////////////////
-// LOAD DEPARTMENTS
-//////////////////////////////////////////
-
-async function loadDepartments() {
-
-
-    try {
-
-
-        const response =
-            await fetch(
-                "/ceo/api/departments"
-            );
-
-
-
-        const result =
-            await response.json();
-
-
-
-
-        const selects = [
-
-
-            document.getElementById(
-                "budgetDepartment"
-            ),
-
-
-            document.getElementById(
-                "predictDepartment"
-            )
-
-
-        ];
-
-
-
-
-        selects.forEach(select => {
-
-
-            if (!select) return;
-
-
-
-            select.innerHTML = `
-
-                <option value="">
-                    Select Department
-                </option>
-
-            `;
-
-
-
-            result.data.forEach(dept => {
-
-
-                select.innerHTML += `
-
-                    <option value="${dept.department_id}">
-                        ${dept.department_name}
-                    </option>
-
-                `;
-
-
-            });
-
-
-        });
-
-
-
-    }
-
-    catch(error) {
-
-
-        console.error(error);
-
-
-    }
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-async function loadCompanyBudgets(){
-
-    try{
-
-
-        const response = await fetch(
-            "/ceo/api/company-budgets"
-        );
-
-
-        const result = await response.json();
-
-
-
-        if(result.success){
-
-
-            renderCompanyBudgetTable(
-                result.data
-            );
-
-
-        }
-        else{
-
-            console.error(result.message);
-
-        }
-
-
-
-    }
-    catch(error){
-
-        console.error(
-            "Loading budgets failed:",
-            error
-        );
-
-    }
-
-}
-
-/* ==========================================
-        SAVE COMPANY BUDGET
-========================================== */
-
-function submitBudget() {
-
-    // Get all form values
-    const budgetNo = document.getElementById("budgetNo").value.trim();
-
-    const financialYear = document.getElementById("financialYear").value;
-
-    const department = document.getElementById("createBudgetDepartment").value;
-
-    const budgetAmount = document.getElementById("budgetAmount").value;
-
-    const budgetType = document.getElementById("budgetType").value;
-
-    const startDate = document.getElementById("budgetStart").value;
-
-    const endDate = document.getElementById("budgetEnd").value;
-
-    const remarks = document.getElementById("budgetRemarks").value.trim();
-
-    const message = document.getElementById("budgetMessage");
+    // Hide Approval Panel
+    document.getElementById(
+        "budgetApprovalTab"
+    ).style.display = "none";
 
 
     // Clear previous message
-    message.innerHTML = "";
+    document.getElementById(
+        "budgetMessage"
+    ).innerHTML = "";
 
 
-    // Validation
-    if (financialYear === "") {
+    // Load departments
+    loadCreateBudgetDepartments();
 
-        message.innerHTML = "Please select the financial year.";
 
+    // Generate budget number
+    generateBudgetNumber();
+
+}
+
+/* ==========================================================
+        CLOSE CREATE BUDGET PANEL
+========================================================== */
+
+function closeCreateBudget() {
+
+    // Hide Create Budget panel
+    document.getElementById("createBudgetTab").style.display = "none";
+
+    // Clear form
+    clearBudgetForm();
+
+}
+
+
+/* ==========================================================
+        GENERATE BUDGET NUMBER
+========================================================== */
+function generateBudgetNumber() {
+
+    const budgetNoInput =
+        document.getElementById("budgetNo");
+
+    if (!budgetNoInput) {
+        console.error(
+            "budgetNo input not found"
+        );
         return;
     }
 
-    if (department === "") {
-
-        message.innerHTML = "Please select a department.";
-
-        return;
-    }
-
-    if (budgetType === "") {
-
-        message.innerHTML = "Please select the budget type.";
-
-        return;
-    }
-
-    if (startDate === "") {
-
-        message.innerHTML = "Please select the start date.";
-
-        return;
-    }
-
-    if (endDate === "") {
-
-        message.innerHTML = "Please select the end date.";
-
-        return;
-    }
-
-
-    // Create JSON object
-    const budgetData = {
-
-        budget_no: budgetNo,
-
-        financial_year: financialYear,
-
-        department_id: department,
-
-        budget_amount: budgetAmount,
-
-        budget_type: budgetType,
-
-        start_date: startDate,
-
-        end_date: endDate,
-
-        remarks: remarks
-
-    };
-
-
-    // Send data to Flask
-    fetch("/ceo/save_budget", {
-
-        method: "POST",
-
+    fetch("/ceo/api/budget/generate-number", {
+        method: "GET",
         headers: {
-
-            "Content-Type": "application/json"
-
-        },
-
-        body: JSON.stringify(budgetData)
-
+            "Accept": "application/json"
+        }
     })
 
     .then(response => {
 
+        console.log(
+            "Budget Number HTTP Status:",
+            response.status
+        );
+
         if (!response.ok) {
 
-            throw new Error("Server Error");
+            throw new Error(
+                "Failed to generate budget number"
+            );
 
         }
 
@@ -508,27 +117,22 @@ function submitBudget() {
 
     .then(data => {
 
-        message.innerHTML = data.message;
+        console.log(
+            "Budget Number Response:",
+            data
+        );
 
         if (data.success) {
 
-            // Optional: Clear the form
-            document.getElementById("financialYear").value = "";
+            budgetNoInput.value =
+                data.budget_no;
 
-            document.getElementById("createBudgetDepartment").value = "";
+        } else {
 
-            document.getElementById("budgetAmount").value = "";
-
-            document.getElementById("budgetType").value = "";
-
-            document.getElementById("budgetStart").value = "";
-
-            document.getElementById("budgetEnd").value = "";
-
-            document.getElementById("budgetRemarks").value = "";
-
-            // Optional: Reload budget table
-            // loadCompanyBudgets();
+            console.error(
+                "Budget Number Error:",
+                data.message
+            );
 
         }
 
@@ -536,9 +140,10 @@ function submitBudget() {
 
     .catch(error => {
 
-        console.error(error);
-
-        message.innerHTML = "Failed to save budget.";
+        console.error(
+            "Budget Number Error:",
+            error
+        );
 
     });
 
@@ -546,16 +151,878 @@ function submitBudget() {
 
 
 
+
+/* ==========================================================
+        LOAD DEPARTMENTS FOR CREATE BUDGET
+========================================================== */
+/* ==========================================================
+        LOAD DEPARTMENTS FOR CREATE COMPANY BUDGET
+========================================================== */
+
+function loadCreateBudgetDepartments() {
+
+    // Get Create Budget department dropdown
+    const departmentSelect =
+        document.getElementById(
+            "createBudgetDepartment"
+        );
+
+
+    // Check if dropdown exists
+    if (!departmentSelect) {
+
+        console.error(
+            "createBudgetDepartment select not found"
+        );
+
+        return;
+
+    }
+
+
+    // Show loading
+    departmentSelect.innerHTML = `
+
+        <option value="">
+            Loading Departments...
+        </option>
+
+    `;
+
+
+    // AJAX GET request
+    fetch("/ceo/api/departments", {
+
+        method: "GET",
+
+        headers: {
+
+            "Accept":
+                "application/json"
+
+        }
+
+    })
+
+
+    // Convert response to JSON
+    .then(response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+        return response.json();
+
+    })
+
+
+    // Process JSON data
+    .then(data => {
+
+        console.log(
+            "Departments Response:",
+            data
+        );
+
+
+        // Clear dropdown
+        departmentSelect.innerHTML = `
+
+            <option value="">
+                Select Department
+            </option>
+
+        `;
+
+
+        // Check successful response
+        if (
+            data.success &&
+            Array.isArray(data.data)
+        ) {
+
+
+            // Loop through departments
+            data.data.forEach(
+                department => {
+
+                    // Create option
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    // Set department ID
+                    option.value =
+                        department.department_id;
+
+
+                    // Set department name
+                    option.textContent =
+                        department.department_name;
+
+
+                    // Add option to select
+                    departmentSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+
+        } else {
+
+            // No departments found
+            departmentSelect.innerHTML = `
+
+                <option value="">
+                    No Departments Found
+                </option>
+
+            `;
+
+        }
+
+    })
+
+
+    // Handle errors
+    .catch(error => {
+
+        console.error(
+            "Department Loading Error:",
+            error
+        );
+
+
+        departmentSelect.innerHTML = `
+
+            <option value="">
+                Failed to Load Departments
+            </option>
+
+        `;
+
+    });
+
+}
+
+/* ==========================================================
+        CREATE / SAVE COMPANY BUDGET
+========================================================== */
+/* ==========================================================
+        SUBMIT COMPANY BUDGET
+========================================================== */
+function submitBudget() {
+
+    // ==========================================
+    // GET MESSAGE ELEMENT
+    // ==========================================
+
+    const message =
+        document.getElementById("budgetMessage");
+
+
+    // ==========================================
+    // GET FORM VALUES
+    // ==========================================
+
+    const budgetNo =
+        document.getElementById("budgetNo").value.trim();
+
+    const financialYear =
+        document.getElementById("financialYear").value;
+
+    const departmentId =
+        document.getElementById("createBudgetDepartment").value;
+
+    const budgetAmount =
+        document.getElementById("allocatedAmount").value;
+
+    const budgetType =
+        document.getElementById("budgetType").value;
+
+    const startDate =
+        document.getElementById("budgetStart").value;
+
+    const endDate =
+        document.getElementById("budgetEnd").value;
+
+    const remarks =
+        document.getElementById("budgetRemarks").value.trim();
+
+
+    // ==========================================
+    // CLEAR OLD MESSAGE
+    // ==========================================
+
+    message.innerHTML = "";
+
+
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+
+    if (!financialYear) {
+
+        message.innerHTML =
+            "Please select financial year.";
+
+        return;
+    }
+
+
+    if (!departmentId) {
+
+        message.innerHTML =
+            "Please select department.";
+
+        return;
+    }
+
+
+    if (
+        !budgetAmount ||
+        Number(budgetAmount) <= 0
+    ) {
+
+        message.innerHTML =
+            "Please enter a valid budget amount.";
+
+        return;
+    }
+
+
+    if (!budgetType) {
+
+        message.innerHTML =
+            "Please select budget type.";
+
+        return;
+    }
+
+
+    if (!startDate) {
+
+        message.innerHTML =
+            "Please select start date.";
+
+        return;
+    }
+
+
+    if (!endDate) {
+
+        message.innerHTML =
+            "Please select end date.";
+
+        return;
+    }
+
+
+    if (endDate < startDate) {
+
+        message.innerHTML =
+            "End date cannot be before start date.";
+
+        return;
+    }
+
+
+    // ==========================================
+    // CREATE JSON DATA
+    // ==========================================
+
+    const budgetData = {
+
+        budget_no:
+            budgetNo,
+
+        financial_year:
+            financialYear,
+
+        department_id:
+            departmentId,
+
+        allocated_amount:
+            Number(budgetAmount),
+
+        budget_type:
+            budgetType,
+
+        start_date:
+            startDate,
+
+        end_date:
+            endDate,
+
+        remarks:
+            remarks
+    };
+
+
+    // ==========================================
+    // DEBUG
+    // ==========================================
+
+    console.log(
+        "Sending Budget:",
+        budgetData
+    );
+
+
+    // ==========================================
+    // SHOW SAVING MESSAGE
+    // ==========================================
+
+    message.innerHTML =
+        "Saving budget...";
+
+
+    // ==========================================
+    // GET SUBMIT BUTTON
+    // ==========================================
+
+    const submitButton =
+        document.getElementById("submitBudgetBtn");
+
+
+    // ==========================================
+    // DISABLE SUBMIT BUTTON
+    // ==========================================
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            "Saving...";
+
+    }
+
+
+    // ==========================================
+    // AJAX POST REQUEST
+    // ==========================================
+
+    fetch(
+        "/ceo/api/budget/create",
+        {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                "Accept":
+                    "application/json"
+
+            },
+
+            body:
+                JSON.stringify(
+                    budgetData
+                )
+
+        }
+    )
+
+
+    // ==========================================
+    // RECEIVE FLASK RESPONSE
+    // ==========================================
+
+    .then(response => {
+
+        console.log(
+            "Create Budget HTTP Status:",
+            response.status
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+
+        return response.json();
+
+    })
+
+
+    // ==========================================
+    // PROCESS FLASK RESPONSE
+    // ==========================================
+
+    .then(data => {
+
+        console.log(
+            "Create Budget Response:",
+            data
+        );
+
+
+        // ==========================================
+        // SUCCESSFUL SUBMISSION
+        // ==========================================
+
+        if (data.success) {
+
+            console.log(
+                "Company budget created successfully."
+            );
+
+
+            // ==========================================
+            // SHOW SUCCESS MESSAGE
+            // ==========================================
+
+            message.innerHTML =
+                data.message ||
+                "Company budget created successfully.";
+
+
+            // ==========================================
+            // CLEAR FORM
+            // ==========================================
+
+            document.getElementById(
+                "budgetNo"
+            ).value = "";
+
+
+            document.getElementById(
+                "financialYear"
+            ).value = "";
+
+
+            document.getElementById(
+                "createBudgetDepartment"
+            ).value = "";
+
+
+            document.getElementById(
+                "allocatedAmount"
+            ).value = "";
+
+
+            document.getElementById(
+                "budgetType"
+            ).value = "";
+
+
+            document.getElementById(
+                "budgetStart"
+            ).value = "";
+
+
+            document.getElementById(
+                "budgetEnd"
+            ).value = "";
+
+
+            document.getElementById(
+                "budgetRemarks"
+            ).value = "";
+
+
+            // ==========================================
+            // GENERATE NEW BUDGET NUMBER
+            // ==========================================
+
+            if (
+                typeof generateBudgetNumber ===
+                "function"
+            ) {
+
+                generateBudgetNumber();
+
+            }
+
+
+            // ==========================================
+            // RELOAD COMPANY BUDGET TABLE
+            // ==========================================
+
+            if (
+                typeof loadCompanyBudgets ===
+                "function"
+            ) {
+
+                loadCompanyBudgets();
+
+            }
+
+
+            // ==========================================
+            // HIDE CREATE BUDGET FORM
+            // ==========================================
+
+            const createBudgetTab =
+                document.getElementById(
+                    "createBudgetTab"
+                );
+
+
+            if (createBudgetTab) {
+
+                createBudgetTab.style.display =
+                    "none";
+
+            }
+
+
+            // ==========================================
+            // SHOW BUDGET TABLE
+            // ==========================================
+
+            const companyBudgetTable =
+                document.getElementById(
+                    "companyBudgetTable"
+                );
+
+
+            if (companyBudgetTable) {
+
+                companyBudgetTable.style.display =
+                    "block";
+
+            }
+
+
+            // ==========================================
+            // RE-ENABLE SUBMIT BUTTON
+            // ==========================================
+
+            if (submitButton) {
+
+                submitButton.disabled =
+                    false;
+
+                submitButton.innerHTML =
+                    "Create Budget";
+
+            }
+
+        }
+
+
+        // ==========================================
+        // FAILED SUBMISSION
+        // ==========================================
+
+        else {
+
+            console.error(
+                "Budget creation failed:",
+                data.message
+            );
+
+
+            message.innerHTML =
+                data.message ||
+                "Failed to create budget.";
+
+
+            // Re-enable button
+
+            if (submitButton) {
+
+                submitButton.disabled =
+                    false;
+
+                submitButton.innerHTML =
+                    "Create Budget";
+
+            }
+
+        }
+
+    })
+
+
+    // ==========================================
+    // HANDLE AJAX / NETWORK ERROR
+    // ==========================================
+
+    .catch(error => {
+
+        console.error(
+            "Create Budget Error:",
+            error
+        );
+
+
+        message.innerHTML =
+            "An error occurred while creating the budget. Please try again.";
+
+
+        // Re-enable button
+
+        if (submitButton) {
+
+            submitButton.disabled =
+                false;
+
+            submitButton.innerHTML =
+                "Create Budget";
+
+        }
+
+    });
+
+}
+/* ==========================================================
+        SELECT A BUDGET
+========================================================== */
+
+function selectBudget(checkbox) {
+
+    if (checkbox.checked) {
+
+        selectedBudgetId =
+            checkbox.value;
+
+        console.log(
+            "Selected Budget ID:",
+            selectedBudgetId
+        );
+
+    } else {
+
+        selectedBudgetId = null;
+
+    }
+
+}
+
+
+/* ==========================================================
+        SELECT ALL BUDGETS
+========================================================== */
+
+function selectAllBudgets(
+    masterCheckbox
+) {
+
+    const checkboxes =
+        document.querySelectorAll(
+            ".budget-checkbox"
+        );
+
+
+    checkboxes.forEach(
+        checkbox => {
+
+            checkbox.checked =
+                masterCheckbox.checked;
+
+        }
+    );
+
+
+    if (masterCheckbox.checked &&
+        checkboxes.length > 0) {
+
+        selectedBudgetId =
+            checkboxes[0].value;
+
+    } else {
+
+        selectedBudgetId = null;
+
+    }
+
+}
+
+
+/* ==========================================================
+        INITIALIZE BUDGET MODULE
+========================================================== */
+
 document.addEventListener(
-"DOMContentLoaded",
-()=>{
+    "DOMContentLoaded",
+    function () {
+
+        // Load company budgets
+        loadCompanyBudgets();
+
+    }
+);
 
 
-    loadCompanyBudgets();
 
-    loadDepartments();
+/* ==========================================================
+        LOAD DEPARTMENTS FOR CREATE COMPANY BUDGET
+========================================================== */
 
-    selectBudget
+function loadCreateBudgetDepartments() {
+
+    // Get Create Budget department dropdown
+    const departmentSelect =
+        document.getElementById(
+            "createBudgetDepartment"
+        );
 
 
-});
+    // Check if dropdown exists
+    if (!departmentSelect) {
+
+        console.error(
+            "createBudgetDepartment select not found"
+        );
+
+        return;
+
+    }
+
+
+    // Show loading
+    departmentSelect.innerHTML = `
+
+        <option value="">
+            Loading Departments...
+        </option>
+
+    `;
+
+
+    // AJAX GET request
+    fetch("/ceo/api/departments", {
+
+        method: "GET",
+
+        headers: {
+
+            "Accept":
+                "application/json"
+
+        }
+
+    })
+
+
+    // Convert response to JSON
+    .then(response => {
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+        return response.json();
+
+    })
+
+
+    // Process JSON data
+    .then(data => {
+
+        console.log(
+            "Departments Response:",
+            data
+        );
+
+
+        // Clear dropdown
+        departmentSelect.innerHTML = `
+
+            <option value="">
+                Select Department
+            </option>
+
+        `;
+
+
+        // Check successful response
+        if (
+            data.success &&
+            Array.isArray(data.data)
+        ) {
+
+
+            // Loop through departments
+            data.data.forEach(
+                department => {
+
+                    // Create option
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    // Set department ID
+                    option.value =
+                        department.department_id;
+
+
+                    // Set department name
+                    option.textContent =
+                        department.department_name;
+
+
+                    // Add option to select
+                    departmentSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+
+        } else {
+
+            // No departments found
+            departmentSelect.innerHTML = `
+
+                <option value="">
+                    No Departments Found
+                </option>
+
+            `;
+
+        }
+
+    })
+
+
+    // Handle errors
+    .catch(error => {
+
+        console.error(
+            "Department Loading Error:",
+            error
+        );
+
+
+        departmentSelect.innerHTML = `
+
+            <option value="">
+                Failed to Load Departments
+            </option>
+
+        `;
+
+    });
+
+}

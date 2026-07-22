@@ -277,63 +277,248 @@ function closeCreateBudget() {
 
 
 
-
-
-
-
 //////////////////////////////////////////
+// DEPARTMENT BUDGET MODULE
+//////////////////////////////////////////
+
+
+// =====================================================
+// GLOBAL BUDGET DATA
+// =====================================================
+
+let budgets = [];
+
+
+// =====================================================
 // CREATE DEPARTMENT BUDGET
-//////////////////////////////////////////
+// =====================================================
 
 async function submitBudget() {
 
+    // ==========================================
+    // GET FORM VALUES
+    // ==========================================
+
+    const companyBudgetId =
+        document.getElementById(
+            "companyBudgetId"
+        ).value;
+
+    const departmentId =
+        document.getElementById(
+            "budgetDepartment"
+        ).value;
+
+    const budgetItem =
+        document.getElementById(
+            "budgetItem"
+        ).value.trim();
+
+    const quantity =
+        document.getElementById(
+            "budgetQuantity"
+        ).value || 1;
+
+    const unitCost =
+        document.getElementById(
+            "budgetUnitCost"
+        ).value;
+
+    const budgetType =
+        document.getElementById(
+            "budgetType"
+        ).value;
+
+    const startDate =
+        document.getElementById(
+            "budgetStart"
+        ).value;
+
+    const endDate =
+        document.getElementById(
+            "budgetEnd"
+        ).value;
+
+    const remarks =
+        document.getElementById(
+            "budgetRemarks"
+        ).value.trim();
+
+
+    // ==========================================
+    // VALIDATION
+    // ==========================================
+
+    if (!departmentId) {
+
+        alert(
+            "Please select a department."
+        );
+
+        return;
+
+    }
+
+
+    if (!companyBudgetId) {
+
+        alert(
+            "No company budget is available for the selected department."
+        );
+
+        return;
+
+    }
+
+
+    if (!budgetItem) {
+
+        alert(
+            "Please enter the budget item."
+        );
+
+        return;
+
+    }
+
+
+    if (!quantity || Number(quantity) <= 0) {
+
+        alert(
+            "Please enter a valid quantity."
+        );
+
+        return;
+
+    }
+
+
+    if (!unitCost || Number(unitCost) <= 0) {
+
+        alert(
+            "Please enter a valid unit cost."
+        );
+
+        return;
+
+    }
+
+
+    if (!budgetType) {
+
+        alert(
+            "Please select budget type."
+        );
+
+        return;
+
+    }
+
+
+    if (!startDate) {
+
+        alert(
+            "Please select start date."
+        );
+
+        return;
+
+    }
+
+
+    if (!endDate) {
+
+        alert(
+            "Please select end date."
+        );
+
+        return;
+
+    }
+
+
+    if (endDate < startDate) {
+
+        alert(
+            "End date cannot be before start date."
+        );
+
+        return;
+
+    }
+
+
+    // ==========================================
+    // CREATE JSON DATA
+    // ==========================================
 
     const data = {
 
-
         company_budget_id:
-            document.getElementById("companyBudget").value,
-
+            Number(companyBudgetId),
 
         department_id:
-            document.getElementById("budgetDepartment").value,
-
+            Number(departmentId),
 
         budget_item:
-            document.getElementById("budgetItem").value,
-
+            budgetItem,
 
         quantity:
-            document.getElementById("budgetQuantity").value || 1,
-
+            Number(quantity),
 
         unit_cost:
-            document.getElementById("budgetUnitCost").value,
-
+            Number(unitCost),
 
         budget_type:
-            document.getElementById("budgetType").value,
-
+            budgetType,
 
         start_date:
-            document.getElementById("budgetStart").value,
-
+            startDate,
 
         end_date:
-            document.getElementById("budgetEnd").value,
-
+            endDate,
 
         remarks:
-            document.getElementById("budgetRemarks").value
-
+            remarks
 
     };
 
 
+    // ==========================================
+    // DEBUG
+    // ==========================================
 
+    console.log(
+        "Sending Department Budget:",
+        data
+    );
+
+
+    // ==========================================
+    // SUBMIT BUTTON
+    // ==========================================
+
+    const submitButton =
+        document.getElementById(
+            "submitBudgetBtn"
+        );
+
+
+    if (submitButton) {
+
+        submitButton.disabled = true;
+
+        submitButton.innerHTML =
+            "Saving...";
+
+    }
+
+
+    // ==========================================
+    // AJAX REQUEST
+    // ==========================================
 
     try {
-
 
         const response =
             await fetch(
@@ -345,90 +530,320 @@ async function submitBudget() {
                     headers: {
 
                         "Content-Type":
-                        "application/json"
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
 
                     },
 
-
                     body:
-                    JSON.stringify(data)
+                        JSON.stringify(data)
 
                 }
             );
 
 
+        // ==========================================
+        // CHECK HTTP RESPONSE
+        // ==========================================
 
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+
+        // ==========================================
+        // GET JSON RESPONSE
+        // ==========================================
 
         const result =
             await response.json();
 
 
+        console.log(
+            "Create Budget Response:",
+            result
+        );
 
 
+        // ==========================================
+        // SUCCESS
+        // ==========================================
 
         if (result.success) {
 
+            alert(
+                result.message ||
+                "Department budget created successfully."
+            );
 
-            alert(result.message);
+
+            // ==========================================
+            // CLEAR FORM
+            // ==========================================
+
+            clearDepartmentBudgetForm();
 
 
+            // ==========================================
+            // CLOSE CREATE BUDGET FORM
+            // ==========================================
 
             closeCreateBudget();
 
 
+            // ==========================================
+            // RELOAD BUDGET TABLE
+            // ==========================================
 
             loadBudgets();
 
-
-
         }
+
+
+        // ==========================================
+        // BACKEND ERROR
+        // ==========================================
 
         else {
 
-
-            alert(result.message);
-
+            alert(
+                result.message ||
+                "Failed to create department budget."
+            );
 
         }
 
 
-
     }
+
+
+    // ==========================================
+    // AJAX / NETWORK ERROR
+    // ==========================================
 
     catch(error) {
 
-
-        console.error(error);
+        console.error(
+            "Create Department Budget Error:",
+            error
+        );
 
 
         alert(
-            "Failed to create budget"
+            "Failed to create department budget. Please try again."
         );
-
 
     }
 
 
+    // ==========================================
+    // RE-ENABLE BUTTON
+    // ==========================================
+
+    finally {
+
+        if (submitButton) {
+
+            submitButton.disabled =
+                false;
+
+            submitButton.innerHTML =
+                "Create Budget";
+
+        }
+
+    }
 
 }
 
 
 
+// =====================================================
+// CLEAR DEPARTMENT BUDGET FORM
+// =====================================================
+
+function clearDepartmentBudgetForm() {
+
+    // ==========================================
+    // CLEAR COMPANY BUDGET
+    // ==========================================
+
+    const companyBudget =
+        document.getElementById(
+            "companyBudget"
+        );
+
+    if (companyBudget) {
+
+        companyBudget.value = "";
+
+        companyBudget.placeholder =
+            "Select Department First";
+
+    }
+
+
+    // ==========================================
+    // CLEAR HIDDEN COMPANY BUDGET ID
+    // ==========================================
+
+    const companyBudgetId =
+        document.getElementById(
+            "companyBudgetId"
+        );
+
+    if (companyBudgetId) {
+
+        companyBudgetId.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR DEPARTMENT
+    // ==========================================
+
+    const department =
+        document.getElementById(
+            "budgetDepartment"
+        );
+
+    if (department) {
+
+        department.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR BUDGET ITEM
+    // ==========================================
+
+    const budgetItem =
+        document.getElementById(
+            "budgetItem"
+        );
+
+    if (budgetItem) {
+
+        budgetItem.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR QUANTITY
+    // ==========================================
+
+    const quantity =
+        document.getElementById(
+            "budgetQuantity"
+        );
+
+    if (quantity) {
+
+        quantity.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR UNIT COST
+    // ==========================================
+
+    const unitCost =
+        document.getElementById(
+            "budgetUnitCost"
+        );
+
+    if (unitCost) {
+
+        unitCost.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR BUDGET TYPE
+    // ==========================================
+
+    const budgetType =
+        document.getElementById(
+            "budgetType"
+        );
+
+    if (budgetType) {
+
+        budgetType.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR START DATE
+    // ==========================================
+
+    const startDate =
+        document.getElementById(
+            "budgetStart"
+        );
+
+    if (startDate) {
+
+        startDate.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR END DATE
+    // ==========================================
+
+    const endDate =
+        document.getElementById(
+            "budgetEnd"
+        );
+
+    if (endDate) {
+
+        endDate.value = "";
+
+    }
+
+
+    // ==========================================
+    // CLEAR REMARKS
+    // ==========================================
+
+    const remarks =
+        document.getElementById(
+            "budgetRemarks"
+        );
+
+    if (remarks) {
+
+        remarks.value = "";
+
+    }
+
+}
 
 
 
-
-
-
-//////////////////////////////////////////
+// =====================================================
 // LOAD DEPARTMENTS
-//////////////////////////////////////////
+// =====================================================
 
 async function loadDepartments() {
 
-
     try {
-
 
         const response =
             await fetch(
@@ -436,36 +851,53 @@ async function loadDepartments() {
             );
 
 
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to load departments"
+            );
+
+        }
+
 
         const result =
             await response.json();
 
 
+        console.log(
+            "Departments:",
+            result
+        );
 
+
+        // ==========================================
+        // DEPARTMENT SELECTS
+        // ==========================================
 
         const selects = [
-
 
             document.getElementById(
                 "budgetDepartment"
             ),
 
-
             document.getElementById(
                 "predictDepartment"
             )
 
-
         ];
 
 
-
+        // ==========================================
+        // POPULATE SELECTS
+        // ==========================================
 
         selects.forEach(select => {
 
+            if (!select) {
 
-            if (!select) return;
+                return;
 
+            }
 
 
             select.innerHTML = `
@@ -477,139 +909,242 @@ async function loadDepartments() {
             `;
 
 
+            if (
+                result.success &&
+                result.data
+            ) {
 
-            result.data.forEach(dept => {
+                result.data.forEach(
+                    dept => {
 
+                        select.innerHTML += `
 
-                select.innerHTML += `
+                            <option
+                                value="${dept.department_id}">
+                                ${dept.department_name}
+                            </option>
 
-                    <option value="${dept.department_id}">
-                        ${dept.department_name}
-                    </option>
+                        `;
 
-                `;
+                    }
+                );
 
-
-            });
-
+            }
 
         });
 
 
-
     }
+
 
     catch(error) {
 
-
-        console.error(error);
-
+        console.error(
+            "Load Departments Error:",
+            error
+        );
 
     }
-
 
 }
 
 
 
+// =====================================================
+// LOAD COMPANY BUDGET FOR SELECTED DEPARTMENT
+// =====================================================
+
+async function loadCompanyBudgetForDepartment(
+    departmentId
+) {
+
+    const companyBudget =
+        document.getElementById(
+            "companyBudget"
+        );
 
 
+    const companyBudgetId =
+        document.getElementById(
+            "companyBudgetId"
+        );
 
 
+    // ==========================================
+    // NO DEPARTMENT SELECTED
+    // ==========================================
+
+    if (!departmentId) {
+
+        if (companyBudget) {
+
+            companyBudget.value = "";
+
+            companyBudget.placeholder =
+                "Select Department First";
+
+        }
 
 
-//////////////////////////////////////////
-// LOAD COMPANY BUDGETS
-//////////////////////////////////////////
+        if (companyBudgetId) {
 
-async function loadCompanyBudgets() {
+            companyBudgetId.value = "";
 
+        }
+
+
+        return;
+
+    }
+
+
+    // ==========================================
+    // SHOW LOADING
+    // ==========================================
+
+    if (companyBudget) {
+
+        companyBudget.value =
+            "Loading...";
+
+    }
+
+
+    if (companyBudgetId) {
+
+        companyBudgetId.value =
+            "";
+
+    }
+
+
+    // ==========================================
+    // FETCH COMPANY BUDGET
+    // ==========================================
 
     try {
 
-
         const response =
             await fetch(
-                "/hod/api/company-budgets"
+                "/hod/api/company-budget/" +
+                departmentId
             );
 
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
 
 
         const result =
             await response.json();
 
 
+        console.log(
+            "Company Budget Response:",
+            result
+        );
 
 
-        const select =
-            document.getElementById(
-                "companyBudget"
-            );
+        // ==========================================
+        // COMPANY BUDGET FOUND
+        // ==========================================
+
+        if (
+            result.success &&
+            result.data
+        ) {
+
+            if (companyBudget) {
+
+                companyBudget.value =
+                    result.data.budget_no;
+
+            }
 
 
+            if (companyBudgetId) {
+
+                companyBudgetId.value =
+                    result.data.company_budget_id;
+
+            }
+
+        }
 
 
-        select.innerHTML = `
+        // ==========================================
+        // COMPANY BUDGET NOT FOUND
+        // ==========================================
 
-            <option value="">
-                Select Company Budget
-            </option>
+        else {
 
-        `;
+            if (companyBudget) {
 
+                companyBudget.value = "";
 
+                companyBudget.placeholder =
+                    result.message ||
+                    "No Company Budget Found";
 
-
-        result.data.forEach(item => {
-
-
-            select.innerHTML += `
-
-                <option value="${item.company_budget_id}">
-                    ${item.budget_no}
-                </option>
-
-            `;
+            }
 
 
-        });
+            if (companyBudgetId) {
 
+                companyBudgetId.value =
+                    "";
 
+            }
+
+        }
 
     }
+
 
     catch(error) {
 
+        console.error(
+            "Load Company Budget Error:",
+            error
+        );
 
-        console.error(error);
 
+        if (companyBudget) {
+
+            companyBudget.value = "";
+
+            companyBudget.placeholder =
+                "Failed to load Company Budget";
+
+        }
+
+
+        if (companyBudgetId) {
+
+            companyBudgetId.value =
+                "";
+
+        }
 
     }
-
 
 }
 
 
 
-
-
-
-
-
-
-//////////////////////////////////////////
+// =====================================================
 // LOAD DEPARTMENT BUDGETS
-//////////////////////////////////////////
-
-let budgets = [];
-
-
+// =====================================================
 
 async function loadBudgets() {
 
-
     try {
-
 
         const response =
             await fetch(
@@ -617,68 +1152,115 @@ async function loadBudgets() {
             );
 
 
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to load budgets"
+            );
+
+        }
+
 
         const result =
             await response.json();
 
 
+        console.log(
+            "Department Budgets:",
+            result
+        );
 
 
-        if (result.success) {
-
+        if (
+            result.success &&
+            result.data
+        ) {
 
             budgets =
                 result.data;
-
 
 
             renderBudgetTable(
                 budgets
             );
 
-
         }
 
-
-
     }
+
 
     catch(error) {
 
-
-        console.error(error);
-
+        console.error(
+            "Load Budgets Error:",
+            error
+        );
 
     }
-
 
 }
 
 
 
+// =====================================================
+// DEPARTMENT CHANGE EVENT
+// =====================================================
+
+function setupDepartmentChangeEvent() {
+
+    const departmentSelect =
+        document.getElementById(
+            "budgetDepartment"
+        );
+
+
+    if (!departmentSelect) {
+
+        return;
+
+    }
+
+
+    departmentSelect.addEventListener(
+        "change",
+        function() {
+
+            const departmentId =
+                this.value;
+
+
+            loadCompanyBudgetForDepartment(
+                departmentId
+            );
+
+        }
+    );
+
+}
 
 
 
-
-
-
-//////////////////////////////////////////
+// =====================================================
 // PAGE LOAD
-//////////////////////////////////////////
+// =====================================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function() {
 
-
-        loadBudgets();
-
+        // Load departments
 
         loadDepartments();
 
 
-        loadCompanyBudgets();
+        // Load existing department budgets
 
+        loadBudgets();
+
+
+        // Setup department selection
+
+        setupDepartmentChangeEvent();
 
     }
 );

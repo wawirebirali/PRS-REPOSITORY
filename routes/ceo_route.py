@@ -108,161 +108,545 @@ def ceo_reject(requisition_id):
 
 
 
-@ceo_dashboard_bp.route("/api/company-budget/create", methods=["POST"])
-def create_company_budget():
-
-    data = request.get_json()
-
-    financial_year = data.get("financial_year")
-    department_id = data.get("department_id")
-    budget_type = data.get("budget_type")
-    total_budget = data.get("total_budget")
-    start_date = data.get("start_date")
-    end_date = data.get("end_date")
-    remarks = data.get("remarks", "")
-
-    if not financial_year:
-        return jsonify({
-            "success": False,
-            "message": "Financial Year is required."
-        })
-
-    if not department_id:
-        return jsonify({
-            "success": False,
-            "message": "Department is required."
-        })
-
-    if not budget_type:
-        return jsonify({
-            "success": False,
-            "message": "Budget Type is required."
-        })
-
-    if not total_budget:
-        return jsonify({
-            "success": False,
-            "message": "Budget Amount is required."
-        })
-
-    if not start_date or not end_date:
-        return jsonify({
-            "success": False,
-            "message": "Start and End dates are required."
-        })
-
-    try:
-
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-        # Generate Budget Number
-        cursor.execute(
-            "SELECT COUNT(*) AS total FROM company_budget"
-        )
-
-        count = cursor.fetchone()["total"] + 1
-
-        budget_no = f"CB-{datetime.now().year}-{count:04d}"
-
-        cursor.execute("""
-            INSERT INTO company_budget
-            (
-                budget_no,
-                financial_year,
-                department_id,
-                budget_type,
-                total_budget,
-                remaining_budget,
-                start_date,
-                end_date,
-                remarks,
-                ceo_status,
-                created_at
-            )
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                'Pending',
-                NOW()
-            )
-        """,
-        (
-            budget_no,
-            financial_year,
-            department_id,
-            budget_type,
-            total_budget,
-            total_budget,
-            start_date,
-            end_date,
-            remarks
-        ))
-
-        conn.commit()
-
-        return jsonify({
-            "success": True,
-            "message": "Company Budget created successfully.",
-            "budget_no": budget_no
-        })
-
-    except Exception as e:
-
-        conn.rollback()
-
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        })
-
-    finally:
-
-        cursor.close()
-        conn.close()
-
-
-
 
 
 @ceo_dashboard_bp.route("/api/departments", methods=["GET"])
 def get_departments():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
     try:
+
+        # Connect to MySQL
+        conn = get_db_connection()
+
+        # Create dictionary cursor
+        cursor = conn.cursor(dictionary=True)
+
+
+        # Get all departments
         cursor.execute("""
-            SELECT 
+            SELECT
                 department_id,
                 department_name
             FROM departments
-            ORDER BY department_name
+            ORDER BY department_name ASC
         """)
 
+
+        # Get database results
         departments = cursor.fetchall()
+
+
+        # Return JSON response
+        return jsonify({
+
+            "success": True,
+
+            "data": departments
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "GET DEPARTMENTS ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load departments.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        # Close cursor
+        if cursor:
+
+            cursor.close()
+
+
+        # Close database connection
+        if conn:
+
+            conn.close()
+
+# ==========================================================
+# CREATE COMPANY BUDGET
+# AJAX URL:
+# POST /ceo/api/budget/create
+# ==========================================================
+
+
+
+
+
+@ceo_dashboard_bp.route(
+    "/api/budget/generate-number",
+    methods=["GET"]
+)
+def generate_budget_number():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM company_budget
+        """)
+
+        result = cursor.fetchone()
+
+        count = result[0] + 1
+
+        budget_no = f"BUD-{count:04d}"
 
         return jsonify({
             "success": True,
-            "data": departments
-        })
+            "budget_no": budget_no
+        }), 200
 
     except Exception as e:
+
+        print(
+            "GENERATE BUDGET NUMBER ERROR:",
+            str(e)
+        )
+
         return jsonify({
             "success": False,
-            "message": str(e)
+            "message": "Failed to generate budget number.",
+            "error": str(e)
         }), 500
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 
+
+
+
+@ceo_dashboard_bp.route(
+    "/api/budget/create",
+    methods=["POST"]
+)
+def create_company_budget():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        # ==================================================
+        # 1. GET JSON DATA SENT BY JAVASCRIPT
+        # ==================================================
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No budget data was received."
+
+            }), 400
+
+
+        # ==================================================
+        # 2. GET VALUES FROM JSON
+        # ==================================================
+
+        budget_no = data.get(
+            "budget_no"
+        )
+
+        financial_year = data.get(
+            "financial_year"
+        )
+
+        department_id = data.get(
+            "department_id"
+        )
+
+        allocated_amount = data.get(
+            "allocated_amount"
+        )
+
+        budget_type = data.get(
+            "budget_type"
+        )
+
+        start_date = data.get(
+            "start_date"
+        )
+
+        end_date = data.get(
+            "end_date"
+        )
+
+        remarks = data.get(
+            "remarks"
+        )
+
+
+        # ==================================================
+        # 3. VALIDATE REQUIRED FIELDS
+        # ==================================================
+
+        if not financial_year:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Financial year is required."
+
+            }), 400
+
+
+        if not department_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Department is required."
+
+            }), 400
+
+
+        if allocated_amount is None:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Allocated amount is required."
+
+            }), 400
+
+
+        if float(allocated_amount) <= 0:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Allocated amount must be greater than zero."
+
+            }), 400
+
+
+        if not budget_type:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Budget type is required."
+
+            }), 400
+
+
+        if not start_date:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Start date is required."
+
+            }), 400
+
+
+        if not end_date:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "End date is required."
+
+            }), 400
+
+
+        # ==================================================
+        # 4. GET LOGGED-IN CEO
+        # ==================================================
+
+        created_by = session.get(
+            "user_id"
+        )
+
+
+        if not created_by:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "User session has expired. Please login again."
+
+            }), 401
+
+
+        # ==================================================
+        # 5. CONNECT TO MYSQL
+        # ==================================================
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor()
+
+
+        # ==================================================
+        # 6. GENERATE BUDGET NUMBER IF NOT PROVIDED
+        # ==================================================
+
+        if not budget_no:
+
+            cursor.execute("""
+
+                SELECT
+                    COUNT(*) + 1
+
+                FROM company_budget
+
+            """)
+
+            result = cursor.fetchone()
+
+            next_number = result[0]
+
+
+            budget_no = (
+                "BUD-"
+                + str(next_number).zfill(4)
+            )
+
+
+        # ==================================================
+        # 7. CHECK FOR DUPLICATE BUDGET NUMBER
+        # ==================================================
+
+        cursor.execute("""
+
+            SELECT
+                company_budget_id
+
+            FROM company_budget
+
+            WHERE budget_no = %s
+
+        """, (budget_no,))
+
+
+        existing_budget = cursor.fetchone()
+
+
+        if existing_budget:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Budget number already exists."
+
+            }), 409
+
+
+        # ==================================================
+        # 8. INSERT COMPANY BUDGET
+        # ==================================================
+
+        sql = """
+
+            INSERT INTO company_budget (
+
+                budget_no,
+
+                financial_year,
+
+                department_id,
+
+                allocated_amount,
+
+                budget_type,
+
+                start_date,
+
+                end_date,
+
+                remarks,
+
+                created_by
+
+            )
+
+            VALUES (
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s,
+
+                %s
+
+            )
+
+        """
+
+
+        values = (
+
+            budget_no,
+
+            financial_year,
+
+            department_id,
+
+            allocated_amount,
+
+            budget_type,
+
+            start_date,
+
+            end_date,
+
+            remarks,
+
+            created_by
+
+        )
+
+
+        cursor.execute(
+            sql,
+            values
+        )
+
+
+        # ==================================================
+        # 9. SAVE CHANGES
+        # ==================================================
+
+        connection.commit()
+
+
+        # ==================================================
+        # 10. GET NEW BUDGET ID
+        # ==================================================
+
+        company_budget_id = cursor.lastrowid
+
+
+        # ==================================================
+        # 11. RETURN SUCCESS RESPONSE
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Company budget created successfully.",
+
+            "company_budget_id":
+                company_budget_id,
+
+            "budget_no":
+                budget_no
+
+        }), 201
+
+
+    # ======================================================
+    # HANDLE DATABASE ERRORS
+    # ======================================================
+
+    except Exception as e:
+
+        if connection:
+
+            connection.rollback()
+
+
+        print(
+            "CREATE BUDGET ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to create company budget.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    # ======================================================
+    # CLOSE DATABASE CONNECTION
+    # ======================================================
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if connection:
+
+            connection.close()

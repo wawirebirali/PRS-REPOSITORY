@@ -475,245 +475,872 @@ def qrf_data():
 
 
 
-#inserting budget
 
 
-@hod_dashboard_bp.route("/api/departments", methods=["GET"])
+# ==========================================================
+# LOAD DEPARTMENTS
+# GET /hod/api/departments
+# ==========================================================
+
+@hod_dashboard_bp.route(
+    "/api/departments",
+    methods=["GET"]
+)
 def get_departments():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
     try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
         cursor.execute("""
-            SELECT 
+            SELECT
                 department_id,
                 department_name
             FROM departments
-            ORDER BY department_name
+            ORDER BY department_name ASC
         """)
+
 
         departments = cursor.fetchall()
 
+
         return jsonify({
+
             "success": True,
+
             "data": departments
-        })
+
+        }), 200
+
 
     except Exception as e:
+
+        print(
+            "GET DEPARTMENTS ERROR:",
+            str(e)
+        )
+
+
         return jsonify({
+
             "success": False,
-            "message": str(e)
+
+            "message":
+                "Failed to load departments.",
+
+            "error":
+                str(e)
+
         }), 500
 
+
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
 
 
 
-# =====================================================
-# INSERT DEPARTMENT BUDGET
-# =====================================================
+# ==========================================================
+# GET COMPANY BUDGET FOR SELECTED DEPARTMENT
+#
+# GET:
+# /hod/api/company-budget/<department_id>
+#
+# WHEN HOD SELECTS A DEPARTMENT,
+# THIS RETURNS THE COMPANY BUDGET BELONGING TO THAT DEPARTMENT
+# ==========================================================
 
-def insert_department_budget(
-    company_budget_id,
-    budget_no,
-    department_id,
-    budget_item,
-    quantity,
-    unit_cost,
-    budget_type,
-    start_date,
-    end_date,
-    created_by
+@hod_dashboard_bp.route(
+    "/api/company-budget/<int:department_id>",
+    methods=["GET"]
+)
+def get_company_budget_for_department(
+    department_id
 ):
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
 
 
-    cursor.execute("""
-        INSERT INTO department_budget
-        (
-            company_budget_id,
-            budget_no,
+        # ==================================================
+        # FIND COMPANY BUDGET FOR SELECTED DEPARTMENT
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+
+                company_budget_id,
+
+                budget_no,
+
+                financial_year,
+
+                department_id,
+
+                allocated_amount,
+
+                budget_type,
+
+                start_date,
+
+                end_date,
+
+                remarks
+
+            FROM company_budget
+
+            WHERE department_id = %s
+
+            ORDER BY company_budget_id DESC
+
+            LIMIT 1
+
+        """, (
             department_id,
-            budget_item,
-            quantity,
-            unit_cost,
-            budget_type,
-            start_date,
-            end_date,
-            created_by
+        ))
+
+
+        company_budget = cursor.fetchone()
+
+
+        # ==================================================
+        # NO COMPANY BUDGET FOUND
+        # ==================================================
+
+        if not company_budget:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No company budget found for the selected department."
+
+            }), 404
+
+
+        # ==================================================
+        # RETURN COMPANY BUDGET
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "data": {
+
+                "company_budget_id":
+                    company_budget[
+                        "company_budget_id"
+                    ],
+
+                "budget_no":
+                    company_budget[
+                        "budget_no"
+                    ],
+
+                "financial_year":
+                    company_budget[
+                        "financial_year"
+                    ],
+
+                "department_id":
+                    company_budget[
+                        "department_id"
+                    ],
+
+                "allocated_amount":
+                    company_budget[
+                        "allocated_amount"
+                    ],
+
+                "budget_type":
+                    company_budget[
+                        "budget_type"
+                    ],
+
+                "start_date":
+                    str(
+                        company_budget[
+                            "start_date"
+                        ]
+                    ),
+
+                "end_date":
+                    str(
+                        company_budget[
+                            "end_date"
+                        ]
+                    ),
+
+                "remarks":
+                    company_budget[
+                        "remarks"
+                    ]
+
+            }
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "GET COMPANY BUDGET ERROR:",
+            str(e)
         )
 
-        VALUES
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load company budget.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+
+
+
+# ==========================================================
+# INSERT DEPARTMENT BUDGET
+# ==========================================================
+
+def insert_department_budget(
+
+    company_budget_id,
+
+    budget_no,
+
+    department_id,
+
+    budget_item,
+
+    quantity,
+
+    unit_cost,
+
+    budget_type,
+
+    start_date,
+
+    end_date,
+
+    remarks,
+
+    created_by
+
+):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor()
+
+
+        # ==================================================
+        # INSERT INTO DEPARTMENT BUDGET
+        # ==================================================
+
+        cursor.execute("""
+            INSERT INTO department_budget
+            (
+                company_budget_id,
+
+                budget_no,
+
+                department_id,
+
+                budget_item,
+
+                quantity,
+
+                unit_cost,
+
+                budget_type,
+
+                start_date,
+
+                end_date,
+
+                remarks,
+
+                created_by
+            )
+
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+
+        """,
+
         (
-            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s
-        )
 
-    """,
-    (
-        company_budget_id,
-        budget_no,
-        department_id,
-        budget_item,
-        quantity,
-        unit_cost,
-        budget_type,
-        start_date,
-        end_date,
-        created_by
-    ))
+            company_budget_id,
 
+            budget_no,
 
-    conn.commit()
+            department_id,
 
-    budget_id = cursor.lastrowid
+            budget_item,
 
+            quantity,
 
-    cursor.close()
-    conn.close()
+            unit_cost,
 
+            budget_type,
 
-    return budget_id
+            start_date,
+
+            end_date,
+
+            remarks,
+
+            created_by
+
+        ))
 
 
+        # ==================================================
+        # SAVE
+        # ==================================================
+
+        conn.commit()
 
 
-# =====================================================
+        # ==================================================
+        # GET CREATED BUDGET ID
+        # ==================================================
+
+        budget_id = cursor.lastrowid
+
+
+        return budget_id
+
+
+    except Exception:
+
+        if conn:
+
+            conn.rollback()
+
+        raise
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+
+
+
+# ==========================================================
 # CREATE DEPARTMENT BUDGET API
-# =====================================================
+#
+# POST:
+# /hod/api/budget/create
+# ==========================================================
 
-@hod_dashboard_bp.route("/api/budget/create", methods=["POST"])
+@hod_dashboard_bp.route(
+    "/api/budget/create",
+    methods=["POST"]
+)
 def create_budget():
+
+    # ==================================================
+    # CHECK LOGIN
+    # ==================================================
 
     if "user_id" not in session:
 
         return jsonify({
+
             "success": False,
-            "message": "Please login first."
-        }),401
+
+            "message":
+                "Please login first."
+
+        }), 401
 
 
     try:
 
+        # ==================================================
+        # GET JSON DATA
+        # ==================================================
+
         data = request.get_json()
 
 
-        budget_no = "DBUD-" + datetime.now().strftime("%Y%m%d%H%M%S")
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No budget data received."
+
+            }), 400
 
 
-        budget_id = insert_department_budget(
+        # ==================================================
+        # GET VALUES
+        # ==================================================
 
-            company_budget_id=data["company_budget_id"],
+        company_budget_id = data.get(
+                "company_budget_id"
+            )
 
-            budget_no=budget_no,
 
-            department_id=data["department_id"],
+        department_id =  data.get(
+                "department_id"
+            )
 
-            budget_item=data["budget_item"],
 
-            quantity=data.get("quantity",1),
+        budget_item =  data.get(
+                "budget_item"
+            )
 
-            unit_cost=data["unit_cost"],
 
-            budget_type=data["budget_type"],
+        quantity = data.get(
+                "quantity",
+                1
+            )
 
-            start_date=data["start_date"],
 
-            end_date=data["end_date"],
+        unit_cost = data.get(
+                "unit_cost"
+            )
 
-            created_by=session["user_id"]
+
+        budget_type = data.get(
+                "budget_type"
+            )
+
+
+        start_date = data.get(
+                "start_date"
+            )
+
+
+        end_date = data.get(
+                "end_date"
+            )
+
+
+        remarks = data.get(
+                "remarks",
+                ""
+            )
+
+
+        # ==================================================
+        # VALIDATION
+        # ==================================================
+
+        if not company_budget_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Company budget is required."
+
+            }), 400
+
+
+        if not department_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Department is required."
+
+            }), 400
+
+
+        if not budget_item:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Budget item is required."
+
+            }), 400
+
+
+        if not unit_cost:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Unit cost is required."
+
+            }), 400
+
+
+        if not budget_type:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Budget type is required."
+
+            }), 400
+
+
+        if not start_date:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Start date is required."
+
+            }), 400
+
+
+        if not end_date:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "End date is required."
+
+            }), 400
+
+
+        # ==================================================
+        # GENERATE DEPARTMENT BUDGET NUMBER
+        # ==================================================
+
+        budget_no = (
+
+            "DBUD-"
+
+            +
+
+            datetime.now().strftime(
+                "%Y%m%d%H%M%S"
+            )
 
         )
 
 
+        # ==================================================
+        # INSERT DEPARTMENT BUDGET
+        # ==================================================
+
+        budget_id = insert_department_budget(
+
+                company_budget_id =
+                    company_budget_id,
+
+                budget_no =
+                    budget_no,
+
+                department_id =
+                    department_id,
+
+                budget_item =
+                    budget_item,
+
+                quantity =
+                    quantity,
+
+                unit_cost =
+                    unit_cost,
+
+                budget_type =
+                    budget_type,
+
+                start_date =
+                    start_date,
+
+                end_date =
+                    end_date,
+
+                remarks =
+                    remarks,
+
+                created_by =
+                    session[
+                        "user_id"
+                    ]
+
+            )
+
+
+        # ==================================================
+        # SUCCESS RESPONSE
+        # ==================================================
+
         return jsonify({
 
-            "success":True,
+            "success": True,
 
-            "budget_id":budget_id,
+            "budget_id":
+                budget_id,
 
-            "budget_no":budget_no,
+            "budget_no":
+                budget_no,
 
-            "message":"Department budget created successfully."
+            "message":
+                "Department budget created successfully."
 
-        })
+        }), 201
 
 
     except Exception as e:
 
         import traceback
+
         traceback.print_exc()
 
 
         return jsonify({
 
-            "success":False,
+            "success": False,
 
-            "message":str(e)
+            "message":
+                "Failed to create department budget.",
 
-        }),500
+            "error":
+                str(e)
+
+        }), 500
 
 
 
-@hod_dashboard_bp.route("/api/budgets", methods=["GET"])
+# ==========================================================
+# GET ALL DEPARTMENT BUDGETS
+#
+# GET:
+# /hod/api/budgets
+# ==========================================================
+
+@hod_dashboard_bp.route(
+    "/api/budgets",
+    methods=["GET"]
+)
 def get_budgets():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
     try:
 
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ==================================================
+        # GET DEPARTMENT BUDGETS
+        # IMPORTANT:
+        # USING department_budget
+        # NOT budgets
+        # ==================================================
+
         cursor.execute("""
+
             SELECT
+
                 b.budget_id,
+
                 b.budget_no,
+
                 b.created_at,
+
                 d.department_name,
+
                 b.budget_item,
+
+                b.quantity,
+
+                b.unit_cost,
+
+                (
+                    b.quantity *
+                    b.unit_cost
+                ) AS budget_amount,
+
                 b.budget_type,
+
                 b.start_date,
+
                 b.end_date,
-                b.budget_amount,
 
-                COALESCE(b.spent_amount,0) AS spent,
+                b.remarks,
 
-                (b.budget_amount - COALESCE(b.spent_amount,0)) AS balance,
+                COALESCE(
+                    b.spent_amount,
+                    0
+                ) AS spent,
 
-                DATEDIFF(b.end_date,CURDATE()) AS due_days,
+                (
+                    (
+                        b.quantity *
+                        b.unit_cost
+                    )
+                    -
+                    COALESCE(
+                        b.spent_amount,
+                        0
+                    )
+                ) AS balance,
 
-                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+                DATEDIFF(
+                    b.end_date,
+                    CURDATE()
+                ) AS due_days,
+
+                COALESCE(
+                    a.ceo_status,
+                    'PENDING'
+                ) AS ceo_status,
+
                 a.ceo_approved_at
 
-            FROM budgets b
+            FROM department_budget b
 
             LEFT JOIN departments d
-                ON b.department_id = d.department_id
+
+                ON b.department_id =
+                   d.department_id
 
             LEFT JOIN approvals a
-                ON a.module_name='BUDGET'
-               AND a.document_id=b.budget_id
 
-            ORDER BY b.created_at DESC
+                ON a.module_name =
+                   'BUDGET'
+
+               AND a.document_id =
+                   b.budget_id
+
+            ORDER BY
+                b.created_at DESC
+
         """)
+
 
         budgets = cursor.fetchall()
 
+
+        # ==================================================
+        # RETURN RESULTS
+        # ==================================================
+
         return jsonify({
+
             "success": True,
+
             "data": budgets
-        })
+
+        }), 200
+
 
     except Exception as e:
 
+        print(
+            "GET BUDGETS ERROR:",
+            str(e)
+        )
+
+
         return jsonify({
+
             "success": False,
-            "message": str(e)
-        }),500
+
+            "message":
+                "Failed to load department budgets.",
+
+            "error":
+                str(e)
+
+        }), 500
+
 
     finally:
-        cursor.close()
-        conn.close()
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
