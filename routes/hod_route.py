@@ -1183,6 +1183,56 @@ def create_budget():
         }), 500
 
 
+        
+
+@hod_dashboard_bp.route(
+    "/api/budget/department/<int:department_id>",
+    methods=["GET"]
+)
+def get_department_budget_items(department_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                department_budget_id,
+                budget_item
+            FROM department_budget
+            WHERE department_id = %s
+            ORDER BY budget_item ASC
+        """, (
+            department_id,
+        ))
+
+        budgets = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "data": budgets
+        })
+
+    except Exception as e:
+
+        print(
+            "Error loading department budgets:",
+            e
+        )
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load department budgets.",
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
 # ==========================================================
 # GET DEPARTMENT BUDGETS
 #

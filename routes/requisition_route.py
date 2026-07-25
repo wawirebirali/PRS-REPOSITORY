@@ -17,114 +17,20 @@ def requisition_home():
 
 
 # =====================================================
-# REQUISITION FORM
-# =====================================================
-# =====================================================
-# LOAD REQUISITION FORM DATA
-# =====================================================
-
-@requisition_bp.route("/form_data")
-def requisition_form_data():
-
-    if "user_id" not in session:
-
-        return jsonify({
-            "success": False,
-            "message": "Login required"
-        }), 401
-
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-
-    try:
-
-        # ===============================
-        # DEPARTMENTS
-        # ===============================
-
-        cursor.execute("""
-            SELECT 
-                department_id,
-                department_name
-            FROM departments
-            ORDER BY department_name
-        """)
-
-        departments = cursor.fetchall()
-
-
-
-        # ===============================
-        # USERS
-        # ===============================
-
-        cursor.execute("""
-            SELECT
-                user_id,
-                username
-            FROM users
-            WHERE status='active'
-            ORDER BY username
-        """)
-
-        users = cursor.fetchall()
-
-
-
-        return jsonify({
-
-            "success": True,
-
-            "departments": departments,
-
-            "users": users
-
-        })
-
-
-    except Exception as e:
-
-
-        print(
-            "FORM DATA ERROR:",
-            e
-        )
-
-
-        return jsonify({
-
-            "success":False,
-
-            "message":"Server error"
-
-        }),500
-
-
-
-    finally:
-
-        cursor.close()
-        conn.close()
-
-
-
-# =====================================================
-# SUBMIT REQUISITION
-# =====================================================
-# =====================================================
 # SUBMIT REQUISITION
 # =====================================================
 
-@requisition_bp.route("/submit", methods=["POST"])
+@requisition_bp.route(
+    "/submit",
+    methods=["POST"]
+)
 def submit_requisition():
 
     try:
 
-        # ===============================
+        # =====================================================
         # CHECK LOGIN
-        # ===============================
+        # =====================================================
 
         if "user_id" not in session:
 
@@ -138,88 +44,146 @@ def submit_requisition():
             )
 
 
+        # =====================================================
+        # GET LOGGED-IN USER
+        # =====================================================
 
         user_id = session["user_id"]
 
-        user_role = session.get("user_role")
+        user_role = session.get(
+            "user_role"
+        )
 
 
+        # =====================================================
+        # GET SELECTED DEPARTMENT
+        # =====================================================
 
-        # ===============================
-        # GET USER DEPARTMENT
-        # ===============================
-
-        conn = get_db_connection()
-
-        cursor = conn.cursor(dictionary=True)
-
+        department_id = request.form.get(
+            "department_id"
+        )
 
 
-        cursor.execute("""
-            SELECT 
-                department_id
-            FROM users
-            WHERE user_id=%s
-        """,(user_id,))
+        # =====================================================
+        # GET SELECTED BUDGET ITEM
+        #
+        # This is actually the department_budget_id
+        # =====================================================
+
+        department_budget_id = request.form.get(
+            "department_budget_id"
+        )
 
 
-        user = cursor.fetchone()
-
-
-
-        if not user:
-
-
-            flash(
-                "User department not found",
-                "error"
-            )
-
-
-            cursor.close()
-            conn.close()
-
-
-            return redirect(
-                url_for("maindashboard.home")
-            )
-
-
-
-        department_id = user["department_id"]
-
-
+        # =====================================================
+        # GET SUBMISSION DATE
+        # =====================================================
 
         submission_date = request.form.get(
             "submission_date"
         )
 
 
+        # =====================================================
+        # VALIDATE DEPARTMENT
+        # =====================================================
 
-        # ===============================
-        # GET ITEMS FROM FORM
-        # ===============================
+        if not department_id:
+
+            session["error_alert"] = (
+                "Please select a department."
+            )
+
+            return redirect(
+                url_for(
+                    "hod_dashboard.hod_dashboard"
+                )
+            )
 
 
-        items=[]
+        # =====================================================
+        # VALIDATE BUDGET ITEM
+        # =====================================================
 
-        row=0
+        if not department_budget_id:
 
+            session["error_alert"] = (
+                "Please select a budget item."
+            )
+
+            return redirect(
+                url_for(
+                    "hod_dashboard.hod_dashboard"
+                )
+            )
+
+
+        # =====================================================
+        # VERIFY SELECTED BUDGET BELONGS TO DEPARTMENT
+        # =====================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        cursor.execute("""
+            SELECT
+                department_budget_id,
+                department_id,
+                budget_item
+            FROM department_budget
+            WHERE department_budget_id = %s
+            AND department_id = %s
+        """, (
+            department_budget_id,
+            department_id
+        ))
+
+
+        budget = cursor.fetchone()
+
+
+        if not budget:
+
+            cursor.close()
+            conn.close()
+
+
+            session["error_alert"] = (
+                "Invalid budget item selected "
+                "for the selected department."
+            )
+
+
+            return redirect(
+                url_for(
+                    "hod_dashboard.hod_dashboard"
+                )
+            )
+
+
+        # =====================================================
+        # GET REQUISITION ITEMS
+        # =====================================================
+
+        items = []
+
+        row = 0
 
 
         while True:
-
 
             material_name = request.form.get(
                 f"material_name_{row}"
             )
 
 
-
             if not material_name:
 
                 break
-
 
 
             items.append({
@@ -242,12 +206,10 @@ def submit_requisition():
                     ),
 
 
-
                 "qty_stock":
                     request.form.get(
                         f"qty_stock_{row}"
                     ) or 0,
-
 
 
                 "qty_required":
@@ -256,12 +218,10 @@ def submit_requisition():
                     ) or 0,
 
 
-
                 "required_date":
                     request.form.get(
                         f"required_date_{row}"
                     ),
-
 
 
                 "remark":
@@ -276,25 +236,25 @@ def submit_requisition():
             row += 1
 
 
-
-
+        # =====================================================
+        # CLOSE DATABASE CONNECTION
+        # =====================================================
 
         cursor.close()
         conn.close()
 
 
-
-
-        # ===============================
+        # =====================================================
         # SAVE REQUISITION
-        # ===============================
-
+        # =====================================================
 
         result = create_requisition(
 
             user_id,
 
             department_id,
+
+            department_budget_id,
 
             submission_date,
 
@@ -303,46 +263,32 @@ def submit_requisition():
         )
 
 
-
-
-
-        # ===============================
-        # SUCCESS
-        # ===============================
-
+        # =====================================================
+        # SUCCESS / ERROR
+        # =====================================================
 
         if result["success"]:
 
-
             session["success_alert"] = (
 
-                f"Requisition {result['prs_no']} "
+                f"Requisition "
+                f"{result['prs_no']} "
                 "created successfully!"
 
             )
 
-
         else:
 
-
             session["error_alert"] = (
-
                 result["message"]
-
             )
 
 
-
-
-
-
-        # ===============================
+        # =====================================================
         # REDIRECT
-        # ===============================
-
+        # =====================================================
 
         if user_role == "employee":
-
 
             return redirect(
                 url_for(
@@ -351,9 +297,7 @@ def submit_requisition():
             )
 
 
-
         elif user_role == "hod":
-
 
             return redirect(
                 url_for(
@@ -362,9 +306,7 @@ def submit_requisition():
             )
 
 
-
         elif user_role == "procurement":
-
 
             return redirect(
                 url_for(
@@ -373,9 +315,7 @@ def submit_requisition():
             )
 
 
-
         else:
-
 
             return redirect(
                 url_for(
@@ -384,12 +324,7 @@ def submit_requisition():
             )
 
 
-
-
-
-
     except Exception as e:
-
 
         print(
             "SUBMIT REQUISITION ERROR:",
@@ -398,14 +333,14 @@ def submit_requisition():
 
 
         session["error_alert"] = (
-            "System error occurred while creating requisition"
+            "System error occurred while "
+            "creating requisition"
         )
-
 
 
         return redirect(
             url_for(
-                "maindashboard.home"
+                "hod_dashboard.hod_dashboard"
             )
         )
 
@@ -413,81 +348,49 @@ def submit_requisition():
 
 
 
-# =====================================================
-# REQUISITION API
-# =====================================================
-
-
 @requisition_bp.route(
-    "/api/<int:requisition_id>"
+    "/api/budget/department/<int:department_id>",
+    methods=["GET"]
 )
-def requisition_api(requisition_id):
+def get_department_budget_items(department_id):
 
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
 
     try:
 
+        cursor.execute("""
+            SELECT
+                department_budget_id,
+                budget_item
+            FROM department_budget
+            WHERE department_id = %s
+            ORDER BY budget_item ASC
+        """, (
+            department_id,
+        ))
 
-        requisition = get_requisition_by_id(
-            requisition_id
-        )
-
-
-        if not requisition:
-
-
-            return jsonify({
-
-                "success":False,
-
-                "message":
-                "Requisition not found"
-
-            }),404
-
-
-
-
-
-        items = get_requisition_items(
-            requisition_id
-        )
-
-
-        approvals = get_requisition_approvals(
-            requisition_id
-        )
-
-
+        budgets = cursor.fetchall()
 
         return jsonify({
-
-            "success":True,
-
-            "requisition":requisition,
-
-            "items":items,
-
-            "approvals":approvals
-
+            "success": True,
+            "data": budgets
         })
-
-
-
 
     except Exception as e:
 
-
         print(
-            "REQUISITION API ERROR:",
+            "Error loading department budgets:",
             e
         )
 
-
         return jsonify({
+            "success": False,
+            "message": "Failed to load department budgets.",
+            "error": str(e)
+        }), 500
 
-            "success":False,
+    finally:
 
-            "message":
-            "Server error"
-
-        }),500
+        cursor.close()
+        conn.close()

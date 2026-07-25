@@ -198,3 +198,374 @@ function cancelRequisition() {
     // Show requisition list
     document.getElementById("requisitionList").style.display = "block";
 }
+
+
+
+// ==========================================================
+// LOAD DEPARTMENTS
+// ==========================================================
+
+async function loadRequisitionDepartments() {
+
+    const departmentSelect =
+        document.getElementById("department");
+
+
+    try {
+
+        const response =
+            await fetch("/hod/api/departments");
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Departments Response:",
+            result
+        );
+
+
+        if (!result.success) {
+
+            throw new Error(
+                result.message ||
+                "Failed to load departments"
+            );
+
+        }
+
+
+        departmentSelect.innerHTML = `
+            <option value="">
+                Select Department
+            </option>
+        `;
+
+
+        result.data.forEach(department => {
+
+            const option =
+                document.createElement("option");
+
+
+            option.value =
+                department.department_id;
+
+
+            option.textContent =
+                department.department_name;
+
+
+            departmentSelect.appendChild(
+                option
+            );
+
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Error loading departments:",
+            error
+        );
+
+    }
+
+}
+
+
+
+
+
+
+
+
+// ==========================================================
+// LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
+// ==========================================================
+
+// ==========================================================
+// LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
+// ==========================================================
+// ==========================================================
+// LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
+// ==========================================================
+
+async function loadBudgetItemsForDepartment(departmentId) {
+
+    const budgetItemSelect =
+        document.getElementById("budgetItem");
+
+
+    // ======================================================
+    // CHECK BUDGET ITEM SELECT EXISTS
+    // ======================================================
+
+    if (!budgetItemSelect) {
+
+        console.error(
+            "Budget Item select element not found."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // NO DEPARTMENT SELECTED
+    // ======================================================
+
+    if (!departmentId) {
+
+        budgetItemSelect.innerHTML = `
+            <option value="">
+                Select Department First
+            </option>
+        `;
+
+        budgetItemSelect.disabled = true;
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SHOW LOADING
+    // ======================================================
+
+    budgetItemSelect.innerHTML = `
+        <option value="">
+            Loading Budget Items...
+        </option>
+    `;
+
+    budgetItemSelect.disabled = true;
+
+
+    try {
+
+        // ==================================================
+        // AJAX REQUEST
+        // ==================================================
+
+        const response = await fetch(
+            `/hod/api/budget/department/${departmentId}`
+        );
+
+
+        console.log(
+            "Budget API HTTP Status:",
+            response.status
+        );
+
+
+        // ==================================================
+        // CONVERT RESPONSE TO JSON
+        // ==================================================
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Department Budget Response:",
+            result
+        );
+
+
+        // ==================================================
+        // CHECK RESPONSE
+        // ==================================================
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Failed to load budget items."
+            );
+
+        }
+
+
+        // ==================================================
+        // CLEAR OLD BUDGET ITEMS
+        // ==================================================
+
+        budgetItemSelect.innerHTML = `
+            <option value="">
+                Select Budget Item
+            </option>
+        `;
+
+
+        // ==================================================
+        // CHECK IF BUDGET ITEMS EXIST
+        // ==================================================
+
+        if (
+            !result.data ||
+            result.data.length === 0
+        ) {
+
+            budgetItemSelect.innerHTML = `
+                <option value="">
+                    No Budget Items Available
+                </option>
+            `;
+
+            budgetItemSelect.disabled = true;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // ADD BUDGET ITEMS
+        // ==================================================
+
+        result.data.forEach(
+            budget => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                // ==================================================
+                // VALUE SENT TO FLASK
+                // ==================================================
+
+                option.value =
+                    budget.department_budget_id;
+
+
+                // ==================================================
+                // TEXT DISPLAYED TO USER
+                // ==================================================
+
+                option.textContent =
+                    budget.budget_item;
+
+
+                // ==================================================
+                // ADD TO DROPDOWN
+                // ==================================================
+
+                budgetItemSelect.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        // ==================================================
+        // ENABLE BUDGET ITEM DROPDOWN
+        // ==================================================
+
+        budgetItemSelect.disabled = false;
+
+
+    } catch (error) {
+
+        console.error(
+            "Budget Item AJAX Error:",
+            error
+        );
+
+
+        budgetItemSelect.innerHTML = `
+            <option value="">
+                Failed to Load Budget Items
+            </option>
+        `;
+
+        budgetItemSelect.disabled = true;
+
+    }
+
+}
+
+
+
+// ==========================================================
+// INITIALIZE DEPARTMENT AND BUDGET ITEM AJAX
+// ==========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        // ==================================================
+        // GET DEPARTMENT SELECT
+        // ==================================================
+
+        const departmentSelect =
+            document.getElementById(
+                "department"
+            );
+
+
+        // ==================================================
+        // CHECK DEPARTMENT SELECT EXISTS
+        // ==================================================
+
+        if (!departmentSelect) {
+
+            console.error(
+                "Department select element not found."
+            );
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // LOAD DEPARTMENTS
+        // ==================================================
+
+        loadRequisitionDepartments();
+
+
+        // ==================================================
+        // DEPARTMENT CHANGE EVENT
+        // ==================================================
+
+        departmentSelect.addEventListener(
+            "change",
+            function() {
+
+                const departmentId =
+                    this.value;
+
+
+                console.log(
+                    "Selected Department ID:",
+                    departmentId
+                );
+
+
+                // ==================================================
+                // LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
+                // ==================================================
+
+                loadBudgetItemsForDepartment(
+                    departmentId
+                );
+
+            }
+        );
+
+    }
+);
