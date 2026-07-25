@@ -1376,3 +1376,1402 @@ def get_all_department_budgets():
         if conn:
 
             conn.close()
+
+
+# ============================================================
+# GET LOGGED-IN USER DEPARTMENT INFORMATION
+# ============================================================
+
+def get_hod_department(cursor):
+
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+
+    cursor.execute("""
+        SELECT
+
+            d.department_id,
+
+            d.department_name
+
+        FROM users u
+
+        INNER JOIN departments d
+
+            ON TRIM(
+                LOWER(u.department)
+            )
+            =
+            TRIM(
+                LOWER(d.department_name)
+            )
+
+        WHERE u.user_id = %s
+
+        LIMIT 1
+
+    """, (user_id,))
+
+
+    return cursor.fetchone()
+
+
+# ============================================================
+# HOD DASHBOARD SUMMARY
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard_summary",
+    methods=["GET"]
+)
+def dashboard_summary():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        # ====================================================
+        # DATABASE CONNECTION
+        # ====================================================
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET DEPARTMENT OF LOGGED-IN USER
+        # ====================================================
+
+        department = get_hod_department(
+            cursor
+        )
+
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Logged-in user department could not be determined.",
+
+                "total_prs": 0,
+
+                "pending_prs": 0,
+
+                "approved_prs": 0,
+
+                "rejected_prs": 0
+
+            }), 400
+
+
+        # ====================================================
+        # STORE DEPARTMENT INFORMATION
+        # ====================================================
+
+        department_id = department[
+            "department_id"
+        ]
+
+        department_name = department[
+            "department_name"
+        ]
+
+
+        # ====================================================
+        # TOTAL PRS
+        #
+        # Counts only PRS belonging to the logged-in
+        # user's department.
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                COUNT(*) AS total_prs
+
+            FROM requisitions r
+
+            WHERE r.department_id = %s
+
+        """, (
+            department_id,
+        ))
+
+
+        total_prs = (
+            cursor.fetchone()[
+                "total_prs"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # PENDING PRS
+        #
+        # Status comes from approvals.final_status
+        #
+        # If there is no approval record yet,
+        # it is treated as PENDING.
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                COUNT(*) AS pending_prs
+
+            FROM requisitions r
+
+            LEFT JOIN approvals a
+
+                ON a.module_name = 'PRS'
+
+                AND a.document_id =
+                    r.requisition_id
+
+            WHERE r.department_id = %s
+
+            AND COALESCE(
+                a.final_status,
+                'PENDING'
+            ) = 'PENDING'
+
+        """, (
+            department_id,
+        ))
+
+
+        pending_prs = (
+            cursor.fetchone()[
+                "pending_prs"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # APPROVED PRS
+        #
+        # Status comes from approvals.final_status
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                COUNT(*) AS approved_prs
+
+            FROM requisitions r
+
+            INNER JOIN approvals a
+
+                ON a.module_name = 'PRS'
+
+                AND a.document_id =
+                    r.requisition_id
+
+            WHERE r.department_id = %s
+
+            AND a.final_status = 'APPROVED'
+
+        """, (
+            department_id,
+        ))
+
+
+        approved_prs = (
+            cursor.fetchone()[
+                "approved_prs"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # REJECTED PRS
+        #
+        # Status comes from approvals.final_status
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                COUNT(*) AS rejected_prs
+
+            FROM requisitions r
+
+            INNER JOIN approvals a
+
+                ON a.module_name = 'PRS'
+
+                AND a.document_id =
+                    r.requisition_id
+
+            WHERE r.department_id = %s
+
+            AND a.final_status = 'REJECTED'
+
+        """, (
+            department_id,
+        ))
+
+
+        rejected_prs = (
+            cursor.fetchone()[
+                "rejected_prs"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # RETURN DASHBOARD SUMMARY
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "department_id":
+                department_id,
+
+            "department_name":
+                department_name,
+
+            "total_prs":
+                total_prs,
+
+            "pending_prs":
+                pending_prs,
+
+            "approved_prs":
+                approved_prs,
+
+            "rejected_prs":
+                rejected_prs
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "HOD Dashboard Summary Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                str(e),
+
+            "total_prs": 0,
+
+            "pending_prs": 0,
+
+            "approved_prs": 0,
+
+            "rejected_prs": 0
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+        if connection:
+
+            connection.close()
+
+
+
+
+
+# ============================================================
+# HOD BUDGET KPI API
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard_budget_summary",
+    methods=["GET"]
+)
+def dashboard_budget_summary():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        # ====================================================
+        # DATABASE CONNECTION
+        # ====================================================
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN USER DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(
+            cursor
+        )
+
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Logged-in user's department could not be determined.",
+
+                "total_budget_allocated": 0,
+
+                "amount_spent": 0,
+
+                "budget_balance": 0,
+
+                "department_budget": 0
+
+            }), 400
+
+
+        # ====================================================
+        # DEPARTMENT INFORMATION
+        # ====================================================
+
+        department_id = department[
+            "department_id"
+        ]
+
+        department_name = department[
+            "department_name"
+        ]
+
+
+        # ====================================================
+        # 1. TOTAL BUDGET ALLOCATED
+        #
+        # SOURCE:
+        # company_budget
+        #
+        # Uses:
+        # allocated_amount
+        #
+        # Only the logged-in user's department
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                COALESCE(
+                    SUM(cb.allocated_amount),
+                    0
+                ) AS total_budget_allocated
+
+            FROM company_budget cb
+
+            WHERE cb.department_id = %s
+
+        """, (
+            department_id,
+        ))
+
+
+        budget_row = cursor.fetchone()
+
+
+        total_budget_allocated = (
+            budget_row[
+                "total_budget_allocated"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # 2. DEPARTMENT BUDGET
+        #
+        # SOURCE:
+        # department_budget
+        #
+        # This represents the total of individual
+        # department budget items.
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                COALESCE(
+                    SUM(db.total_budget),
+                    0
+                ) AS department_budget
+
+            FROM department_budget db
+
+            WHERE db.department_id = %s
+
+        """, (
+            department_id,
+        ))
+
+
+        department_budget_row = cursor.fetchone()
+
+
+        department_budget = (
+            department_budget_row[
+                "department_budget"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # 3. AMOUNT SPENT
+        #
+        # SOURCE:
+        # purchase_orders
+        #
+        # Linked through requisitions.
+        #
+        # Only POs belonging to the logged-in
+        # user's department are counted.
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                COALESCE(
+                    SUM(po.total_amount),
+                    0
+                ) AS amount_spent
+
+            FROM purchase_orders po
+
+            INNER JOIN requisitions r
+                ON po.requisition_id =
+                   r.requisition_id
+
+            WHERE r.department_id = %s
+
+            AND po.status IN (
+                'Approved',
+                'Delivered'
+            )
+
+        """, (
+            department_id,
+        ))
+
+
+        spent_row = cursor.fetchone()
+
+
+        amount_spent = (
+            spent_row[
+                "amount_spent"
+            ]
+            or 0
+        )
+
+
+        # ====================================================
+        # 4. BUDGET BALANCE
+        #
+        # Total Company Budget Allocated
+        # MINUS
+        # Amount Spent
+        # ====================================================
+
+        budget_balance = (
+
+            float(
+                total_budget_allocated
+            )
+
+            -
+
+            float(
+                amount_spent
+            )
+
+        )
+
+
+        # ====================================================
+        # RETURN KPI DATA
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "department_id":
+                department_id,
+
+            "department_name":
+                department_name,
+
+            "total_budget_allocated":
+                float(
+                    total_budget_allocated
+                ),
+
+            "amount_spent":
+                float(
+                    amount_spent
+                ),
+
+            "budget_balance":
+                budget_balance,
+
+            "department_budget":
+                float(
+                    department_budget
+                )
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "HOD Budget Dashboard Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                str(e),
+
+            "total_budget_allocated": 0,
+
+            "amount_spent": 0,
+
+            "budget_balance": 0,
+
+            "department_budget": 0
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+# ============================================================
+# RECENT DOCUMENTS
+# ============================================================
+# ============================================================
+# RECENT DOCUMENTS API
+# ============================================================
+@hod_dashboard_view_bp.route(
+    "/recent_documents",
+    methods=["GET"]
+)
+def recent_documents():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN USER DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(cursor)
+
+        if not department:
+
+            return jsonify([])
+
+
+        department_id = department[
+            "department_id"
+        ]
+
+
+        # ====================================================
+        # GET RECENT PRS
+        # ONLY FOR LOGGED-IN USER'S DEPARTMENT
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                r.requisition_id,
+
+                r.prs_no AS document_no,
+
+                d.department_name AS department,
+
+                'PRS' AS module,
+
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS status,
+
+                r.submission_date AS date
+
+            FROM requisitions r
+
+            INNER JOIN departments d
+
+                ON r.department_id =
+                   d.department_id
+
+            LEFT JOIN approvals a
+
+                ON a.document_id =
+                   r.requisition_id
+
+                AND a.module_name = 'PRS'
+
+            WHERE r.department_id = %s
+
+            ORDER BY
+                r.created_at DESC
+
+            LIMIT 10
+
+        """, (
+            department_id,
+        ))
+
+
+        documents = cursor.fetchall()
+
+
+        return jsonify(documents)
+
+
+    except Exception as e:
+
+        print(
+            "Recent Documents Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+
+# ============================================================
+# MONTHLY PRS DASHBOARD CHART
+# ============================================================
+@hod_dashboard_view_bp.route(
+    "/dashboard/monthly",
+    methods=["GET"]
+)
+def dashboard_monthly():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN USER DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(cursor)
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "labels": [],
+
+                "values": []
+
+            })
+
+
+        department_id = department[
+            "department_id"
+        ]
+
+
+        # ====================================================
+        # MONTHLY PRS FOR LOGGED-IN DEPARTMENT
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                MONTH(
+                    r.submission_date
+                ) AS month_number,
+
+                MONTHNAME(
+                    r.submission_date
+                ) AS month_name,
+
+                COUNT(
+                    r.requisition_id
+                ) AS total
+
+            FROM requisitions r
+
+            WHERE r.department_id = %s
+
+            AND YEAR(
+                r.submission_date
+            ) = YEAR(
+                CURDATE()
+            )
+
+            GROUP BY
+
+                MONTH(
+                    r.submission_date
+                ),
+
+                MONTHNAME(
+                    r.submission_date
+                )
+
+            ORDER BY
+
+                MONTH(
+                    r.submission_date
+                )
+
+        """, (
+            department_id,
+        ))
+
+
+        rows = cursor.fetchall()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "labels": [
+                row["month_name"]
+                for row in rows
+            ],
+
+            "values": [
+                int(row["total"] or 0)
+                for row in rows
+            ]
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Monthly Chart Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e),
+
+            "labels": [],
+
+            "values": []
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+
+
+            
+# ============================================================
+# HOD DEPARTMENT REQUESTS CHART
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard/departments",
+    methods=["GET"]
+)
+def dashboard_departments():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN HOD DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(cursor)
+
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "labels": [],
+
+                "values": []
+
+            })
+
+
+        department_id = \
+            department["department_id"]
+
+
+        # ====================================================
+        # COUNT PRS FOR LOGGED-IN HOD DEPARTMENT
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                d.department_name
+                    AS department,
+
+                COUNT(
+                    r.requisition_id
+                ) AS total
+
+            FROM departments d
+
+            LEFT JOIN requisitions r
+
+                ON d.department_id =
+                   r.department_id
+
+            WHERE d.department_id = %s
+
+            GROUP BY
+
+                d.department_id,
+
+                d.department_name
+
+        """, (department_id,))
+
+
+        rows = cursor.fetchall()
+
+
+        labels = []
+
+        values = []
+
+
+        for row in rows:
+
+            labels.append(
+                row["department"]
+            )
+
+            values.append(
+                row["total"]
+            )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "labels": labels,
+
+            "values": values
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Department Chart Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e),
+
+            "labels": [],
+
+            "values": []
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+
+
+
+# ============================================================
+# HOD DASHBOARD NOTIFICATIONS
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard_notifications",
+    methods=["GET"]
+)
+def dashboard_notifications():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        user_id = session.get(
+            "user_id"
+        )
+
+
+        if not user_id:
+
+            return jsonify([])
+
+
+        cursor.execute("""
+            SELECT
+
+                notification_id,
+
+                'HOD Notification'
+                    AS title,
+
+                message,
+
+                status,
+
+                created_at
+
+            FROM notifications
+
+            WHERE user_id = %s
+
+            ORDER BY created_at DESC
+
+            LIMIT 10
+
+        """, (user_id,))
+
+
+        notifications = cursor.fetchall()
+
+
+        return jsonify(
+            notifications
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Notifications Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+
+
+# ============================================================
+# DOCUMENT STATUS CHART
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard/status",
+    methods=["GET"]
+)
+def dashboard_status():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN HOD DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(cursor)
+
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "approved": 0,
+
+                "pending": 0,
+
+                "rejected": 0
+
+            })
+
+
+        department_id = \
+            department["department_id"]
+
+
+        # ====================================================
+        # GET ALL STATUS COUNTS IN ONE QUERY
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                SUM(
+                    status = 'Completed'
+                ) AS approved,
+
+                SUM(
+                    status = 'Pending'
+                ) AS pending,
+
+                SUM(
+                    status = 'Rejected'
+                ) AS rejected
+
+            FROM requisitions
+
+            WHERE department_id = %s
+
+        """, (department_id,))
+
+
+        result = cursor.fetchone()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "approved":
+                result["approved"] or 0,
+
+            "pending":
+                result["pending"] or 0,
+
+            "rejected":
+                result["rejected"] or 0
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Status Chart Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e),
+
+            "approved": 0,
+
+            "pending": 0,
+
+            "rejected": 0
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()
+
+
+
+
+
+
+# ============================================================
+# PURCHASE ORDERS PER MONTH
+# ============================================================
+
+@hod_dashboard_view_bp.route(
+    "/dashboard/suppliers",
+    methods=["GET"]
+)
+def dashboard_suppliers():
+
+    connection = None
+    cursor = None
+
+    try:
+
+        connection = get_db_connection()
+
+        cursor = connection.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN HOD DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(cursor)
+
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "labels": [],
+
+                "values": []
+
+            })
+
+
+        department_id = \
+            department["department_id"]
+
+
+        # ====================================================
+        # PURCHASE ORDERS FOR HOD DEPARTMENT
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                MONTH(
+                    po.order_date
+                ) AS month_number,
+
+                MONTHNAME(
+                    po.order_date
+                ) AS month_name,
+
+                COUNT(
+                    po.purchase_order_id
+                ) AS total
+
+            FROM purchase_orders po
+
+            INNER JOIN requisitions r
+
+                ON po.requisition_id =
+                   r.requisition_id
+
+            WHERE r.department_id = %s
+
+            AND YEAR(
+                po.order_date
+            ) = YEAR(
+                CURDATE()
+            )
+
+            GROUP BY
+
+                MONTH(
+                    po.order_date
+                ),
+
+                MONTHNAME(
+                    po.order_date
+                )
+
+            ORDER BY
+
+                MONTH(
+                    po.order_date
+                )
+
+        """, (department_id,))
+
+
+        rows = cursor.fetchall()
+
+
+        labels = []
+
+        values = []
+
+
+        for row in rows:
+
+            labels.append(
+                row["month_name"]
+            )
+
+            values.append(
+                row["total"]
+            )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "labels":
+                labels,
+
+            "values":
+                values
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Purchase Order Chart Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e),
+
+            "labels": [],
+
+            "values": []
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if connection:
+            connection.close()

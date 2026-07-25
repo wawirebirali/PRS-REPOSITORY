@@ -7,149 +7,295 @@ procurement_dashboard_bp = Blueprint("procurement_dashboard", __name__)
 # =========================
 # DASHBOARD PAGE
 # =========================
+
 @procurement_dashboard_bp.route("/", methods=["GET"])
 def procurement_dashboard():
 
+    # =====================================================
+    # CHECK PROCUREMENT LOGIN
+    # =====================================================
+
     if session.get("user_role") != "procurement":
-        return redirect(url_for("auth.login"))
+
+        return redirect(
+            url_for("auth.login")
+        )
 
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
 
-    # ===============================
-    # LOAD REQUISITIONS FOR QRF
-    # ===============================
+    try:
 
-    cursor.execute("""
-        SELECT 
-            requisition_id,
-            prs_no
-        FROM requisitions
-        WHERE status != 'REJECTED'
-        ORDER BY requisition_id DESC
-    """)
+        conn = get_db_connection()
 
-    requisitions = cursor.fetchall()
+        cursor = conn.cursor(
+            dictionary=True
+        )
 
 
+        # =====================================================
+        # LOAD REQUISITIONS FOR QRF
+        #
+        # USE approvals.final_status
+        #
+        # Only PRS requisitions that are NOT rejected
+        # are loaded.
+        # =====================================================
 
-    # ===============================
-    # LOAD SUPPLIERS
-    # ===============================
+        cursor.execute("""
+            SELECT
 
-    cursor.execute("""
-        SELECT
-            supplier_id,
-            supplier_name
-        FROM suppliers
-        ORDER BY supplier_name
-    """)
+                r.requisition_id,
 
-    suppliers = cursor.fetchall()
+                r.prs_no,
 
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS final_status
 
+            FROM requisitions r
 
-    # ===============================
-    # LOAD PURCHASE ORDERS
-    # ===============================
+            LEFT JOIN approvals a
 
-    cursor.execute("""
-        SELECT
-            purchase_order_id,
-            po_number
-        FROM purchase_orders
-        ORDER BY purchase_order_id DESC
-    """)
+                ON a.module_name = 'PRS'
 
-    pos = cursor.fetchall()
+                AND a.document_id =
+                    r.requisition_id
 
+            WHERE COALESCE(
+                a.final_status,
+                'PENDING'
+            ) != 'REJECTED'
 
+            ORDER BY
+                r.requisition_id DESC
 
-    # ===============================
-    # LOAD QUOTATIONS
-    # ===============================
+        """)
 
-    cursor.execute("""
-        SELECT
-            quotation_id,
-            quotation_no
-        FROM quotations
-        ORDER BY quotation_id DESC
-    """)
-
-    quotations = cursor.fetchall()
+        requisitions = cursor.fetchall()
 
 
-    cursor.execute("""
-        SELECT 
-            qrf_id,
-            qrf_no
-        FROM quotation_requests
-        ORDER BY qrf_id DESC
-    """)
+        # =====================================================
+        # LOAD SUPPLIERS
+        # =====================================================
 
-    qrfs = cursor.fetchall()
+        cursor.execute("""
+            SELECT
+
+                supplier_id,
+
+                supplier_name
+
+            FROM suppliers
+
+            ORDER BY
+                supplier_name
+
+        """)
+
+        suppliers = cursor.fetchall()
 
 
+        # =====================================================
+        # LOAD PURCHASE ORDERS
+        # =====================================================
 
-    cursor.close()
-    conn.close()
+        cursor.execute("""
+            SELECT
+
+                purchase_order_id,
+
+                po_number
+
+            FROM purchase_orders
+
+            ORDER BY
+                purchase_order_id DESC
+
+        """)
+
+        pos = cursor.fetchall()
 
 
+        # =====================================================
+        # LOAD QUOTATIONS
+        # =====================================================
 
-    return render_template(
-        "procurement_dashboard.html",
+        cursor.execute("""
+            SELECT
 
-        requisitions=requisitions,
+                quotation_id,
 
-        suppliers=suppliers,
+                quotation_no
 
-        pos=pos,
+            FROM quotations
 
-        quotations=quotations,
+            ORDER BY
+                quotation_id DESC
 
-        qrfs=qrfs
-        
+        """)
 
-    )
+        quotations = cursor.fetchall()
+
+
+        # =====================================================
+        # LOAD QUOTATION REQUESTS
+        # =====================================================
+
+        cursor.execute("""
+            SELECT
+
+                qrf_id,
+
+                qrf_no
+
+            FROM quotation_requests
+
+            ORDER BY
+                qrf_id DESC
+
+        """)
+
+        qrfs = cursor.fetchall()
+
+
+        # =====================================================
+        # RENDER PROCUREMENT DASHBOARD
+        # =====================================================
+
+        return render_template(
+
+            "procurement_dashboard.html",
+
+            requisitions=requisitions,
+
+            suppliers=suppliers,
+
+            pos=pos,
+
+            quotations=quotations,
+
+            qrfs=qrfs
+
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Procurement Dashboard Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load Procurement Dashboard.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+        if conn:
+
+            conn.close()
+
+
+            
 @procurement_dashboard_bp.route("/api/procurement_requisition")
 def procurement_requisition():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
-    cursor.execute("""
-        SELECT 
-            r.requisition_id,
-            r.prs_no,
-            d.department_name,
-            r.submission_date,
-            r.status,
-            COALESCE(a.hod_status, 'PENDING') AS hod_status,
-            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
-            COALESCE(a.final_status, 'PENDING') AS final_status
+    try:
 
-        FROM requisitions r
+        conn = get_db_connection()
 
-        JOIN departments d 
-            ON r.department_id = d.department_id
+        cursor = conn.cursor(dictionary=True)
 
-        LEFT JOIN approvals a 
-            ON a.module_name = 'PRS'
-            AND a.document_id = r.requisition_id
+        cursor.execute("""
+            SELECT 
 
-        ORDER BY r.requisition_id DESC
-    """)
+                r.requisition_id,
 
-    data = cursor.fetchall()
+                r.prs_no,
 
-    cursor.close()
-    conn.close()
+                d.department_name,
 
-    return jsonify(data)
+                r.submission_date,
 
+                -- FINAL STATUS FROM APPROVALS TABLE
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS final_status,
+
+                -- NUMBER OF DAYS SINCE SUBMISSION
+                DATEDIFF(
+                    CURRENT_DATE,
+                    DATE(r.submission_date)
+                ) AS due
+
+            FROM requisitions r
+
+            INNER JOIN departments d
+                ON r.department_id =
+                   d.department_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'PRS'
+                AND a.document_id =
+                    r.requisition_id
+
+            ORDER BY
+                r.requisition_id DESC
+
+        """)
+
+        data = cursor.fetchall()
+
+        return jsonify(data)
+
+    except Exception as e:
+
+        print(
+            "Procurement Requisition API Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load procurement requisitions.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 # =========================
 # PRS DETAILS API (AJAX)
 # =========================

@@ -271,6 +271,86 @@
         </div>
 
 
+
+        <!-- ======================================
+                TOTAL BUDGET ALLOCATED
+        ======================================= -->
+
+        <div class="kpi-card purple">
+
+            <div class="kpi-icon">
+                💰
+            </div>
+
+            <div>
+
+                <h4>
+                    Total Budget Allocated
+                </h4>
+
+                <h2 id="totalBudgetAllocated">
+                    UGX 0
+                </h2>
+
+            </div>
+
+        </div>
+
+        <!-- ======================================
+            AMOUNT SPENT
+    ======================================= -->
+
+        <div class="kpi-card blue">
+
+            <div class="kpi-icon">
+                💸
+            </div>
+
+            <div>
+
+                <h4>
+                    Amount Spent
+                </h4>
+
+                <h2 id="amountSpent">
+                    UGX 0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+         <!-- ======================================
+            BUDGET BALANCE
+    ======================================= -->
+
+            <div class="kpi-card green">
+
+                <div class="kpi-icon">
+                    💵
+                </div>
+
+                <div>
+
+                    <h4>
+                        Budget Balance
+                    </h4>
+
+                    <h2 id="budgetBalance">
+                        UGX 0
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
         <div class="kpi-card purple">
 
             <div class="kpi-icon">
@@ -1460,6 +1540,23 @@
 
                     <div class="form-row">
 
+                        <div>
+
+                            <label for="prs_no">
+                                PRS Number
+                            </label>
+
+                            <input
+                            type="text"
+                            id="prs_no"
+                            name="prs_no"
+                            readonly
+                            placeholder="Generating PRS Number..."
+                        >
+
+
+                        </div>
+
 
 
                         <div>
@@ -1490,18 +1587,15 @@
                                 Budget Item
                             </label>
 
-                            <select
-                                id="budgetItem"
+                           <select
+                                id="departmentBudgetItem"
                                 name="department_budget_id"
                                 required
-                                disabled>
-
+                            >
                                 <option value="">
-                                    Select Department First
+                                    Select Budget Item
                                 </option>
-
                             </select>
-
                         </div>
 
 

@@ -25,6 +25,8 @@ function loadDashboard() {
 
     loadDashboardSummary();
 
+    loadBudgetSummary();
+
     loadRecentDocuments();
 
     loadNotifications();
@@ -128,36 +130,302 @@ function animateKPIs() {
 // ================================================
 // DASHBOARD SUMMARY
 // ================================================
+// ============================================================
+// LOAD HOD DASHBOARD SUMMARY
+// ============================================================
 
 function loadDashboardSummary() {
 
     fetch("/hod/dashboard_summary")
 
-    .then(response => response.json())
+        .then(response => {
 
-    .then(data => {
+            if (!response.ok) {
 
-        document.getElementById("totalPRS").innerText =
-            data.total_prs || 0;
+                throw new Error(
+                    "Failed to load dashboard summary"
+                );
 
-        document.getElementById("pendingPRS").innerText =
-            data.pending_prs || 0;
+            }
 
-        document.getElementById("approvedPRS").innerText =
-            data.approved_prs || 0;
+            return response.json();
 
-        document.getElementById("rejectedPRS").innerText =
-            data.rejected_prs || 0;
+        })
 
-        animateKPIs();
+        .then(data => {
 
-    })
+            console.log(
+                "HOD Dashboard Summary:",
+                data
+            );
 
-    .catch(error => {
 
-        console.error(error);
+            // ==========================================
+            // TOTAL REQUISITIONS
+            // ==========================================
 
-    });
+            const totalRequisitions =
+                document.getElementById(
+                    "totalRequisitions"
+                );
+
+            if (totalRequisitions) {
+
+                totalRequisitions.innerText =
+                    data.total_prs || 0;
+
+            }
+
+
+            // ==========================================
+            // PENDING APPROVALS
+            // ==========================================
+
+            const pendingApprovals =
+                document.getElementById(
+                    "pendingApprovals"
+                );
+
+            if (pendingApprovals) {
+
+                pendingApprovals.innerText =
+                    data.pending_prs || 0;
+
+            }
+
+
+            // ==========================================
+            // APPROVED
+            // ==========================================
+
+            const approvedCount =
+                document.getElementById(
+                    "approvedCount"
+                );
+
+            if (approvedCount) {
+
+                approvedCount.innerText =
+                    data.approved_prs || 0;
+
+            }
+
+
+            // ==========================================
+            // REJECTED
+            // ==========================================
+
+            const rejectedCount =
+                document.getElementById(
+                    "rejectedCount"
+                );
+
+            if (rejectedCount) {
+
+                rejectedCount.innerText =
+                    data.rejected_prs || 0;
+
+            }
+
+
+            // ==========================================
+            // DISPLAY DEPARTMENT
+            // OPTIONAL
+            // ==========================================
+
+            const departmentName =
+                document.getElementById(
+                    "departmentName"
+                );
+
+            if (departmentName) {
+
+                departmentName.innerText =
+                    data.department_name || "";
+
+            }
+
+
+            // ==========================================
+            // ANIMATE KPI NUMBERS
+            // ==========================================
+
+            animateKPIs();
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                "Dashboard Summary Error:",
+                error
+            );
+
+        });
+
+}
+
+
+
+// ============================================================
+// LOAD HOD BUDGET KPI SUMMARY
+// ============================================================
+// ==========================================================
+// LOAD HOD BUDGET SUMMARY
+// ==========================================================
+
+async function loadBudgetSummary() {
+
+    console.log(
+        "Loading HOD Budget Summary..."
+    );
+
+    try {
+
+        const response = await fetch(
+            "/hod/dashboard_budget_summary"
+        );
+
+        console.log(
+            "Budget Summary Status:",
+            response.status
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+        const data =
+            await response.json();
+
+        console.log(
+            "HOD Budget Summary:",
+            data
+        );
+
+
+        if (!data.success) {
+
+            console.error(
+                "Budget Summary Error:",
+                data.message ||
+                data.error
+            );
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // TOTAL BUDGET ALLOCATED
+        // ==================================================
+
+        const totalBudgetElement =
+            document.getElementById(
+                "totalBudgetAllocated"
+            );
+
+        if (totalBudgetElement) {
+
+            totalBudgetElement.textContent =
+                "UGX " +
+                Number(
+                    data.total_budget_allocated || 0
+                ).toLocaleString();
+
+        }
+
+
+        // ==================================================
+        // AMOUNT SPENT
+        // ==================================================
+
+        const amountSpentElement =
+            document.getElementById(
+                "amountSpent"
+            );
+
+        if (amountSpentElement) {
+
+            amountSpentElement.textContent =
+                "UGX " +
+                Number(
+                    data.amount_spent || 0
+                ).toLocaleString();
+
+        }
+
+
+        // ==================================================
+        // BUDGET BALANCE
+        // ==================================================
+
+        const budgetBalanceElement =
+            document.getElementById(
+                "budgetBalance"
+            );
+
+        if (budgetBalanceElement) {
+
+            budgetBalanceElement.textContent =
+                "UGX " +
+                Number(
+                    data.budget_balance || 0
+                ).toLocaleString();
+
+        }
+
+
+        // ==================================================
+        // DEPARTMENT BUDGET
+        // ==================================================
+
+        const departmentBudgetElement =
+            document.getElementById(
+                "departmentBudget"
+            );
+
+        if (departmentBudgetElement) {
+
+            departmentBudgetElement.textContent =
+                "UGX " +
+                Number(
+                    data.department_budget || 0
+                ).toLocaleString();
+
+        }
+
+
+        // ==================================================
+        // OPTIONAL: DISPLAY DEPARTMENT NAME
+        // ==================================================
+
+        console.log(
+            "Department:",
+            data.department_name
+        );
+
+        console.log(
+            "Department ID:",
+            data.department_id
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to load HOD Budget Summary:",
+            error
+        );
+
+    }
 
 }
 
@@ -165,67 +433,240 @@ function loadDashboardSummary() {
 // ================================================
 // RECENT DOCUMENTS
 // ================================================
+// ==========================================================
+// LOAD RECENT DOCUMENTS
+// ==========================================================
 
 function loadRecentDocuments() {
 
     fetch("/hod/recent_documents")
 
-    .then(response => response.json())
+        .then(response => {
 
-    .then(data => {
+            if (!response.ok) {
 
-        const body =
-            document.getElementById("recentDocuments");
+                throw new Error(
+                    "HTTP Error: " +
+                    response.status
+                );
 
-        if (!body) return;
+            }
 
-        body.innerHTML = "";
+            return response.json();
 
-        data.forEach(doc => {
+        })
 
-            body.innerHTML += `
+        .then(data => {
 
-            <tr>
+            console.log(
+                "Recent Documents:",
+                data
+            );
 
-                <td>${doc.document_no}</td>
 
-                <td>${doc.department}</td>
+            const body =
+                document.getElementById(
+                    "recentDocuments"
+                );
 
-                <td>
 
-                    <span class="badge badge-info">
+            if (!body) {
 
-                        ${doc.module}
+                console.error(
+                    "recentDocuments table body not found."
+                );
 
-                    </span>
+                return;
 
-                </td>
+            }
 
-                <td>
 
-                    ${doc.status}
+            // ==========================================
+            // CLEAR EXISTING ROWS
+            // ==========================================
 
-                </td>
+            body.innerHTML = "";
 
-                <td>
 
-                    ${doc.date}
+            // ==========================================
+            // CHECK DATA
+            // ==========================================
 
-                </td>
+            if (
+                !Array.isArray(data) ||
+                data.length === 0
+            ) {
 
-            </tr>
+                body.innerHTML = `
 
-            `;
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            style="text-align:center;"
+                        >
+
+                            No recent documents found.
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
+
+            }
+
+
+            // ==========================================
+            // CREATE ROWS
+            // ==========================================
+
+            data.forEach(doc => {
+
+
+                // ======================================
+                // FORMAT DATE
+                // ======================================
+
+                let formattedDate = "-";
+
+
+                if (doc.date) {
+
+                    const date =
+                        new Date(doc.date);
+
+
+                    if (
+                        !isNaN(
+                            date.getTime()
+                        )
+                    ) {
+
+                        formattedDate =
+                            date.toLocaleDateString(
+                                "en-GB",
+                                {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric"
+                                }
+                            );
+
+                    }
+
+                }
+
+
+                // ======================================
+                // FORMAT STATUS
+                // ======================================
+
+                const status =
+                    (
+                        doc.status ||
+                        "PENDING"
+                    ).toUpperCase();
+
+
+                let statusClass =
+                    "badge-info";
+
+
+                if (
+                    status === "APPROVED" ||
+                    status === "COMPLETED"
+                ) {
+
+                    statusClass =
+                        "badge-success";
+
+                }
+
+                else if (
+                    status === "REJECTED"
+                ) {
+
+                    statusClass =
+                        "badge-danger";
+
+                }
+
+                else if (
+                    status === "PENDING"
+                ) {
+
+                    statusClass =
+                        "badge-warning";
+
+                }
+
+
+                // ======================================
+                // ADD ROW
+                // ======================================
+
+                body.innerHTML += `
+
+                    <tr>
+
+                        <td>
+                            ${doc.document_no || "-"}
+                        </td>
+
+                        <td>
+                            ${doc.department || "-"}
+                        </td>
+
+                        <td>
+
+                            <span class="badge badge-info">
+
+                                ${doc.module || "PRS"}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="
+                                badge
+                                ${statusClass}
+                            ">
+
+                                ${status}
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            ${formattedDate}
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            });
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                "Recent Documents Error:",
+                error
+            );
 
         });
 
-    })
-
-    .catch(console.error);
-
 }
-
-
 // ================================================
 // NOTIFICATIONS
 // ================================================

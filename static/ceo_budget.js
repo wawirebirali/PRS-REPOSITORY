@@ -1913,44 +1913,170 @@ document.addEventListener(
         OPEN CREATE BUDGET
 ========================================================== */
 
+/* ==========================================================
+        OPEN CREATE COMPANY BUDGET
+========================================================== */
+
 function openCreateBudget() {
 
-    // Show Create Budget panel
-    document.getElementById(
-        "createBudgetTab"
-    ).style.display = "block";
+    console.log(
+        "Opening Create Company Budget..."
+    );
 
 
-    // Hide Prediction panel
-    document.getElementById(
-        "predictBudgetTab"
-    ).style.display = "none";
+    // ==========================================
+    // CREATE BUDGET TAB
+    // ==========================================
+
+    const createBudgetTab =
+        document.getElementById(
+            "createBudgetTab"
+        );
 
 
-    // Hide Department Summary
-    document.getElementById(
-        "departmentBudgetTab"
-    ).style.display = "none";
+    // ==========================================
+    // PREDICT BUDGET TAB
+    // ==========================================
+
+    const predictBudgetTab =
+        document.getElementById(
+            "predictBudgetTab"
+        );
 
 
-    // Hide Approval Panel
-    document.getElementById(
-        "budgetApprovalTab"
-    ).style.display = "none";
+    // ==========================================
+    // DEPARTMENT BUDGET TAB
+    // ==========================================
+
+    const departmentBudgetTab =
+        document.getElementById(
+            "departmentBudgetTab"
+        );
 
 
-    // Clear previous message
-    document.getElementById(
-        "budgetMessage"
-    ).innerHTML = "";
+    // ==========================================
+    // APPROVAL TAB
+    // ==========================================
+
+    const budgetApprovalTab =
+        document.getElementById(
+            "budgetApprovalTab"
+        );
 
 
-    // Load departments
-    loadCreateBudgetDepartments();
+    // ==========================================
+    // MESSAGE
+    // ==========================================
+
+    const budgetMessage =
+        document.getElementById(
+            "budgetMessage"
+        );
 
 
-    // Generate budget number
-    generateBudgetNumber();
+    // ==========================================
+    // SHOW CREATE BUDGET
+    // ==========================================
+
+    if (createBudgetTab) {
+
+        createBudgetTab.style.display =
+            "block";
+
+    } else {
+
+        console.error(
+            "ERROR: #createBudgetTab not found"
+        );
+
+    }
+
+
+    // ==========================================
+    // HIDE PREDICTION
+    // ==========================================
+
+    if (predictBudgetTab) {
+
+        predictBudgetTab.style.display =
+            "none";
+
+    }
+
+
+    // ==========================================
+    // HIDE DEPARTMENT BUDGET
+    // ==========================================
+
+    if (departmentBudgetTab) {
+
+        departmentBudgetTab.style.display =
+            "none";
+
+    }
+
+
+    // ==========================================
+    // HIDE APPROVAL
+    // ==========================================
+
+    if (budgetApprovalTab) {
+
+        budgetApprovalTab.style.display =
+            "none";
+
+    }
+
+
+    // ==========================================
+    // CLEAR MESSAGE
+    // ==========================================
+
+    if (budgetMessage) {
+
+        budgetMessage.innerHTML = "";
+
+    }
+
+
+    // ==========================================
+    // LOAD DEPARTMENTS
+    // ==========================================
+
+    if (
+        typeof loadCreateBudgetDepartments ===
+        "function"
+    ) {
+
+        loadCreateBudgetDepartments();
+
+    } else {
+
+        console.error(
+            "ERROR: loadCreateBudgetDepartments() not found"
+        );
+
+    }
+
+
+    // ==========================================
+    // GENERATE BUDGET NUMBER
+    // ==========================================
+
+    if (
+        typeof generateBudgetNumber ===
+        "function"
+    ) {
+
+        generateBudgetNumber();
+
+    } else {
+
+        console.error(
+            "ERROR: generateBudgetNumber() not found"
+        );
+
+    }
 
 }
 
@@ -1960,14 +2086,21 @@ function openCreateBudget() {
 
 function closeCreateBudget() {
 
-    // Hide Create Budget panel
-    document.getElementById("createBudgetTab").style.display = "none";
+    const createBudgetTab =
+        document.getElementById(
+            "createBudgetTab"
+        );
 
-    // Clear form
+    if (createBudgetTab) {
+
+        createBudgetTab.style.display =
+            "none";
+
+    }
+
     clearBudgetForm();
 
 }
-
 
 /* ==========================================================
         GENERATE BUDGET NUMBER
@@ -2682,6 +2815,113 @@ function submitBudget() {
     });
 
 }
+
+
+
+
+
+
+/* ==========================================================
+        CLEAR CREATE COMPANY BUDGET FORM
+========================================================== */
+
+function clearBudgetForm() {
+
+    const budgetNo =
+        document.getElementById(
+            "budgetNo"
+        );
+
+    const financialYear =
+        document.getElementById(
+            "financialYear"
+        );
+
+    const department =
+        document.getElementById(
+            "createBudgetDepartment"
+        );
+
+    const allocatedAmount =
+        document.getElementById(
+            "allocatedAmount"
+        );
+
+    const budgetType =
+        document.getElementById(
+            "budgetType"
+        );
+
+    const budgetStart =
+        document.getElementById(
+            "budgetStart"
+        );
+
+    const budgetEnd =
+        document.getElementById(
+            "budgetEnd"
+        );
+
+    const budgetRemarks =
+        document.getElementById(
+            "budgetRemarks"
+        );
+
+    const budgetMessage =
+        document.getElementById(
+            "budgetMessage"
+        );
+
+
+    // ==========================================
+    // CLEAR FIELDS
+    // ==========================================
+
+    if (budgetNo) {
+        budgetNo.value = "";
+    }
+
+    if (financialYear) {
+        financialYear.value = "";
+    }
+
+    if (department) {
+        department.value = "";
+    }
+
+    if (allocatedAmount) {
+        allocatedAmount.value = "";
+    }
+
+    if (budgetType) {
+        budgetType.value = "";
+    }
+
+    if (budgetStart) {
+        budgetStart.value = "";
+    }
+
+    if (budgetEnd) {
+        budgetEnd.value = "";
+    }
+
+    if (budgetRemarks) {
+        budgetRemarks.value = "";
+    }
+
+    if (budgetMessage) {
+        budgetMessage.innerHTML = "";
+    }
+
+}
+
+
+
+
+
+
+
+
 /* ==========================================================
         SELECT A BUDGET
 ========================================================== */

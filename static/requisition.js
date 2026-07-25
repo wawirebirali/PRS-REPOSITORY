@@ -22,25 +22,69 @@ document.addEventListener("DOMContentLoaded", function () {
    SHOW CREATE FORM
 ================================= */
 
-function showCreateForm(){
+// ==========================================================
+// SHOW CREATE REQUISITION FORM
+// ==========================================================
+function showCreateForm() {
 
-    document.getElementById("requisitionList").style.display = "none";
+    document.getElementById(
+        "requisitionList"
+    ).style.display = "none";
 
-    document.getElementById("createForm").style.display = "block";
 
-    // Set today's date
-    const dateInput = document.getElementById("submission_date");
+    document.getElementById(
+        "createForm"
+    ).style.display = "block";
 
-    if(dateInput){
 
-        dateInput.value = new Date().toISOString().split("T")[0];
+    // ==================================================
+    // LOAD DEPARTMENTS
+    // ==================================================
+
+    loadRequisitionDepartments();
+
+
+    // ==================================================
+    // LOAD NEXT PRS NUMBER
+    // ==================================================
+
+    loadNextPRSNumber();
+
+
+    // ==================================================
+    // SET TODAY'S DATE
+    // ==================================================
+
+    const dateInput =
+        document.getElementById(
+            "submission_date"
+        );
+
+
+    if (dateInput) {
+
+        dateInput.value =
+            new Date()
+            .toISOString()
+            .split("T")[0];
 
     }
 
-    // Add first row only once
-    const tbody = document.querySelector("#reqTable tbody");
 
-    if(tbody && tbody.rows.length === 0){
+    // ==================================================
+    // ADD FIRST ITEM ROW
+    // ==================================================
+
+    const tbody =
+        document.querySelector(
+            "#reqTable tbody"
+        );
+
+
+    if (
+        tbody &&
+        tbody.rows.length === 0
+    ) {
 
         addRow();
 
@@ -49,6 +93,92 @@ function showCreateForm(){
 }
 
 
+// ==========================================================
+// LOAD NEXT PRS NUMBER
+// ==========================================================
+
+// ==========================================================
+// LOAD NEXT PRS NUMBER
+// ==========================================================
+
+async function loadNextPRSNumber() {
+
+    const prsInput =
+        document.getElementById(
+            "prs_no"
+        );
+
+
+    if (!prsInput) {
+
+        console.error(
+            "PRS number input #prs_no not found"
+        );
+
+        return;
+
+    }
+
+
+    prsInput.value =
+        "Generating PRS Number...";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/requisition/api/next-prs-number"
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Next PRS Response:",
+            result
+        );
+
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Failed to generate PRS number."
+            );
+
+        }
+
+
+        prsInput.value =
+            result.prs_no;
+
+
+        console.log(
+            "PRS Number:",
+            result.prs_no
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "PRS Number Error:",
+            error
+        );
+
+
+        prsInput.value =
+            "Unable to generate PRS";
+
+    }
+
+}
 /* ==============================
    HIDE CREATE FORM
 ================================= */
@@ -199,10 +329,8 @@ function cancelRequisition() {
     document.getElementById("requisitionList").style.display = "block";
 }
 
-
-
 // ==========================================================
-// LOAD DEPARTMENTS
+// LOAD DEPARTMENTS FOR REQUISITION FORM
 // ==========================================================
 
 async function loadRequisitionDepartments() {
@@ -210,32 +338,50 @@ async function loadRequisitionDepartments() {
     const departmentSelect =
         document.getElementById("department");
 
+    if (!departmentSelect) {
+
+        console.error(
+            "Department select #department not found"
+        );
+
+        return;
+    }
 
     try {
 
-        const response =
-            await fetch("/hod/api/departments");
+        departmentSelect.innerHTML = `
+            <option value="">
+                Loading Departments...
+            </option>
+        `;
 
+        const response = await fetch(
+            "/requisition/api/departments"
+        );
+
+        console.log(
+            "Department API Status:",
+            response.status
+        );
 
         const result =
             await response.json();
-
 
         console.log(
             "Departments Response:",
             result
         );
 
-
-        if (!result.success) {
+        if (
+            !response.ok ||
+            !result.success
+        ) {
 
             throw new Error(
                 result.message ||
                 "Failed to load departments"
             );
-
         }
-
 
         departmentSelect.innerHTML = `
             <option value="">
@@ -243,75 +389,110 @@ async function loadRequisitionDepartments() {
             </option>
         `;
 
+        result.data.forEach(
+            department => {
 
-        result.data.forEach(department => {
+                const option =
+                    document.createElement(
+                        "option"
+                    );
 
-            const option =
-                document.createElement("option");
+                option.value =
+                    department.department_id;
 
+                option.textContent =
+                    department.department_name;
 
-            option.value =
-                department.department_id;
+                departmentSelect.appendChild(
+                    option
+                );
 
+            }
+        );
 
-            option.textContent =
-                department.department_name;
-
-
-            departmentSelect.appendChild(
-                option
-            );
-
-        });
-
+        console.log(
+            "Departments loaded successfully"
+        );
 
     } catch (error) {
 
         console.error(
-            "Error loading departments:",
+            "Department AJAX Error:",
             error
         );
 
+        departmentSelect.innerHTML = `
+            <option value="">
+                Failed to load Departments
+            </option>
+        `;
     }
-
 }
 
 
+// ==========================================================
+// DEPARTMENT CHANGE
+// ==========================================================
 
+document.addEventListener(
+    "change",
+    function(event) {
 
+        if (
+            event.target.id !==
+            "department"
+        ) {
+            return;
+        }
 
+        const departmentId =
+            event.target.value;
 
+        console.log(
+            "Selected Department ID:",
+            departmentId
+        );
+
+        loadBudgetItemsForDepartment(
+            departmentId
+        );
+
+    }
+);
 
 
 // ==========================================================
 // LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
 // ==========================================================
-
 // ==========================================================
 // LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
 // ==========================================================
 // ==========================================================
 // LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
 // ==========================================================
+// ==========================================================
+// LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
+// ==========================================================
 
-async function loadBudgetItemsForDepartment(departmentId) {
+async function loadBudgetItemsForDepartment(
+    departmentId
+) {
 
     const budgetItemSelect =
-        document.getElementById("budgetItem");
+        document.getElementById("departmentBudgetItem");
 
 
     // ======================================================
-    // CHECK BUDGET ITEM SELECT EXISTS
+    // CHECK DROPDOWN EXISTS
     // ======================================================
 
     if (!budgetItemSelect) {
 
         console.error(
-            "Budget Item select element not found."
+            "Budget Item dropdown #budgetItem not found"
         );
 
         return;
-
     }
 
 
@@ -330,7 +511,6 @@ async function loadBudgetItemsForDepartment(departmentId) {
         budgetItemSelect.disabled = true;
 
         return;
-
     }
 
 
@@ -350,22 +530,22 @@ async function loadBudgetItemsForDepartment(departmentId) {
     try {
 
         // ==================================================
-        // AJAX REQUEST
+        // CALL API
         // ==================================================
 
         const response = await fetch(
-            `/hod/api/budget/department/${departmentId}`
+            `/requisition/api/budget/department/${departmentId}`
         );
 
 
         console.log(
-            "Budget API HTTP Status:",
+            "Budget Items API Status:",
             response.status
         );
 
 
         // ==================================================
-        // CONVERT RESPONSE TO JSON
+        // READ JSON
         // ==================================================
 
         const result =
@@ -373,13 +553,13 @@ async function loadBudgetItemsForDepartment(departmentId) {
 
 
         console.log(
-            "Department Budget Response:",
+            "Budget Items Response:",
             result
         );
 
 
         // ==================================================
-        // CHECK RESPONSE
+        // CHECK API RESPONSE
         // ==================================================
 
         if (
@@ -389,42 +569,84 @@ async function loadBudgetItemsForDepartment(departmentId) {
 
             throw new Error(
                 result.message ||
-                "Failed to load budget items."
+                "Failed to load budget items"
             );
 
         }
 
 
         // ==================================================
-        // CLEAR OLD BUDGET ITEMS
+        // GET BUDGET ARRAY
         // ==================================================
 
-        budgetItemSelect.innerHTML = `
-            <option value="">
-                Select Budget Item
-            </option>
-        `;
+        const budgets =
+            Array.isArray(result.data)
+                ? result.data
+                : [];
+
+
+        console.log(
+            "Budget items received:",
+            budgets
+        );
+
+
+        console.log(
+            "Number of budget items:",
+            budgets.length
+        );
 
 
         // ==================================================
-        // CHECK IF BUDGET ITEMS EXIST
+        // CLEAR DROPDOWN
         // ==================================================
 
-        if (
-            !result.data ||
-            result.data.length === 0
-        ) {
+        budgetItemSelect.innerHTML = "";
 
-            budgetItemSelect.innerHTML = `
-                <option value="">
-                    No Budget Items Available
-                </option>
-            `;
+
+        // ==================================================
+        // DEFAULT OPTION
+        // ==================================================
+
+        const defaultOption =
+            document.createElement("option");
+
+        defaultOption.value = "";
+
+        defaultOption.textContent =
+            "Select Budget Item";
+
+        budgetItemSelect.appendChild(
+            defaultOption
+        );
+
+
+        // ==================================================
+        // NO BUDGET ITEMS
+        // ==================================================
+
+        if (budgets.length === 0) {
+
+            const noBudgetOption =
+                document.createElement("option");
+
+            noBudgetOption.value = "";
+
+            noBudgetOption.textContent =
+                "No Budget Items Available";
+
+            budgetItemSelect.appendChild(
+                noBudgetOption
+            );
 
             budgetItemSelect.disabled = true;
 
-            return;
+            console.log(
+                "No budget items found for department:",
+                departmentId
+            );
 
+            return;
         }
 
 
@@ -432,7 +654,7 @@ async function loadBudgetItemsForDepartment(departmentId) {
         // ADD BUDGET ITEMS
         // ==================================================
 
-        result.data.forEach(
+        budgets.forEach(
             budget => {
 
                 const option =
@@ -441,28 +663,36 @@ async function loadBudgetItemsForDepartment(departmentId) {
                     );
 
 
-                // ==================================================
-                // VALUE SENT TO FLASK
-                // ==================================================
+                // ==========================================
+                // DATABASE VALUE
+                // ==========================================
 
                 option.value =
                     budget.department_budget_id;
 
 
-                // ==================================================
-                // TEXT DISPLAYED TO USER
-                // ==================================================
+                // ==========================================
+                // DISPLAY TEXT
+                // ==========================================
 
                 option.textContent =
                     budget.budget_item;
 
 
-                // ==================================================
-                // ADD TO DROPDOWN
-                // ==================================================
+                // ==========================================
+                // ADD OPTION TO DROPDOWN
+                // ==========================================
 
                 budgetItemSelect.appendChild(
                     option
+                );
+
+
+                console.log(
+                    "Added Budget Item:",
+                    budget.budget_item,
+                    "ID:",
+                    budget.department_budget_id
                 );
 
             }
@@ -470,25 +700,51 @@ async function loadBudgetItemsForDepartment(departmentId) {
 
 
         // ==================================================
-        // ENABLE BUDGET ITEM DROPDOWN
+        // ENABLE DROPDOWN
         // ==================================================
 
         budgetItemSelect.disabled = false;
 
 
+        // ==================================================
+        // SUCCESS DEBUG
+        // ==================================================
+
+        console.log(
+            "SUCCESS: Budget Item dropdown populated."
+        );
+
+
+        console.log(
+            "Budget Item dropdown HTML:",
+            budgetItemSelect.innerHTML
+        );
+
+
+        console.log(
+            "Budget Item dropdown children:",
+            budgetItemSelect.children.length
+        );
+
+
     } catch (error) {
 
+        // ==================================================
+        // ERROR
+        // ==================================================
+
         console.error(
-            "Budget Item AJAX Error:",
+            "Budget Loading Error:",
             error
         );
 
 
         budgetItemSelect.innerHTML = `
             <option value="">
-                Failed to Load Budget Items
+                Failed to load Budget Items
             </option>
         `;
+
 
         budgetItemSelect.disabled = true;
 
@@ -499,73 +755,402 @@ async function loadBudgetItemsForDepartment(departmentId) {
 
 
 // ==========================================================
-// INITIALIZE DEPARTMENT AND BUDGET ITEM AJAX
+// SUBMIT PURCHASE REQUISITION
 // ==========================================================
 
 document.addEventListener(
-    "DOMContentLoaded",
-    function() {
+    "submit",
+    async function (event) {
+
+        // Only handle the requisition form
+        const form = event.target.closest(
+            "#createForm form"
+        );
+
+        if (!form) {
+            return;
+        }
+
+        // Prevent normal page submission
+        event.preventDefault();
+
 
         // ==================================================
-        // GET DEPARTMENT SELECT
+        // GET FORM DATA
         // ==================================================
 
-        const departmentSelect =
+        const formData = new FormData(form);
+
+
+        // ==================================================
+        // GET SELECTED DEPARTMENT
+        // ==================================================
+
+        const departmentId =
             document.getElementById(
                 "department"
-            );
+            )?.value;
 
 
         // ==================================================
-        // CHECK DEPARTMENT SELECT EXISTS
+        // GET SELECTED BUDGET ITEM
         // ==================================================
 
-        if (!departmentSelect) {
+        const departmentBudgetId =
+            document.getElementById(
+                "departmentBudgetItem"
+            )?.value;
 
-            console.error(
-                "Department select element not found."
+
+        // ==================================================
+        // VALIDATE DEPARTMENT
+        // ==================================================
+
+        if (!departmentId) {
+
+            alert(
+                "Please select a department."
             );
 
             return;
-
         }
 
 
         // ==================================================
-        // LOAD DEPARTMENTS
+        // VALIDATE BUDGET ITEM
         // ==================================================
 
-        loadRequisitionDepartments();
+        if (!departmentBudgetId) {
+
+            alert(
+                "Please select a budget item."
+            );
+
+            return;
+        }
 
 
         // ==================================================
-        // DEPARTMENT CHANGE EVENT
+        // MAKE SURE VALUES ARE IN FORMDATA
         // ==================================================
 
-        departmentSelect.addEventListener(
-            "change",
-            function() {
-
-                const departmentId =
-                    this.value;
+        formData.set(
+            "department_id",
+            departmentId
+        );
 
 
-                console.log(
-                    "Selected Department ID:",
-                    departmentId
-                );
+        formData.set(
+            "department_budget_id",
+            departmentBudgetId
+        );
 
 
-                // ==================================================
-                // LOAD BUDGET ITEMS FOR SELECTED DEPARTMENT
-                // ==================================================
+        // ==================================================
+        // DEBUG
+        // ==================================================
 
-                loadBudgetItemsForDepartment(
-                    departmentId
+        console.log(
+            "Submitting Requisition..."
+        );
+
+        console.log(
+            "Department ID:",
+            departmentId
+        );
+
+        console.log(
+            "Department Budget ID:",
+            departmentBudgetId
+        );
+
+
+        // ==================================================
+        // SUBMIT BUTTON
+        // ==================================================
+
+        const submitButton =
+            form.querySelector(
+                'button[type="submit"]'
+            );
+
+
+        if (submitButton) {
+
+            submitButton.disabled = true;
+
+            submitButton.textContent =
+                "Submitting...";
+
+        }
+
+
+        try {
+
+            // ==================================================
+            // SEND TO FLASK
+            // ==================================================
+
+            const response = await fetch(
+                "/requisition/submit",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+            console.log(
+                "Submit Status:",
+                response.status
+            );
+
+
+            // ==================================================
+            // READ JSON RESPONSE
+            // ==================================================
+
+            const result =
+                await response.json();
+
+
+            console.log(
+                "Submit Response:",
+                result
+            );
+
+
+            // ==================================================
+            // CHECK RESPONSE
+            // ==================================================
+
+            if (
+                !response.ok ||
+                !result.success
+            ) {
+
+                throw new Error(
+                    result.message ||
+                    "Failed to create requisition."
                 );
 
             }
-        );
+
+
+            // ==================================================
+            // PRS CREATED SUCCESSFULLY
+            // ==================================================
+
+            alert(
+                `Requisition ${result.prs_no} created successfully!`
+            );
+
+
+            // ==================================================
+            // DISPLAY PRS NUMBER
+            // ==================================================
+
+            const prsDisplay =
+                document.getElementById(
+                    "generatedPRS"
+                );
+
+
+            if (prsDisplay) {
+
+                prsDisplay.textContent =
+                    result.prs_no;
+
+                prsDisplay.style.display =
+                    "block";
+
+            }
+
+
+            // ==================================================
+            // OPTIONAL: SHOW PRS IN INPUT
+            // ==================================================
+
+            const prsInput =
+                document.getElementById(
+                    "prs_no"
+                );
+
+
+            if (prsInput) {
+
+                prsInput.value =
+                    result.prs_no;
+
+            }
+
+
+            // ==================================================
+            // RESET FORM
+            // ==================================================
+
+            form.reset();
+
+
+            // ==================================================
+            // RESET DATE
+            // ==================================================
+
+            const dateInput =
+                document.getElementById(
+                    "submission_date"
+                );
+
+
+            if (dateInput) {
+
+                dateInput.value =
+                    new Date()
+                    .toISOString()
+                    .split("T")[0];
+
+            }
+
+
+            // ==================================================
+            // RESET DEPARTMENT
+            // ==================================================
+
+            const departmentSelect =
+                document.getElementById(
+                    "department"
+                );
+
+
+            if (departmentSelect) {
+
+                departmentSelect.value =
+                    "";
+
+            }
+
+
+            // ==================================================
+            // RESET BUDGET ITEM
+            // ==================================================
+
+            const budgetItemSelect =
+                document.getElementById(
+                    "departmentBudgetItem"
+                );
+
+
+            if (budgetItemSelect) {
+
+                budgetItemSelect.innerHTML = `
+                    <option value="">
+                        Select Department First
+                    </option>
+                `;
+
+                budgetItemSelect.disabled =
+                    true;
+
+            }
+
+
+            // ==================================================
+            // CLEAR ITEM ROWS
+            // ==================================================
+
+            const tbody =
+                document.querySelector(
+                    "#reqTable tbody"
+                );
+
+
+            if (tbody) {
+
+                tbody.innerHTML =
+                    "";
+
+            }
+
+
+            // ==================================================
+            // RESET ROW INDEX
+            // ==================================================
+
+            rowIndex = 0;
+
+
+            // ==================================================
+            // ADD FIRST EMPTY ROW
+            // ==================================================
+
+            addRow();
+
+
+            // ==================================================
+            // HIDE CREATE FORM
+            // ==================================================
+
+            document.getElementById(
+                "createForm"
+            ).style.display =
+                "none";
+
+
+            // ==================================================
+            // SHOW REQUISITION LIST
+            // ==================================================
+
+            document.getElementById(
+                "requisitionList"
+            ).style.display =
+                "block";
+
+
+            // ==================================================
+            // RELOAD REQUISITIONS
+            // ==================================================
+
+            if (
+                typeof loadRequisitions ===
+                "function"
+            ) {
+
+                loadRequisitions();
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "REQUISITION SUBMIT ERROR:",
+                error
+            );
+
+
+            alert(
+                error.message ||
+                "An error occurred while creating requisition."
+            );
+
+
+        } finally {
+
+            // ==================================================
+            // ENABLE SUBMIT BUTTON
+            // ==================================================
+
+            if (submitButton) {
+
+                submitButton.disabled =
+                    false;
+
+                submitButton.textContent =
+                    "Submit Requisition";
+
+            }
+
+        }
 
     }
 );

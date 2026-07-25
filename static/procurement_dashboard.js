@@ -270,11 +270,11 @@ function loadRequisitions() {
 
                 <td>${req.department_name}</td>
 
-                <td>${req.hod_status ?? "-"}</td>
+                <td>${req.due ?? "-"}</td>
 
                 <td>${req.submission_date ?? "-"}</td>
 
-                <td>${req.hod_approved_at ?? "-"}</td>
+                <td>${req.final_status ?? "-"}</td>
 
             `;
 
