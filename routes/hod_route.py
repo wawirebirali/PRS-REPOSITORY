@@ -1183,24 +1183,30 @@ def create_budget():
         }), 500
 
 
-
+# ==========================================================
+# GET DEPARTMENT BUDGETS
+#
+# AJAX URL:
+# GET /hod/api/budgets
+# ==========================================================
 # ==========================================================
 # GET ALL DEPARTMENT BUDGETS
-#
-# GET:
-# /hod/api/budgets
 # ==========================================================
 
 @hod_dashboard_bp.route(
     "/api/budgets",
     methods=["GET"]
 )
-def get_budgets():
+def get_department_budgets():
 
     conn = None
     cursor = None
 
     try:
+
+        # ==================================================
+        # CONNECT TO DATABASE
+        # ==================================================
 
         conn = get_db_connection()
 
@@ -1211,119 +1217,175 @@ def get_budgets():
 
         # ==================================================
         # GET DEPARTMENT BUDGETS
-        # IMPORTANT:
-        # USING department_budget
-        # NOT budgets
         # ==================================================
 
         cursor.execute("""
-
             SELECT
 
-                b.budget_id,
+                db.department_budget_id,
 
-                b.budget_no,
+                db.company_budget_id,
 
-                b.created_at,
+                db.budget_no,
 
-                d.department_name,
+                db.department_id,
 
-                b.budget_item,
+                db.budget_item,
 
-                b.quantity,
+                db.quantity,
 
-                b.unit_cost,
+                db.unit_cost,
 
-                (
-                    b.quantity *
-                    b.unit_cost
-                ) AS budget_amount,
+                db.total_budget,
 
-                b.budget_type,
+                db.budget_type,
 
-                b.start_date,
+                db.start_date,
 
-                b.end_date,
+                db.end_date,
 
-                b.remarks,
+                db.remarks,
 
-                COALESCE(
-                    b.spent_amount,
-                    0
-                ) AS spent,
+                db.ceo_status,
 
-                (
-                    (
-                        b.quantity *
-                        b.unit_cost
-                    )
-                    -
-                    COALESCE(
-                        b.spent_amount,
-                        0
-                    )
-                ) AS balance,
+                db.ceo_user_id,
 
-                DATEDIFF(
-                    b.end_date,
-                    CURDATE()
-                ) AS due_days,
+                db.ceo_approval_date,
 
-                COALESCE(
-                    a.ceo_status,
-                    'PENDING'
-                ) AS ceo_status,
+                db.created_by,
 
-                a.ceo_approved_at
+                db.created_at,
 
-            FROM department_budget b
+                db.updated_at,
 
-            LEFT JOIN departments d
+                d.department_name
 
-                ON b.department_id =
+            FROM department_budget AS db
+
+            LEFT JOIN departments AS d
+
+                ON db.department_id =
                    d.department_id
 
-            LEFT JOIN approvals a
-
-                ON a.module_name =
-                   'BUDGET'
-
-               AND a.document_id =
-                   b.budget_id
-
             ORDER BY
-                b.created_at DESC
+                db.department_budget_id DESC
 
         """)
 
+
+        # ==================================================
+        # FETCH RESULTS
+        # ==================================================
 
         budgets = cursor.fetchall()
 
 
         # ==================================================
-        # RETURN RESULTS
+        # CONVERT DATE/DATETIME VALUES
+        # ==================================================
+
+        for budget in budgets:
+
+            if budget.get(
+                "start_date"
+            ):
+
+                budget[
+                    "start_date"
+                ] = budget[
+                    "start_date"
+                ].strftime(
+                    "%Y-%m-%d"
+                )
+
+
+            if budget.get(
+                "end_date"
+            ):
+
+                budget[
+                    "end_date"
+                ] = budget[
+                    "end_date"
+                ].strftime(
+                    "%Y-%m-%d"
+                )
+
+
+            if budget.get(
+                "ceo_approval_date"
+            ):
+
+                budget[
+                    "ceo_approval_date"
+                ] = budget[
+                    "ceo_approval_date"
+                ].strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+
+            if budget.get(
+                "created_at"
+            ):
+
+                budget[
+                    "created_at"
+                ] = budget[
+                    "created_at"
+                ].strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+
+            if budget.get(
+                "updated_at"
+            ):
+
+                budget[
+                    "updated_at"
+                ] = budget[
+                    "updated_at"
+                ].strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
+
+        # ==================================================
+        # RETURN SUCCESS
         # ==================================================
 
         return jsonify({
 
-            "success": True,
+            "success":
+                True,
 
-            "data": budgets
+            "data":
+                budgets
 
         }), 200
 
 
     except Exception as e:
 
+        # ==================================================
+        # PRINT ERROR IN TERMINAL
+        # ==================================================
+
         print(
-            "GET BUDGETS ERROR:",
+            "GET DEPARTMENT BUDGETS ERROR:",
             str(e)
         )
 
 
+        # ==================================================
+        # RETURN ERROR
+        # ==================================================
+
         return jsonify({
 
-            "success": False,
+            "success":
+                False,
 
             "message":
                 "Failed to load department budgets.",
@@ -1336,10 +1398,18 @@ def get_budgets():
 
     finally:
 
+        # ==================================================
+        # CLOSE CURSOR
+        # ==================================================
+
         if cursor:
 
             cursor.close()
 
+
+        # ==================================================
+        # CLOSE CONNECTION
+        # ==================================================
 
         if conn:
 

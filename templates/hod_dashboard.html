@@ -160,19 +160,9 @@
 
     <div class="quick-actions">
 
-        <button class="quick-btn"
-                onclick="openModule('requisition',this)">
+        
 
-            📄 View Requisitions
-
-        </button>
-
-        <button class="quick-btn"
-                onclick="showPendingApprovals()">
-
-            ✔ Pending Approvals
-
-        </button>
+        
 
         <button class="quick-btn"
                 onclick="printDashboard()">
@@ -1449,16 +1439,6 @@
 
 
 
-                    <button
-                        type="button"
-                        class="btn secondary"
-                        onclick="hideCreateForm()">
-
-
-                        ← Back
-
-
-                    </button>
 
 
 
@@ -1484,19 +1464,47 @@
 
                         <div>
 
-                            <label>
+                            <label for="department">
                                 Department
                             </label>
 
+                            <select
+                                id="department"
+                                name="department_id"
+                                required>
 
-                            <input
-                                type="text"
-                                value="{{session.department}}"
-                                readonly>
+                                <option value="">
+                                    Select Department
+                                </option>
+
+                                <!-- Departments will be loaded here using AJAX -->
+
+                            </select>
 
                         </div>
 
 
+
+                        <div>
+
+                            <label for="budgetItem">
+                                Budget Item
+                            </label>
+
+                            <select
+                                id="budgetitem"
+                                name="budgetItem"
+                                required>
+
+                                <option value="">
+                                    Select Budget Item
+                                </option>
+
+                                <!-- Departments will be loaded here using AJAX -->
+
+                            </select>
+
+                        </div>
 
 
 

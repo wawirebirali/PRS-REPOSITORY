@@ -1,15 +1,1910 @@
-/* ==========================================================
-        CEO COMPANY BUDGET MANAGEMENT
-========================================================== */
+// ==========================================================
+// CEO BUDGET MANAGEMENT - COMPLETE JAVASCRIPT
+// ==========================================================
 
 
-/* ==========================================================
-        GLOBAL VARIABLE
-        Stores the currently selected budget
-========================================================== */
+// ==========================================================
+// GLOBAL SELECTED BUDGET VARIABLES
+// ==========================================================
 
-let selectedBudgetId = null;
+window.selectedCompanyBudget = null;
 
+window.selectedCompanyBudgetId = null;
+
+window.selectedDepartmentBudget = null;
+
+window.departmentBudgets = [];
+
+
+
+window.openCompanyBudgetApproval = function (budget) {
+
+    console.log(
+        "Opening Company Budget Approval:",
+        budget
+    );
+
+    if (!budget) {
+
+        alert(
+            "Company budget information is missing."
+        );
+
+        return;
+    }
+
+    if (!budget.company_budget_id) {
+
+        alert(
+            "Company budget ID is missing."
+        );
+
+        return;
+    }
+
+    // Save selected company budget
+    window.selectedCompanyBudget =
+        budget;
+
+    console.log(
+        "Selected Company Budget:",
+        budget.company_budget_id
+    );
+
+
+    // Hide company budget table
+    const companyBudgetTable =
+        document.getElementById(
+            "companyBudgetTable"
+        );
+
+    if (companyBudgetTable) {
+
+        companyBudgetTable.style.display =
+            "none";
+
+    }
+
+
+    // Get approval panel
+    const approvalPanel =
+        document.getElementById(
+            "budgetApprovalTab"
+        );
+
+    if (!approvalPanel) {
+
+        console.error(
+            "budgetApprovalTab was not found."
+        );
+
+        return;
+    }
+
+
+    // Fill budget number
+    const approvalBudgetNo =
+        document.getElementById(
+            "approvalBudgetNo"
+        );
+
+    if (approvalBudgetNo) {
+
+        approvalBudgetNo.textContent =
+            budget.budget_no || "-";
+
+    }
+
+
+    // Fill financial year
+    const approvalFinancialYear =
+        document.getElementById(
+            "approvalFinancialYear"
+        );
+
+    if (approvalFinancialYear) {
+
+        approvalFinancialYear.textContent =
+            budget.financial_year || "-";
+
+    }
+
+
+    // Fill budget type
+    const approvalBudgetType =
+        document.getElementById(
+            "approvalBudgetType"
+        );
+
+    if (approvalBudgetType) {
+
+        approvalBudgetType.textContent =
+            budget.budget_type || "-";
+
+    }
+
+
+    // Fill allocated amount
+    const approvalAmount =
+        document.getElementById(
+            "approvalAmount"
+        );
+
+    if (approvalAmount) {
+
+        const amount =
+            budget.allocated_amount ??
+            budget.total_budget ??
+            0;
+
+        approvalAmount.textContent =
+            "UGX " +
+            formatCurrency(amount);
+
+    }
+
+
+    // Fill start date
+    const approvalStartDate =
+        document.getElementById(
+            "approvalStartDate"
+        );
+
+    if (approvalStartDate) {
+
+        approvalStartDate.textContent =
+            budget.start_date
+                ? formatDate(
+                    budget.start_date
+                )
+                : "-";
+
+    }
+
+
+    // Fill end date
+    const approvalEndDate =
+        document.getElementById(
+            "approvalEndDate"
+        );
+
+    if (approvalEndDate) {
+
+        approvalEndDate.textContent =
+            budget.end_date
+                ? formatDate(
+                    budget.end_date
+                )
+                : "-";
+
+    }
+
+
+    // Fill remarks
+    const approvalRemarks =
+        document.getElementById(
+            "approvalRemarks"
+        );
+
+    if (approvalRemarks) {
+
+        approvalRemarks.textContent =
+            budget.remarks || "-";
+
+    }
+
+
+    // Fill status
+    const approvalStatus =
+        document.getElementById(
+            "approvalStatus"
+        );
+
+    if (approvalStatus) {
+
+        approvalStatus.textContent =
+            budget.ceo_status ||
+            "Pending";
+
+    }
+
+
+    // Fill approval date
+    const approvalDate =
+        document.getElementById(
+            "approvalDate"
+        );
+
+    if (approvalDate) {
+
+        approvalDate.textContent =
+            budget.ceo_approval_date
+                ? formatDateTime(
+                    budget.ceo_approval_date
+                )
+                : "-";
+
+    }
+
+
+    // Change title
+    const approvalTitle =
+        approvalPanel.querySelector(
+            ".predict-header h2"
+        );
+
+    if (approvalTitle) {
+
+        approvalTitle.textContent =
+            "Company Budget Approval";
+
+    }
+
+
+    // Show panel
+    approvalPanel.style.display =
+        "block";
+
+
+    // Scroll to panel
+    approvalPanel.scrollIntoView({
+
+        behavior:
+            "smooth",
+
+        block:
+            "start"
+
+    });
+
+};
+
+
+// ==========================================================
+// FORMAT CURRENCY
+// ==========================================================
+
+function formatCurrency(amount) {
+
+    if (
+        amount === null ||
+        amount === undefined ||
+        amount === ""
+    ) {
+
+        return "0";
+
+    }
+
+    const number =
+        Number(amount);
+
+    if (isNaN(number)) {
+
+        return "0";
+
+    }
+
+    return number.toLocaleString(
+        "en-UG",
+        {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }
+    );
+
+}
+
+
+// ==========================================================
+// FORMAT DATE
+// ==========================================================
+
+function formatDate(dateValue) {
+
+    if (!dateValue) {
+
+        return "-";
+
+    }
+
+    const normalizedDate =
+        String(dateValue).replace(
+            " ",
+            "T"
+        );
+
+    const date =
+        new Date(normalizedDate);
+
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+
+    }
+
+    return date.toLocaleDateString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
+    );
+
+}
+
+
+// ==========================================================
+// FORMAT DATE AND TIME
+// ==========================================================
+
+function formatDateTime(dateTime) {
+
+    if (!dateTime) {
+
+        return "-";
+
+    }
+
+    const normalizedDateTime =
+        String(dateTime).replace(
+            " ",
+            "T"
+        );
+
+    const date =
+        new Date(
+            normalizedDateTime
+        );
+
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "-";
+
+    }
+
+    return date.toLocaleString(
+        "en-GB",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        }
+    );
+
+}
+
+
+// ==========================================================
+// LOAD COMPANY BUDGETS
+// ==========================================================
+
+async function loadCompanyBudgets() {
+
+    console.log(
+        "Loading Company Budgets..."
+    );
+
+
+    const budgetBody =
+        document.getElementById(
+            "companyBudgetBody"
+        );
+
+
+    if (!budgetBody) {
+
+        console.error(
+            "companyBudgetBody was not found."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SHOW LOADING
+    // ======================================================
+
+    budgetBody.innerHTML = `
+
+        <tr>
+
+            <td
+                colspan="15"
+                style="text-align:center;">
+
+                Loading company budgets...
+
+            </td>
+
+        </tr>
+
+    `;
+
+
+    try {
+
+        // ==================================================
+        // CALL API
+        // ==================================================
+
+        const response =
+            await fetch(
+                "/ceo/api/company-budgets",
+                {
+
+                    method: "GET",
+
+                    headers: {
+
+                        "Accept":
+                            "application/json"
+
+                    }
+
+                }
+            );
+
+
+        console.log(
+            "Company Budgets HTTP Status:",
+            response.status
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+
+        // ==================================================
+        // READ JSON
+        // ==================================================
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Company Budgets Response:",
+            result
+        );
+
+
+        if (!result.success) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="15"
+                        style="text-align:center;">
+
+                        ${
+                            result.message ||
+                            "Failed to load company budgets."
+                        }
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // SAVE COMPANY BUDGETS
+        // ==================================================
+
+        const companyBudgets =
+            result.data || [];
+
+
+        // ==================================================
+        // CHECK EMPTY
+        // ==================================================
+
+        if (
+            companyBudgets.length === 0
+        ) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="15"
+                        style="text-align:center;">
+
+                        No company budgets found.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // CLEAR TABLE
+        // ==================================================
+
+        budgetBody.innerHTML = "";
+
+
+        // ==================================================
+        // DISPLAY COMPANY BUDGETS
+        // ==================================================
+
+        companyBudgets.forEach(
+            function(budget) {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                // ==========================================
+                // STORE COMPANY BUDGET ID
+                // ==========================================
+
+                row.dataset.companyBudgetId =
+                    budget.company_budget_id;
+
+
+                row.style.cursor =
+                    "pointer";
+
+
+                // ==========================================
+                // CREATE ROW
+                // ==========================================
+
+                row.innerHTML = `
+
+                    <td>
+                        ${
+                            budget.budget_no ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.financial_year ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.budget_type ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.department_name ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        UGX
+                        ${
+                            formatCurrency(
+                                budget.allocated_amount ||
+                                budget.total_budget ||
+                                0
+                            )
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.ceo_status ||
+                            "Pending"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.ceo_approval_date
+                                ? formatDateTime(
+                                    budget.ceo_approval_date
+                                )
+                                : "-"
+                        }
+                    </td>
+
+                `;
+
+
+                // ==========================================
+                // CLICK COMPANY BUDGET ROW
+                // ==========================================
+
+                row.addEventListener(
+                    "click",
+                    function() {
+
+                        console.log(
+                            "Selected Company Budget:",
+                            budget
+                        );
+
+
+                        console.log(
+                            "Company Budget ID:",
+                            budget.company_budget_id
+                        );
+
+
+                        // ==================================
+                        // SAVE SELECTED COMPANY BUDGET
+                        // ==================================
+
+                        window.selectedCompanyBudget =
+                            budget;
+
+
+                        window.selectedCompanyBudgetId =
+                            budget.company_budget_id;
+
+
+                        // ==================================
+                        // OPEN DEPARTMENT BUDGETS
+                        // ==================================
+
+                        window.openDepartmentBudgetsForCompany(
+                            budget.company_budget_id
+                        );
+
+                    }
+                );
+
+
+                budgetBody.appendChild(
+                    row
+                );
+
+            }
+        );
+
+
+        console.log(
+            companyBudgets.length +
+            " company budget(s) loaded."
+        );
+
+    }
+
+
+    catch(error) {
+
+        console.error(
+            "Load Company Budgets Error:",
+            error
+        );
+
+
+        budgetBody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="15"
+                    style="text-align:center;">
+
+                    Failed to load company budgets.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+}
+
+
+// ==========================================================
+// OPEN DEPARTMENT BUDGETS FOR COMPANY
+// ==========================================================
+
+window.openDepartmentBudgetsForCompany =
+async function(
+    companyBudgetId
+) {
+
+    console.log(
+        "Opening Department Budgets for Company Budget ID:",
+        companyBudgetId
+    );
+
+
+    // ======================================================
+    // CHECK COMPANY BUDGET ID
+    // ======================================================
+
+    if (!companyBudgetId) {
+
+        alert(
+            "Company Budget ID is missing."
+        );
+
+        console.error(
+            "Company Budget ID is missing."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SAVE COMPANY BUDGET ID
+    // ======================================================
+
+    window.selectedCompanyBudgetId =
+        companyBudgetId;
+
+
+    // ======================================================
+    // HIDE COMPANY BUDGET TABLE
+    // ======================================================
+
+    const companyBudgetTable =
+        document.getElementById(
+            "companyBudgetTable"
+        );
+
+
+    if (companyBudgetTable) {
+
+        companyBudgetTable.style.display =
+            "none";
+
+    }
+
+
+    // ======================================================
+    // GET DEPARTMENT BUDGET PANEL
+    // ======================================================
+
+    const departmentBudgetTab =
+        document.getElementById(
+            "departmentBudgetTab"
+        );
+
+
+    if (!departmentBudgetTab) {
+
+        console.error(
+            "departmentBudgetTab was not found."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SHOW DEPARTMENT BUDGET PANEL
+    // ======================================================
+
+    departmentBudgetTab.style.display =
+        "block";
+
+
+    // ======================================================
+    // LOAD DEPARTMENT BUDGETS
+    // ======================================================
+
+    await loadDepartmentBudgetsForCompany(
+        companyBudgetId
+    );
+
+
+    // ======================================================
+    // SCROLL TO PANEL
+    // ======================================================
+
+    departmentBudgetTab.scrollIntoView({
+
+        behavior:
+            "smooth",
+
+        block:
+            "start"
+
+    });
+
+};
+
+
+// ==========================================================
+// LOAD DEPARTMENT BUDGETS FOR COMPANY
+// ==========================================================
+
+async function loadDepartmentBudgetsForCompany(
+    companyBudgetId
+) {
+
+    console.log(
+        "Loading department budgets for company:",
+        companyBudgetId
+    );
+
+
+    const budgetBody =
+        document.getElementById(
+            "departmentBudgetBody"
+        );
+
+
+    if (!budgetBody) {
+
+        console.error(
+            "departmentBudgetBody was not found."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SHOW LOADING
+    // ======================================================
+
+    budgetBody.innerHTML = `
+
+        <tr>
+
+            <td
+                colspan="15"
+                style="text-align:center;">
+
+                Loading department budgets...
+
+            </td>
+
+        </tr>
+
+    `;
+
+
+    try {
+
+        // ==================================================
+        // CALL API
+        // ==================================================
+
+        const response =
+            await fetch(
+                `/ceo/api/company-budget/${companyBudgetId}/department-budgets`,
+                {
+
+                    method: "GET",
+
+                    headers: {
+
+                        "Accept":
+                            "application/json"
+
+                    }
+
+                }
+            );
+
+
+        console.log(
+            "Department Budgets HTTP Status:",
+            response.status
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "HTTP Error: " +
+                response.status
+            );
+
+        }
+
+
+        // ==================================================
+        // READ JSON
+        // ==================================================
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Department Budgets Response:",
+            result
+        );
+
+
+        if (!result.success) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="15"
+                        style="text-align:center;">
+
+                        ${
+                            result.message ||
+                            "Failed to load department budgets."
+                        }
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // SAVE DEPARTMENT BUDGETS
+        // ==================================================
+
+        window.departmentBudgets =
+            result.data || [];
+
+
+        // ==================================================
+        // CHECK EMPTY
+        // ==================================================
+
+        if (
+            window.departmentBudgets.length === 0
+        ) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="15"
+                        style="text-align:center;">
+
+                        No department budgets have been
+                        created for this company budget.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // CLEAR TABLE
+        // ==================================================
+
+        budgetBody.innerHTML = "";
+
+
+        // ==================================================
+        // DISPLAY DEPARTMENT BUDGETS
+        // ==================================================
+
+        window.departmentBudgets.forEach(
+            function(budget) {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                // ==========================================
+                // STORE IDs
+                // ==========================================
+
+                row.dataset.departmentBudgetId =
+                    budget.department_budget_id;
+
+
+                row.dataset.companyBudgetId =
+                    budget.company_budget_id;
+
+
+                row.style.cursor =
+                    "pointer";
+
+
+                // ==========================================
+                // CREATE ROW
+                // ==========================================
+
+                row.innerHTML = `
+
+                    <td>
+                        ${
+                            budget.budget_no ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.department_name ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.budget_item ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.quantity ||
+                            0
+                        }
+                    </td>
+
+                    <td>
+                        UGX
+                        ${
+                            formatCurrency(
+                                budget.unit_cost ||
+                                0
+                            )
+                        }
+                    </td>
+
+                    <td>
+                        UGX
+                        ${
+                            formatCurrency(
+                                budget.total_budget ||
+                                0
+                            )
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.budget_type ||
+                            "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.start_date
+                                ? formatDate(
+                                    budget.start_date
+                                )
+                                : "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.end_date
+                                ? formatDate(
+                                    budget.end_date
+                                )
+                                : "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.ceo_status ||
+                            "Pending"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            budget.ceo_approval_date
+                                ? formatDateTime(
+                                    budget.ceo_approval_date
+                                )
+                                : "-"
+                        }
+                    </td>
+
+                `;
+
+
+                // ==========================================
+                // CLICK DEPARTMENT BUDGET ROW
+                // ==========================================
+
+                row.addEventListener(
+                    "click",
+                    function() {
+
+                        console.log(
+                            "Selected Department Budget:",
+                            budget
+                        );
+
+
+                        console.log(
+                            "Department Budget ID:",
+                            budget.department_budget_id
+                        );
+
+
+                        console.log(
+                            "Company Budget ID:",
+                            budget.company_budget_id
+                        );
+
+
+                        // ==================================
+                        // SAVE SELECTED BUDGET
+                        // ==================================
+
+                        window.selectedDepartmentBudget =
+                            budget;
+
+
+                        // ==================================
+                        // OPEN APPROVAL PANEL
+                        // ==================================
+
+                        window.openDepartmentBudgetApproval(
+                            budget
+                        );
+
+                    }
+                );
+
+
+                budgetBody.appendChild(
+                    row
+                );
+
+            }
+        );
+
+
+        console.log(
+            window.departmentBudgets.length +
+            " department budget(s) loaded."
+        );
+
+    }
+
+
+    catch(error) {
+
+        console.error(
+            "Load Department Budgets Error:",
+            error
+        );
+
+
+        budgetBody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="15"
+                    style="text-align:center;">
+
+                    Failed to load department budgets.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+}
+
+
+// ==========================================================
+// OPEN DEPARTMENT BUDGET APPROVAL PANEL
+// ==========================================================
+
+window.openDepartmentBudgetApproval =
+function(
+    budget
+) {
+
+    console.log(
+        "Opening Department Budget Approval:",
+        budget
+    );
+
+
+    // ======================================================
+    // CHECK BUDGET
+    // ======================================================
+
+    if (!budget) {
+
+        alert(
+            "Department budget information is missing."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // CHECK ID
+    // ======================================================
+
+    if (
+        !budget.department_budget_id
+    ) {
+
+        alert(
+            "Department budget ID is missing."
+        );
+
+        console.error(
+            "Invalid Department Budget:",
+            budget
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // SAVE SELECTED BUDGET
+    // ======================================================
+
+    window.selectedDepartmentBudget =
+        budget;
+
+
+    // ======================================================
+    // GET APPROVAL PANEL
+    // ======================================================
+
+    const approvalPanel =
+        document.getElementById(
+            "departmentBudgetApprovalPanel"
+        );
+
+
+    if (!approvalPanel) {
+
+        console.error(
+            "departmentBudgetApprovalPanel was not found."
+        );
+
+        return;
+
+    }
+
+
+    // ======================================================
+    // FILL BUDGET NUMBER
+    // ======================================================
+
+    const budgetNo =
+        document.getElementById(
+            "departmentApprovalBudgetNo"
+        );
+
+
+    if (budgetNo) {
+
+        budgetNo.textContent =
+            budget.budget_no || "-";
+
+    }
+
+
+    // ======================================================
+    // FILL DEPARTMENT
+    // ======================================================
+
+    const department =
+        document.getElementById(
+            "departmentApprovalDepartment"
+        );
+
+
+    if (department) {
+
+        department.textContent =
+            budget.department_name || "-";
+
+    }
+
+
+    // ======================================================
+    // FILL BUDGET ITEM
+    // ======================================================
+
+    const budgetItem =
+        document.getElementById(
+            "departmentApprovalBudgetItem"
+        );
+
+
+    if (budgetItem) {
+
+        budgetItem.textContent =
+            budget.budget_item || "-";
+
+    }
+
+
+    // ======================================================
+    // FILL QUANTITY
+    // ======================================================
+
+    const quantity =
+        document.getElementById(
+            "departmentApprovalQuantity"
+        );
+
+
+    if (quantity) {
+
+        quantity.textContent =
+            budget.quantity || 0;
+
+    }
+
+
+    // ======================================================
+    // FILL UNIT COST
+    // ======================================================
+
+    const unitCost =
+        document.getElementById(
+            "departmentApprovalUnitCost"
+        );
+
+
+    if (unitCost) {
+
+        unitCost.textContent =
+            "UGX " +
+            formatCurrency(
+                budget.unit_cost || 0
+            );
+
+    }
+
+
+    // ======================================================
+    // FILL TOTAL BUDGET
+    // ======================================================
+
+    const totalBudget =
+        document.getElementById(
+            "departmentApprovalAmount"
+        );
+
+
+    if (totalBudget) {
+
+        totalBudget.textContent =
+            "UGX " +
+            formatCurrency(
+                budget.total_budget || 0
+            );
+
+    }
+
+
+    // ======================================================
+    // FILL BUDGET TYPE
+    // ======================================================
+
+    const budgetType =
+        document.getElementById(
+            "departmentApprovalBudgetType"
+        );
+
+
+    if (budgetType) {
+
+        budgetType.textContent =
+            budget.budget_type || "-";
+
+    }
+
+
+    // ======================================================
+    // FILL START DATE
+    // ======================================================
+
+    const startDate =
+        document.getElementById(
+            "departmentApprovalStartDate"
+        );
+
+
+    if (startDate) {
+
+        startDate.textContent =
+            budget.start_date
+                ? formatDate(
+                    budget.start_date
+                )
+                : "-";
+
+    }
+
+
+    // ======================================================
+    // FILL END DATE
+    // ======================================================
+
+    const endDate =
+        document.getElementById(
+            "departmentApprovalEndDate"
+        );
+
+
+    if (endDate) {
+
+        endDate.textContent =
+            budget.end_date
+                ? formatDate(
+                    budget.end_date
+                )
+                : "-";
+
+    }
+
+
+    // ======================================================
+    // FILL REMARKS
+    // ======================================================
+
+    const remarks =
+        document.getElementById(
+            "departmentApprovalRemarks"
+        );
+
+
+    if (remarks) {
+
+        remarks.textContent =
+            budget.remarks || "-";
+
+    }
+
+
+    // ======================================================
+    // FILL CEO STATUS
+    // ======================================================
+
+    const status =
+        document.getElementById(
+            "departmentApprovalStatus"
+        );
+
+
+    if (status) {
+
+        status.textContent =
+            budget.ceo_status || "Pending";
+
+    }
+
+
+    // ======================================================
+    // FILL CEO APPROVAL DATE
+    // ======================================================
+
+    const approvalDate =
+        document.getElementById(
+            "departmentApprovalDate"
+        );
+
+
+    if (approvalDate) {
+
+        approvalDate.textContent =
+            budget.ceo_approval_date
+                ? formatDateTime(
+                    budget.ceo_approval_date
+                )
+                : "-";
+
+    }
+
+
+    // ======================================================
+    // SET PANEL TITLE
+    // ======================================================
+
+    const title =
+        approvalPanel.querySelector(
+            ".predict-header h2"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            "Department Budget Approval";
+
+    }
+
+
+    // ======================================================
+    // SHOW PANEL
+    // ======================================================
+
+    approvalPanel.style.display =
+        "block";
+
+
+    // ======================================================
+    // SCROLL TO PANEL
+    // ======================================================
+
+    approvalPanel.scrollIntoView({
+
+        behavior:
+            "smooth",
+
+        block:
+            "start"
+
+    });
+
+
+    console.log(
+        "Department Budget Approval Panel Opened."
+    );
+
+};
+
+
+// ==========================================================
+// APPROVE DEPARTMENT BUDGET
+// ==========================================================
+
+async function approveDepartmentBudget() {
+
+    const budget =
+        window.selectedDepartmentBudget;
+
+
+    if (!budget) {
+
+        alert(
+            "Please select a department budget first."
+        );
+
+        return;
+
+    }
+
+
+    await updateDepartmentBudgetApproval(
+
+        budget.department_budget_id,
+
+        "Approved"
+
+    );
+
+}
+
+
+// ==========================================================
+// REJECT DEPARTMENT BUDGET
+// ==========================================================
+
+async function rejectDepartmentBudget() {
+
+    const budget =
+        window.selectedDepartmentBudget;
+
+
+    if (!budget) {
+
+        alert(
+            "Please select a department budget first."
+        );
+
+        return;
+
+    }
+
+
+    await updateDepartmentBudgetApproval(
+
+        budget.department_budget_id,
+
+        "Rejected"
+
+    );
+
+}
+
+
+// ==========================================================
+// UPDATE DEPARTMENT BUDGET APPROVAL
+// ==========================================================
+
+async function updateDepartmentBudgetApproval(
+
+    departmentBudgetId,
+
+    status
+
+) {
+
+    try {
+
+        console.log(
+            "Updating Department Budget:",
+            departmentBudgetId
+        );
+
+
+        console.log(
+            "New CEO Status:",
+            status
+        );
+
+
+        // ==================================================
+        // CALL FLASK API
+        // ==================================================
+
+        const response =
+            await fetch(
+
+                `/ceo/api/department-budget/${departmentBudgetId}/approval`,
+
+                {
+
+                    method:
+                        "PUT",
+
+                    headers:
+                        {
+
+                            "Content-Type":
+                                "application/json",
+
+                            "Accept":
+                                "application/json"
+
+                        },
+
+                    body:
+                        JSON.stringify({
+
+                            ceo_status:
+                                status
+
+                        })
+
+                }
+
+            );
+
+
+        console.log(
+            "Approval HTTP Status:",
+            response.status
+        );
+
+
+        // ==================================================
+        // READ RESPONSE
+        // ==================================================
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Approval Response:",
+            result
+        );
+
+
+        // ==================================================
+        // CHECK RESPONSE
+        // ==================================================
+
+        if (!result.success) {
+
+            alert(
+
+                result.message ||
+
+                "Failed to update approval."
+
+            );
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // SUCCESS MESSAGE
+        // ==================================================
+
+        alert(
+
+            result.message ||
+
+            "Department budget approval updated successfully."
+
+        );
+
+
+        // ==================================================
+        // UPDATE MEMORY
+        // ==================================================
+
+        if (
+            window.selectedDepartmentBudget
+        ) {
+
+            window.selectedDepartmentBudget.ceo_status =
+                result.ceo_status;
+
+
+            window.selectedDepartmentBudget.ceo_approval_date =
+                result.ceo_approval_date ||
+                null;
+
+        }
+
+
+        // ==================================================
+        // CLOSE APPROVAL PANEL
+        // ==================================================
+
+        const approvalPanel =
+            document.getElementById(
+                "departmentBudgetApprovalPanel"
+            );
+
+
+        if (approvalPanel) {
+
+            approvalPanel.style.display =
+                "none";
+
+        }
+
+
+        // ==================================================
+        // SHOW DEPARTMENT BUDGET TAB
+        // ==================================================
+
+        const departmentBudgetTab =
+            document.getElementById(
+                "departmentBudgetTab"
+            );
+
+
+        if (departmentBudgetTab) {
+
+            departmentBudgetTab.style.display =
+                "block";
+
+        }
+
+
+        // ==================================================
+        // RELOAD DEPARTMENT BUDGETS
+        // ==================================================
+
+        if (
+            window.selectedCompanyBudgetId
+        ) {
+
+            await loadDepartmentBudgetsForCompany(
+
+                window.selectedCompanyBudgetId
+
+            );
+
+        }
+
+    }
+
+
+    catch(error) {
+
+        console.error(
+            "Approval Update Error:",
+            error
+        );
+
+
+        alert(
+            "An error occurred while updating the approval."
+        );
+
+    }
+
+}
+
+
+// ==========================================================
+// INITIALIZE CEO BUDGET MODULE
+// ==========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        console.log(
+            "CEO Budget JavaScript Loaded."
+        );
+
+        // Uncomment this if you want company
+        // budgets to load automatically.
+
+        // loadCompanyBudgets();
+
+    }
+);
 
 /* ==========================================================
         OPEN CREATE BUDGET PANEL
@@ -866,25 +2761,103 @@ document.addEventListener(
 );
 
 
+// ==========================================================
+// CURRENT SELECTED COMPANY BUDGET
+// ==========================================================
 
-/* ==========================================================
-        LOAD DEPARTMENTS FOR CREATE COMPANY BUDGET
-========================================================== */
+let selectedCompanyBudget = null;
 
-function loadCreateBudgetDepartments() {
 
-    // Get Create Budget department dropdown
-    const departmentSelect =
+
+// ==========================================================
+// FORMAT CURRENCY
+// ==========================================================
+
+function formatCurrency(amount) {
+
+    if (
+        amount === null ||
+        amount === undefined ||
+        amount === ""
+    ) {
+
+        return "0.00";
+
+    }
+
+
+    return Number(amount).toLocaleString(
+        "en-UG",
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    );
+
+}
+
+
+
+// ==========================================================
+// FORMAT DATE
+// ==========================================================
+
+function formatDate(dateValue) {
+
+    if (
+        !dateValue ||
+        dateValue === "null" ||
+        dateValue === "undefined"
+    ) {
+
+        return "-";
+
+    }
+
+
+    return dateValue;
+
+}
+
+
+
+// ==========================================================
+// LOAD COMPANY BUDGETS
+// ==========================================================
+// ==========================================================
+// SELECTED COMPANY BUDGET
+// ==========================================================
+
+
+// ==========================================================
+// LOAD COMPANY BUDGETS
+// ==========================================================
+
+async function loadCompanyBudgets() {
+
+    console.log(
+        "Loading company budgets..."
+    );
+
+
+    // ======================================================
+    // GET TABLE BODY
+    // ======================================================
+
+    const budgetBody =
         document.getElementById(
-            "createBudgetDepartment"
+            "budgetBody"
         );
 
 
-    // Check if dropdown exists
-    if (!departmentSelect) {
+    // ======================================================
+    // CHECK TABLE BODY
+    // ======================================================
+
+    if (!budgetBody) {
 
         console.error(
-            "createBudgetDepartment select not found"
+            "ERROR: budgetBody was not found."
         );
 
         return;
@@ -892,137 +2865,589 @@ function loadCreateBudgetDepartments() {
     }
 
 
-    // Show loading
-    departmentSelect.innerHTML = `
+    // ======================================================
+    // SHOW LOADING
+    // ======================================================
 
-        <option value="">
-            Loading Departments...
-        </option>
+    budgetBody.innerHTML = `
+
+        <tr>
+
+            <td
+                colspan="17"
+                style="text-align:center;">
+
+                Loading company budgets...
+
+            </td>
+
+        </tr>
 
     `;
 
 
-    // AJAX GET request
-    fetch("/ceo/api/departments", {
-
-        method: "GET",
-
-        headers: {
-
-            "Accept":
-                "application/json"
-
-        }
-
-    })
+    try {
 
 
-    // Convert response to JSON
-    .then(response => {
+        // ==================================================
+        // AJAX REQUEST
+        // ==================================================
 
-        if (!response.ok) {
+        const response =
+            await fetch(
+                "/ceo/api/company-budgets",
+                {
 
-            throw new Error(
-                "HTTP Error: " +
-                response.status
-            );
+                    method: "GET",
 
-        }
+                    headers: {
 
-        return response.json();
+                        "Accept":
+                            "application/json"
 
-    })
-
-
-    // Process JSON data
-    .then(data => {
-
-        console.log(
-            "Departments Response:",
-            data
-        );
-
-
-        // Clear dropdown
-        departmentSelect.innerHTML = `
-
-            <option value="">
-                Select Department
-            </option>
-
-        `;
-
-
-        // Check successful response
-        if (
-            data.success &&
-            Array.isArray(data.data)
-        ) {
-
-
-            // Loop through departments
-            data.data.forEach(
-                department => {
-
-                    // Create option
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
-
-
-                    // Set department ID
-                    option.value =
-                        department.department_id;
-
-
-                    // Set department name
-                    option.textContent =
-                        department.department_name;
-
-
-                    // Add option to select
-                    departmentSelect.appendChild(
-                        option
-                    );
+                    }
 
                 }
             );
 
 
-        } else {
+        // ==================================================
+        // DEBUG HTTP STATUS
+        // ==================================================
 
-            // No departments found
-            departmentSelect.innerHTML = `
-
-                <option value="">
-                    No Departments Found
-                </option>
-
-            `;
-
-        }
-
-    })
-
-
-    // Handle errors
-    .catch(error => {
-
-        console.error(
-            "Department Loading Error:",
-            error
+        console.log(
+            "Company Budgets HTTP Status:",
+            response.status
         );
 
 
-        departmentSelect.innerHTML = `
+        // ==================================================
+        // CHECK HTTP RESPONSE
+        // ==================================================
 
-            <option value="">
-                Failed to Load Departments
-            </option>
+        if (!response.ok) {
+
+            throw new Error(
+
+                "HTTP Error: " +
+                response.status
+
+            );
+
+        }
+
+
+        // ==================================================
+        // CONVERT TO JSON
+        // ==================================================
+
+        const result =
+            await response.json();
+
+
+        // ==================================================
+        // DEBUG RESPONSE
+        // ==================================================
+
+        console.log(
+            "Company Budgets Response:",
+            result
+        );
+
+
+        // ==================================================
+        // CHECK API SUCCESS
+        // ==================================================
+
+        if (
+            !result.success
+        ) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="17"
+                        style="text-align:center;">
+
+                        ${
+                            result.message ||
+                            "Failed to load company budgets."
+                        }
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // GET BUDGET DATA
+        // ==================================================
+
+        const budgets =
+            result.data || [];
+
+
+        // ==================================================
+        // CHECK IF NO DATA
+        // ==================================================
+
+        if (
+            budgets.length === 0
+        ) {
+
+            budgetBody.innerHTML = `
+
+                <tr>
+
+                    <td
+                        colspan="17"
+                        style="text-align:center;">
+
+                        No company budgets found.
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================================
+        // CLEAR TABLE
+        // ==================================================
+
+        budgetBody.innerHTML = "";
+
+
+        // ==================================================
+        // DISPLAY COMPANY BUDGETS
+        // ==================================================
+
+        budgets.forEach(
+            budget => {
+
+
+                // ==========================================
+                // CREATE ROW
+                // ==========================================
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                // ==========================================
+                // STORE COMPANY BUDGET ID
+                // ==========================================
+
+                row.dataset.companyBudgetId =
+                    budget.company_budget_id;
+
+
+                // ==========================================
+                // MAKE ROW CLICKABLE
+                // ==========================================
+
+                row.style.cursor =
+                    "pointer";
+
+
+                // ==========================================
+                // CREATE ROW CONTENT
+                // ==========================================
+
+                row.innerHTML = `
+
+                    <!-- SELECT CHECKBOX -->
+
+                    <td>
+
+                        <input
+                            type="checkbox"
+                            class="budgetCheckbox"
+                            value="${budget.company_budget_id}">
+
+                    </td>
+
+
+                    <!-- BUDGET NO -->
+
+                    <td>
+
+                        ${
+                            budget.budget_no ||
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- FINANCIAL YEAR -->
+
+                    <td>
+
+                        ${
+                            budget.financial_year ||
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- DEPARTMENT -->
+
+                    <td>
+
+                        ${
+                            budget.department_name ||
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- TOTAL BUDGET -->
+
+                    <td>
+
+                        ${
+                            typeof formatCurrency ===
+                            "function"
+
+                            ?
+
+                            formatCurrency(
+                                budget.total_budget || 0
+                            )
+
+                            :
+
+                            (
+                                budget.total_budget ||
+                                "0.00"
+                            )
+                        }
+
+                    </td>
+
+
+                    <!-- BUDGET TYPE -->
+
+                    <td>
+
+                        ${
+                            budget.budget_type ||
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- START DATE -->
+
+                    <td>
+
+                        ${
+                            typeof formatDate ===
+                            "function"
+
+                            ?
+
+                            formatDate(
+                                budget.start_date
+                            )
+
+                            :
+
+                            (
+                                budget.start_date ||
+                                "-"
+                            )
+                        }
+
+                    </td>
+
+
+                    <!-- END DATE -->
+
+                    <td>
+
+                        ${
+                            typeof formatDate ===
+                            "function"
+
+                            ?
+
+                            formatDate(
+                                budget.end_date
+                            )
+
+                            :
+
+                            (
+                                budget.end_date ||
+                                "-"
+                            )
+                        }
+
+                    </td>
+
+
+                    <!-- SPENT -->
+
+                    <td>
+
+                        ${
+                            budget.spent ||
+                            "0.00"
+                        }
+
+                    </td>
+
+
+                    <!-- BALANCE -->
+
+                    <td>
+
+                        ${
+                            typeof formatCurrency ===
+                            "function"
+
+                            ?
+
+                            formatCurrency(
+                                budget.balance || 0
+                            )
+
+                            :
+
+                            (
+                                budget.total_budget ||
+                                "0.00"
+                            )
+                        }
+
+                    </td>
+
+
+                    <!-- CREATED BY -->
+
+                    <td>
+
+                        ${
+                            budget.created_by_name ||
+                            budget.created_by ||
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- CREATED DATE -->
+
+                    <td>
+
+                        ${
+                            typeof formatDate ===
+                            "function"
+
+                            ?
+
+                            formatDate(
+                                budget.created_at
+                            )
+
+                            :
+
+                            (
+                                budget.created_at ||
+                                "-"
+                            )
+                        }
+
+                    </td>
+
+
+                    <!-- CEO APPROVAL DATE -->
+
+                    <td>
+
+                        ${
+                            budget.ceo_approval_date ||
+
+                            "-"
+                        }
+
+                    </td>
+
+
+                    <!-- CEO STATUS -->
+
+                    <td>
+
+                        ${
+                            budget.ceo_status ||
+                            "Pending"
+                        }
+
+                    </td>
+
+                `;
+
+
+                // ==========================================
+                // CHECKBOX
+                // DO NOT OPEN APPROVAL PANEL
+                // ==========================================
+
+                const checkbox =
+                    row.querySelector(
+                        ".budgetCheckbox"
+                    );
+
+
+                if (checkbox) {
+
+                    checkbox.addEventListener(
+                        "click",
+                        function(event) {
+
+                            event.stopPropagation();
+
+                        }
+                    );
+
+                }
+
+
+                // ==========================================
+                // CLICK COMPANY BUDGET ROW
+                // ==========================================
+                
+
+                row.addEventListener(
+                    "click",
+                    function(event) {
+
+
+                        // ==================================
+                        // IGNORE CHECKBOX
+                        // ==================================
+
+                        if (
+                            event.target.closest(
+                                ".budgetCheckbox"
+                            )
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        // ==================================
+                        // SAVE SELECTED BUDGET
+                        // ==================================
+
+                        selectedCompanyBudget =
+                            budget;
+
+
+                        console.log(
+                            "Selected Company Budget:",
+                            selectedCompanyBudget
+                        );
+
+
+                        console.log(
+                            "Selected Company Budget ID:",
+                            budget.company_budget_id
+                        );
+
+
+                        // ==================================
+                        // OPEN APPROVAL PANEL
+                        // ==================================
+
+                        window.openCompanyBudgetApproval(
+                            budget
+                        );
+
+                    }
+                );
+
+
+                // ==========================================
+                // ADD ROW TO TABLE
+                // ==========================================
+
+                budgetBody.appendChild(
+                    row
+                );
+
+            }
+        );
+
+
+        // ==================================================
+        // SUCCESS MESSAGE
+        // ==================================================
+
+        console.log(
+
+            budgets.length +
+            " company budget(s) loaded successfully."
+
+        );
+
+
+    }
+
+    catch(error) {
+
+
+        // ==================================================
+        // HANDLE ERROR
+        // ==================================================
+
+        console.error(
+
+            "Load Company Budgets Error:",
+
+            error
+
+        );
+
+
+        budgetBody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="17"
+                    style="text-align:center;">
+
+                    Failed to load company budgets.
+
+                </td>
+
+            </tr>
 
         `;
 
-    });
+    }
 
 }

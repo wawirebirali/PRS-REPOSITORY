@@ -836,24 +836,10 @@ UGX 530M
 
             </button>
 
-            <!-- CEO Approve -->
-            <button
-                class="approve-btn"
-                onclick="approveCompanyBudget()">
+            
+            
 
-                ✅ Approve
-
-            </button>
-
-            <!-- CEO Reject -->
-            <button
-                class="reject-btn"
-                onclick="rejectCompanyBudget()">
-
-                ❌ Reject
-
-            </button>
-
+            
         </div>
 
     </div>
@@ -882,12 +868,6 @@ UGX 530M
 
                     <th>Department</th>
 
-                    <th>Budget Item</th>
-
-                    <th>Quantity</th>
-
-                    <th>Unit Cost</th>
-
                     <th>Total Budget</th>
 
                     <th>Budget Type</th>
@@ -903,10 +883,6 @@ UGX 530M
                     <th>Created By</th>
 
                     <th>Created Date</th>
-
-                    <th>CEO Approval Date</th>
-
-                    <th>CEO Status</th>
 
                 </tr>
 
@@ -1306,112 +1282,10 @@ UGX 530M
 
     </div>
 
-        <!-- ======================================================
-                DEPARTMENT BUDGET SUMMARY
-    ======================================================= -->
-    <div
-        id="departmentBudgetTab"
-        class="department-budget-card"
-        style="display:none;">
+       
 
-        <div class="predict-header">
-
-            <h2>
-                Department Budget Summary
-            </h2>
-
-            <p>
-                View departmental budget allocation, expenditure and remaining balance.
-            </p>
-
-        </div>
-
-        <div class="form-group">
-
-            <label>
-                Select Department
-            </label>
-
-            <select
-                id="deptSelect"
-                onchange="loadDepartmentBudget()">
-
-                <option value="">
-                    Select Department
-                </option>
-
-            </select>
-
-        </div>
-
-        <div class="department-summary">
-
-            <div class="summary-item">
-
-                <strong>Department</strong>
-
-                <span id="summaryDepartment">
-                    -
-                </span>
-
-            </div>
-
-            <div class="summary-item">
-
-                <strong>Total Budget</strong>
-
-                <span id="summaryBudget">
-                    UGX 0
-                </span>
-
-            </div>
-
-            <div class="summary-item">
-
-                <strong>Total Spent</strong>
-
-                <span id="summarySpent">
-                    UGX 0
-                </span>
-
-            </div>
-
-            <div class="summary-item">
-
-                <strong>Remaining Balance</strong>
-
-                <span id="summaryBalance">
-                    UGX 0
-                </span>
-
-            </div>
-
-            <div class="summary-item">
-
-                <strong>CEO Status</strong>
-
-                <span id="summaryStatus">
-                    Pending
-                </span>
-
-            </div>
-
-        </div>
-
-        <div class="button-area">
-
-            <button
-                class="cancel-btn"
-                onclick="toggleDepartmentBudget()">
-
-                Close
-
-            </button>
-
-        </div>
-
-    </div>
-
+        
+ 
     <!-- ======================================================
                     CEO APPROVAL PANEL
     ======================================================= -->
@@ -1452,6 +1326,11 @@ UGX 530M
                 </tr>
 
                 <tr>
+                    <th>Budget Item</th>
+                    <td id="approvalBudgetItem">-</td>
+                </tr>
+
+                <tr>
                     <th>Budget Type</th>
                     <td id="approvalBudgetType">-</td>
                 </tr>
@@ -1484,7 +1363,8 @@ UGX 530M
 
             <button
                 class="approve-btn"
-                onclick="approveCompanyBudget()">
+                type="button"
+                onclick="approveDepartmentBudget()">
 
                 ✅ Approve Budget
 

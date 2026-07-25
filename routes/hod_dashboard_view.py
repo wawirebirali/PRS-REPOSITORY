@@ -1254,3 +1254,125 @@ def quotation_details(quotation_id):
     finally:
         cursor.close()
         conn.close()
+
+
+
+
+# ==========================================================
+# GET DEPARTMENT BUDGETS WITH COMPANY BUDGET NUMBER
+# ==========================================================
+
+@hod_dashboard_view_bp.route(
+    "/api/department-budgets",
+    methods=["GET"]
+)
+def get_all_department_budgets():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        cursor.execute("""
+            SELECT
+
+                db.department_budget_id,
+
+                db.company_budget_id,
+
+                cb.budget_no AS company_budget_no,
+
+                db.budget_no AS department_budget_no,
+
+                db.department_id,
+
+                db.budget_item,
+
+                db.quantity,
+
+                db.unit_cost,
+
+                db.total_budget,
+
+                db.budget_type,
+
+                db.start_date,
+
+                db.end_date,
+
+                db.ceo_status,
+
+                db.ceo_user_id,
+
+                db.ceo_approval_date,
+
+                d.department_name
+
+            FROM department_budget AS db
+
+            LEFT JOIN company_budget AS cb
+                ON db.company_budget_id =
+                   cb.company_budget_id
+
+            LEFT JOIN departments AS d
+                ON db.department_id =
+                   d.department_id
+
+            ORDER BY
+                db.department_budget_id DESC
+
+        """)
+
+
+        budgets = cursor.fetchall()
+
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "data":
+                budgets
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "GET DEPARTMENT BUDGETS ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                "Failed to load department budgets.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+        if conn:
+
+            conn.close()

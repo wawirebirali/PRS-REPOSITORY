@@ -650,3 +650,693 @@ def create_company_budget():
         if connection:
 
             connection.close()
+
+
+
+
+# ==========================================================
+# GET COMPANY BUDGETS
+#
+# URL:
+# GET /ceo/api/company-budgets
+# ==========================================================
+@ceo_dashboard_bp.route(
+    "/api/company-budgets",
+    methods=["GET"]
+)
+def get_company_budgets():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # ==================================================
+        # 1. CONNECT TO DATABASE
+        # ==================================================
+
+        conn = get_db_connection()
+
+
+        # ==================================================
+        # 2. CREATE DICTIONARY CURSOR
+        # ==================================================
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ==================================================
+        # 3. GET COMPANY BUDGETS
+        #    AND SUM DEPARTMENT BUDGETS
+        # ==================================================
+
+        cursor.execute("""
+
+            SELECT
+
+                cb.company_budget_id,
+
+                cb.budget_no,
+
+                cb.financial_year,
+
+                cb.department_id,
+
+                d.department_name,
+
+                cb.allocated_amount
+                    AS total_budget,
+
+                cb.budget_type,
+
+                cb.start_date,
+
+                cb.end_date,
+
+                cb.remarks,
+
+                cb.created_by,
+
+                u.username
+                    AS created_by_name,
+
+                cb.created_at,
+
+                cb.updated_at,
+
+
+                -- ==========================================
+                -- SUM ALL DEPARTMENT BUDGETS
+                -- FOR THIS COMPANY BUDGET
+                -- ==========================================
+
+                COALESCE(
+                    SUM(
+                        db.total_budget
+                    ),
+                    0
+                ) AS spent
+
+
+            FROM company_budget cb
+
+
+            -- ==============================================
+            -- JOIN DEPARTMENTS
+            -- ==============================================
+
+            LEFT JOIN departments d
+
+                ON cb.department_id =
+                   d.department_id
+
+
+            -- ==============================================
+            -- JOIN USERS
+            -- ==============================================
+
+            LEFT JOIN users u
+
+                ON cb.created_by =
+                   u.user_id
+
+
+            -- ==============================================
+            -- JOIN DEPARTMENT BUDGET
+            --
+            -- This connects department budgets
+            -- to their company budget
+            -- ==============================================
+
+            LEFT JOIN department_budget db
+
+                ON cb.company_budget_id =
+                   db.company_budget_id
+
+
+            -- ==============================================
+            -- GROUP BY COMPANY BUDGET
+            -- ==============================================
+
+            GROUP BY
+
+                cb.company_budget_id,
+
+                cb.budget_no,
+
+                cb.financial_year,
+
+                cb.department_id,
+
+                d.department_name,
+
+                cb.allocated_amount,
+
+                cb.budget_type,
+
+                cb.start_date,
+
+                cb.end_date,
+
+                cb.remarks,
+
+                cb.created_by,
+
+                u.username,
+
+                cb.created_at,
+
+                cb.updated_at
+
+
+            -- ==============================================
+            -- ORDER BY LATEST BUDGET
+            -- ==============================================
+
+            ORDER BY
+
+                cb.created_at DESC
+
+        """)
+
+
+        # ==================================================
+        # 4. FETCH ALL RESULTS
+        # ==================================================
+
+        budgets = cursor.fetchall()
+
+
+        # ==================================================
+        # 5. CONVERT VALUES TO JSON-SAFE STRINGS
+        # ==================================================
+
+        for budget in budgets:
+
+
+            # ==============================================
+            # START DATE
+            # ==============================================
+
+            if budget.get(
+                "start_date"
+            ):
+
+                budget[
+                    "start_date"
+                ] = str(
+                    budget[
+                        "start_date"
+                    ]
+                )
+
+
+            # ==============================================
+            # END DATE
+            # ==============================================
+
+            if budget.get(
+                "end_date"
+            ):
+
+                budget[
+                    "end_date"
+                ] = str(
+                    budget[
+                        "end_date"
+                    ]
+                )
+
+
+            # ==============================================
+            # CREATED DATE
+            # ==============================================
+
+            if budget.get(
+                "created_at"
+            ):
+
+                budget[
+                    "created_at"
+                ] = str(
+                    budget[
+                        "created_at"
+                    ]
+                )
+
+
+            # ==============================================
+            # UPDATED DATE
+            # ==============================================
+
+            if budget.get(
+                "updated_at"
+            ):
+
+                budget[
+                    "updated_at"
+                ] = str(
+                    budget[
+                        "updated_at"
+                    ]
+                )
+
+
+            # ==============================================
+            # CONVERT SPENT TO FLOAT
+            # ==============================================
+
+            if budget.get(
+                "spent"
+            ) is not None:
+
+                budget[
+                    "spent"
+                ] = float(
+                    budget[
+                        "spent"
+                    ]
+                )
+
+            else:
+
+                budget[
+                    "spent"
+                ] = 0.0
+
+
+            # ==============================================
+            # CALCULATE BALANCE
+            #
+            # Company Budget
+            # MINUS
+            # Total Department Budgets
+            # ==============================================
+
+            total_budget = float(
+                budget.get(
+                    "total_budget"
+                ) or 0
+            )
+
+
+            spent = float(
+                budget.get(
+                    "spent"
+                ) or 0
+            )
+
+
+            budget[
+                "balance"
+            ] = (
+                total_budget -
+                spent
+            )
+
+
+        # ==================================================
+        # 6. RETURN JSON RESPONSE
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "data": budgets
+
+        }), 200
+
+
+    # ======================================================
+    # HANDLE ERRORS
+    # ======================================================
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load company budgets.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    # ======================================================
+    # CLOSE DATABASE CONNECTION
+    # ======================================================
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+    # ======================================================
+    # CLOSE DATABASE CONNECTION
+    # ======================================================
+
+    
+
+
+
+
+
+
+
+# ==========================================================
+# APPROVE DEPARTMENT BUDGET
+# ==========================================================
+# POST /ceo/api/department-budget/<department_budget_id>/approve
+# ==========================================================
+
+# ==========================================================
+# CEO BUDGET MANAGEMENT ROUTES
+# ==========================================================
+
+
+
+@ceo_dashboard_bp.route(
+    "/api/department-budget/<int:department_budget_id>/approval",
+    methods=["PUT"]
+)
+def update_department_budget_approval(
+    department_budget_id
+):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # ==================================================
+        # GET LOGGED-IN CEO
+        # ==================================================
+
+        ceo_user_id = session.get(
+            "user_id"
+        )
+
+        if not ceo_user_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "CEO is not logged in."
+
+            }), 401
+
+
+        # ==================================================
+        # GET JSON DATA
+        # ==================================================
+
+        data = request.get_json()
+
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No approval data received."
+
+            }), 400
+
+
+        # ==================================================
+        # GET CEO STATUS
+        # ==================================================
+
+        ceo_status = data.get(
+                "ceo_status"
+            )
+
+
+        # ==================================================
+        # VALIDATE STATUS
+        # ==================================================
+
+        allowed_statuses = [
+
+            "Approved",
+
+            "Rejected"
+
+        ]
+
+
+        if ceo_status not in allowed_statuses:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invalid CEO approval status."
+
+            }), 400
+
+
+        # ==================================================
+        # CONNECT DATABASE
+        # ==================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ==================================================
+        # CHECK DEPARTMENT BUDGET EXISTS
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                department_budget_id,
+                company_budget_id,
+                ceo_status
+
+            FROM department_budget
+
+            WHERE department_budget_id = %s
+
+        """, (
+            department_budget_id,
+        ))
+
+
+        budget = cursor.fetchone()
+
+
+        if not budget:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Department budget not found."
+
+            }), 404
+
+
+        # ==================================================
+        # UPDATE CEO APPROVAL
+        # ==================================================
+
+        cursor.execute("""
+            UPDATE department_budget
+
+            SET
+                ceo_status = %s,
+
+                ceo_user_id = %s,
+
+                ceo_approval_date = NOW(),
+
+                updated_at = NOW()
+
+            WHERE department_budget_id = %s
+
+        """, (
+
+            ceo_status,
+
+            ceo_user_id,
+
+            department_budget_id
+
+        ))
+
+
+        conn.commit()
+
+
+        # ==================================================
+        # RETURN SUCCESS
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                f"Department budget {ceo_status.lower()} successfully.",
+
+            "department_budget_id":
+                department_budget_id,
+
+            "ceo_status":
+                ceo_status
+
+        }), 200
+
+
+    except Exception as e:
+
+        if conn:
+
+            conn.rollback()
+
+
+        print(
+            "Department Budget Approval Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to update department budget approval.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+        if conn:
+
+            conn.close()
+
+
+# ==========================================================
+# GET DEPARTMENT BUDGETS FOR A COMPANY BUDGET
+# ==========================================================
+
+@ceo_dashboard_bp.route(
+    "/api/company-budget/<int:company_budget_id>/department-budgets",
+    methods=["GET"]
+)
+def get_department_budgets_for_company(company_budget_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+        cursor.execute("""
+            SELECT
+                db.department_budget_id,
+                db.company_budget_id,
+                db.department_id,
+                db.budget_no,
+                db.budget_item,
+                db.quantity,
+                db.unit_cost,
+                db.total_budget,
+                db.budget_type,
+                db.start_date,
+                db.end_date,
+                db.ceo_status,
+                db.ceo_approval_date,
+                d.department_name
+
+            FROM department_budget AS db
+
+            LEFT JOIN departments AS d
+                ON db.department_id = d.department_id
+
+            WHERE db.company_budget_id = %s
+
+            ORDER BY db.department_budget_id DESC
+
+        """, (
+            company_budget_id,
+        ))
+
+        department_budgets = cursor.fetchall()
+
+        return jsonify({
+
+            "success": True,
+
+            "data": department_budgets
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "Load Department Budgets Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load department budgets.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
