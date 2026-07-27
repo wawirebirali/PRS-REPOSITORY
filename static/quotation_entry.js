@@ -1,304 +1,532 @@
-/*****************************************************************
-        QUOTATION ENTRY MODULE
-*****************************************************************/
+function showQuotationEntry() {
 
-/*****************************************************************
-    QUOTATION ENTRY MODULE
-*****************************************************************/
+    const quotationForm =
+        document.getElementById(
+            "quotationEntryForm"
+        );
 
+    const quotationTable =
+        document.getElementById(
+            "quotationTableList"
+        );
+
+    // ==========================================
+    // SHOW QUOTATION ENTRY FORM
+    // ==========================================
+
+    if (quotationForm) {
+
+        quotationForm.style.display =
+            "block";
+
+    }
+
+    // ==========================================
+    // HIDE QUOTATION TABLE
+    // ==========================================
+
+    if (quotationTable) {
+
+        quotationTable.style.display =
+            "none";
+
+    }
+
+    // ==========================================
+    // LOAD NEXT QUOTATION NUMBER
+    // ==========================================
+
+    loadNextQuotationNumber();
+
+}
+
+
+function hideQuotationEntry() {
+
+    const quotationForm =
+        document.getElementById(
+            "quotationEntryForm"
+        );
+
+    const quotationTable =
+        document.getElementById(
+            "quotationTableList"
+        );
+
+    if (quotationForm) {
+
+        quotationForm.style.display =
+            "none";
+
+    }
+
+    if (quotationTable) {
+
+        quotationTable.style.display =
+            "table";
+
+    }
+
+}
 
 // =====================================================
+// LOAD NEXT QUOTATION NUMBER
+// =====================================================
+
+async function loadNextQuotationNumber() {
+
+    const quotationInput =
+        document.getElementById("QTNo");
+
+    if (!quotationInput) {
+        return;
+    }
+
+    quotationInput.value = "Loading...";
+
+    try {
+
+        const response = await fetch(
+            "/procurement/api/next-quotation-number"
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            quotationInput.value =
+                data.quotation_no;
+
+        } else {
+
+            quotationInput.value = "";
+
+            console.error(
+                data.message
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load quotation number:",
+            error
+        );
+
+        quotationInput.value = "";
+
+    }
+
+}
+
+// ==========================================================
 // LOAD QRF DETAILS
-// =====================================================
+// ==========================================================
+// ==========================================================
+// LOAD QRF DETAILS
+// ==========================================================
 
-function loadQRFDetails(){
+async function loadQRFDetails() {
 
+    // ======================================================
+    // GET SELECTED QRF
+    // ======================================================
 
-    let qrf_id =
-    document.getElementById("quotationQrfSelect").value;
+    const qrfSelect =
+        document.getElementById(
+            "quotationQrfSelect"
+        );
 
+    const qrfId =
+        qrfSelect.value;
 
+    // ======================================================
+    // GET FORM ELEMENTS
+    // ======================================================
 
-    if(!qrf_id){
+    const supplierIdInput =
+        document.getElementById(
+            "quotationSupplierId"
+        );
+
+    const supplierNameInput =
+        document.getElementById(
+            "quotationSupplierName"
+        );
+
+    const itemsTableBody =
+        document.getElementById(
+            "quotationItemsTableBody"
+        );
+
+    // ======================================================
+    // NO QRF SELECTED
+    // ======================================================
+
+    if (!qrfId) {
+
+        supplierIdInput.value = "";
+
+        supplierNameInput.value = "";
+
+        itemsTableBody.innerHTML = "";
 
         return;
 
     }
 
+    // ======================================================
+    // SHOW LOADING
+    // ======================================================
 
+    supplierNameInput.value =
+        "Loading supplier...";
 
-    fetch("/procurement/get_qrf_details/" + qrf_id)
+    itemsTableBody.innerHTML = `
 
+        <tr>
 
-    .then(response=>response.json())
+            <td
+                colspan="6"
+                style="text-align:center;">
 
+                Loading quotation items...
 
-    .then(data=>{
+            </td>
 
+        </tr>
 
-        console.log("QRF DATA:",data);
+    `;
 
+    try {
 
+        // ==================================================
+        // FETCH QRF DETAILS
+        // ==================================================
 
-        // ==========================
-        // SUPPLIER
-        // ==========================
-
-
-        document.getElementById(
-            "quotationSupplierId"
-        ).value =
-        data.supplier_id || "";
-
-
-
-        document.getElementById(
-            "quotationSupplierName"
-        ).value =
-        data.supplier_name || "";
-
-
-
-
-
-        // ==========================
-        // ITEMS TABLE
-        // ==========================
-
-
-        let tbody =
-        document.getElementById(
-            "quotationItemBody"
-        );
-
-
-
-        if(!tbody){
-
-            console.error(
-                "quotationItemBody missing"
+        const response =
+            await fetch(
+                `/procurement/api/quotation-request/${qrfId}`
             );
+
+        // ==================================================
+        // CONVERT RESPONSE TO JSON
+        // ==================================================
+
+        const data =
+            await response.json();
+
+        // ==================================================
+        // CHECK RESPONSE
+        // ==================================================
+
+        if (
+            !response.ok ||
+            !data.success
+        ) {
+
+            alert(
+                data.message ||
+                "Failed to load QRF details."
+            );
+
+            supplierIdInput.value = "";
+
+            supplierNameInput.value = "";
+
+            itemsTableBody.innerHTML = "";
 
             return;
 
         }
 
+        // ==================================================
+        // LOAD SUPPLIER
+        // ==================================================
 
+        if (
+            data.suppliers &&
+            data.suppliers.length > 0
+        ) {
 
+            // ----------------------------------------------
+            // GET FIRST SUPPLIER
+            // ----------------------------------------------
 
-        tbody.innerHTML="";
+            const supplier =
+                data.suppliers[0];
 
+            // ----------------------------------------------
+            // STORE SUPPLIER ID
+            // ----------------------------------------------
 
+            supplierIdInput.value =
+                supplier.supplier_id;
 
+            // ----------------------------------------------
+            // DISPLAY SUPPLIER NAME
+            // ----------------------------------------------
 
-        data.items.forEach(item=>{
+            supplierNameInput.value =
+                supplier.supplier_name;
 
+        }
 
-            let row=document.createElement("tr");
+        else {
 
+            supplierIdInput.value = "";
 
+            supplierNameInput.value =
+                "No supplier found";
 
-            row.innerHTML=`
+        }
 
+        // ==================================================
+        // CLEAR OLD ITEMS
+        // ==================================================
 
-<td>
+        itemsTableBody.innerHTML = "";
 
-<input class="qitem"
-value="${item.material_name || ''}">
+        // ==================================================
+        // CHECK ITEMS
+        // ==================================================
 
-</td>
+        if (
+            !data.items ||
+            data.items.length === 0
+        ) {
 
+            itemsTableBody.innerHTML = `
 
+                <tr>
 
-<td>
+                    <td
+                        colspan="6"
+                        style="text-align:center;">
 
-<input class="qdesc"
-value="${item.description || ''}">
+                        No items found for this QRF.
 
-</td>
+                    </td>
 
+                </tr>
 
+            `;
 
-<td>
+            return;
 
-<input type="number"
-class="qqty"
-value="${item.quantity || 0}"
-oninput="calculateQuotation(this)">
+        }
 
-</td>
+        // ==================================================
+        // LOAD ITEMS
+        // ==================================================
 
+        data.items.forEach(
+            item => {
 
+                // ==========================================
+                // CREATE TABLE ROW
+                // ==========================================
 
-<td>
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
 
-<input type="number"
-class="qprice"
-value="0"
-oninput="calculateQuotation(this)">
+                // ==========================================
+                // STORE ORIGINAL QRF DATA
+                // ==========================================
 
-</td>
+                row.dataset.qrfItemId =
+                    item.quotation_request_item_id ||
+                    "";
 
+                // ==========================================
+                // ITEM ROW
+                // ==========================================
 
+                row.innerHTML = `
 
-<td>
+                    <!-- ==================================
+                         ITEM NAME
+                    =================================== -->
 
-<input class="qamount"
-readonly>
+                    <td>
 
-</td>
+                        <input
+                            type="text"
+                            class="quotation-item-name"
+                            value="${item.material_name || ""}">
 
+                    </td>
 
+                    <!-- ==================================
+                         DESCRIPTION
+                    =================================== -->
 
-<td>
+                    <td>
 
-<button
-type="button"
-class="btn danger"
-onclick="removeQuotationRow(this)">
+                        <input
+                            type="text"
+                            class="quotation-item-description"
+                            value="${item.description || ""}">
 
-X
+                    </td>
 
-</button>
+                    <!-- ==================================
+                         QUANTITY
+                    =================================== -->
 
+                    <td>
 
-</td>
+                        <div
+                            style="
+                                display:flex;
+                                gap:5px;
+                            ">
 
+                            <input
+                                type="number"
+                                class="quotation-item-quantity"
+                                value="${item.quantity || 0}"
+                                min="0"
+                                step="1"
+                                style="width:80px;"
+                                oninput="
+                                    calculateQuotationRow(this)
+                                ">
 
-`;
+                            <input
+                                type="text"
+                                class="quotation-item-uom"
+                                value="${item.uom || ""}"
+                                placeholder="UOM"
+                                style="width:80px;">
 
+                        </div>
 
+                    </td>
 
-            tbody.appendChild(row);
+                    <!-- ==================================
+                         UNIT PRICE
+                    =================================== -->
 
+                    <td>
 
+                        <input
+                            type="number"
+                            class="quotation-item-price"
+                            value="0"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            oninput="
+                                calculateQuotationRow(this)
+                            ">
 
-        });
+                    </td>
 
+                    <!-- ==================================
+                         TOTAL
+                    =================================== -->
 
+                    <td>
 
-    })
+                        <span
+                            class="quotation-item-total">
 
+                            0.00
 
+                        </span>
 
-    .catch(error=>{
+                    </td>
 
+                    <!-- ==================================
+                         REMOVE
+                    =================================== -->
+
+                    <td>
+
+                        <button
+                            type="button"
+                            class="btn danger"
+                            onclick="
+                                removeQuotationRow(this)
+                            ">
+
+                            Remove
+
+                        </button>
+
+                    </td>
+
+                `;
+
+                // ==========================================
+                // ADD ROW TO TABLE
+                // ==========================================
+
+                itemsTableBody.appendChild(
+                    row
+                );
+
+                // ==========================================
+                // CALCULATE INITIAL TOTAL
+                // ==========================================
+
+                calculateQuotationRow(
+                    row.querySelector(
+                        ".quotation-item-price"
+                    )
+                );
+
+            }
+        );
+
+    }
+
+    catch (error) {
+
+        // ==================================================
+        // LOG ERROR
+        // ==================================================
 
         console.error(
-            "QRF LOAD ERROR:",
+            "QRF details error:",
             error
         );
 
+        // ==================================================
+        // CLEAR FORM
+        // ==================================================
+
+        supplierIdInput.value = "";
+
+        supplierNameInput.value = "";
+
+        itemsTableBody.innerHTML = "";
+
+        // ==================================================
+        // SHOW ERROR
+        // ==================================================
 
         alert(
-            "Unable to load QRF details"
+            "Failed to load QRF details. Please try again."
         );
 
-
-    });
-
-
+    }
 
 }
-
-
-
-
-
-
-// =====================================================
-// ADD ITEM
-// =====================================================
-
-
-function addQuotationRow(){
-
-
-
-    let tbody =
-    document.getElementById(
-        "quotationItemBody"
-    );
-
-
-
-    let row =
-    document.createElement("tr");
-
-
-
-    row.innerHTML=`
-
-
-<td>
-<input class="qitem">
-</td>
-
-
-<td>
-<input class="qdesc">
-</td>
-
-
-<td>
-<input type="number"
-class="qqty"
-value="1"
-oninput="calculateQuotation(this)">
-</td>
-
-
-<td>
-<input type="number"
-class="qprice"
-value="0"
-oninput="calculateQuotation(this)">
-</td>
-
-
-<td>
-<input class="qamount" readonly>
-</td>
-
-
-<td>
-
-<button
-type="button"
-class="btn danger"
-onclick="removeQuotationRow(this)">
-
-X
-
-</button>
-
-</td>
-
-
-`;
-
-
-
-tbody.appendChild(row);
-
-
-}
-
-
-
-
 
 // =====================================================
 // REMOVE ROW
 // =====================================================
-
 
 function removeQuotationRow(btn){
 
     btn.closest("tr").remove();
 
 }
-
 
 
 
@@ -308,38 +536,34 @@ function removeQuotationRow(btn){
 // CALCULATE AMOUNT
 // =====================================================
 
+function calculateQuotationRow(input) {
 
-function calculateQuotation(input){
+    const row =
+        input.closest("tr");
 
+    const quantity =
+        parseFloat(
+            row.querySelector(
+                ".quotation-item-quantity"
+            ).value
+        ) || 0;
 
-    let row =
-    input.closest("tr");
+    const unitPrice =
+        parseFloat(
+            row.querySelector(
+                ".quotation-item-price"
+            ).value
+        ) || 0;
 
+    const total =
+        quantity * unitPrice;
 
-
-    let qty =
-    parseFloat(
-        row.querySelector(".qqty").value
-    ) || 0;
-
-
-
-    let price =
-    parseFloat(
-        row.querySelector(".qprice").value
-    ) || 0;
-
-
-
-    row.querySelector(".qamount").value =
-    (qty * price).toFixed(2);
-
-
+    row.querySelector(
+        ".quotation-item-total"
+    ).textContent =
+        total.toFixed(2);
 
 }
-
-
-
 
 
 
@@ -348,219 +572,424 @@ function calculateQuotation(input){
 // SAVE QUOTATION
 // =====================================================
 
+// ==========================================================
+// SAVE QUOTATION
+// ==========================================================
 
-function saveQuotation(){
+async function saveQuotation() {
 
+    // ======================================================
+    // GET HEADER VALUES
+    // ======================================================
 
-
-    let payload={
-
-
-
-        qrf_id:
-
+    const qrfId =
         document.getElementById(
             "quotationQrfSelect"
-        ).value,
+        ).value;
 
-
-
-        supplier_id:
-
+    const supplierId =
         document.getElementById(
             "quotationSupplierId"
-        ).value,
+        ).value;
 
-
-
-        delivery_date:
-
+    const deliveryDate =
         document.getElementById(
             "quotationDeliveryDate"
-        ).value,
+        ).value;
 
-
-
-        payment_terms:
-
+    const paymentTerms =
         document.getElementById(
             "quotationPaymentTerms"
-        ).value,
+        ).value;
 
-
-
-        warranty:
-
+    const warranty =
         document.getElementById(
             "quotationWarranty"
-        ).value,
+        ).value;
 
+    // ======================================================
+    // VALIDATE QRF
+    // ======================================================
 
-
-        items:[]
-
-
-    };
-
-
-
-
-
-
-
-    document
-    .querySelectorAll(
-        "#quotationItemBody tr"
-    )
-    .forEach(row=>{
-
-
-        payload.items.push({
-
-
-            item_name:
-
-            row.querySelector(".qitem").value,
-
-
-
-            description:
-
-            row.querySelector(".qdesc").value,
-
-
-
-            quantity:
-
-            row.querySelector(".qqty").value,
-
-
-
-            unit_price:
-
-            row.querySelector(".qprice").value
-
-
-
-        });
-
-
-
-    });
-
-
-
-
-
-
-    if(!payload.qrf_id){
-
+    if (!qrfId) {
 
         alert(
-            "Select QRF first"
+            "Please select a QRF."
         );
 
         return;
 
     }
 
+    // ======================================================
+    // VALIDATE SUPPLIER
+    // ======================================================
 
+    if (!supplierId) {
 
+        alert(
+            "Please select a supplier."
+        );
 
-    fetch(
-        "/procurement/Quotation_entry",
-        {
+        return;
 
-            method:"POST",
+    }
 
-            headers:{
+    // ======================================================
+    // GET ALL QUOTATION ITEM ROWS
+    // ======================================================
 
-                "Content-Type":
-                "application/json"
+    const rows =
+        document.querySelectorAll(
+            "#quotationItemsTableBody tr"
+        );
 
-            },
+    // ======================================================
+    // CHECK IF ITEMS EXIST
+    // ======================================================
 
+    if (rows.length === 0) {
 
-            body:
-            JSON.stringify(payload)
+        alert(
+            "Add at least one item."
+        );
+
+        return;
+
+    }
+
+    // ======================================================
+    // CREATE ITEMS ARRAY
+    // ======================================================
+
+    const items = [];
+
+    // ======================================================
+    // READ EACH ITEM
+    // ======================================================
+
+    rows.forEach(
+        row => {
+
+            // ----------------------------------------------
+            // GET INPUTS
+            // ----------------------------------------------
+
+            const itemNameInput =
+                row.querySelector(
+                    ".quotation-item-name"
+                );
+
+            const descriptionInput =
+                row.querySelector(
+                    ".quotation-item-description"
+                );
+
+            const quantityInput =
+                row.querySelector(
+                    ".quotation-item-quantity"
+                );
+
+            const uomInput =
+                row.querySelector(
+                    ".quotation-item-uom"
+                );
+
+            const unitPriceInput =
+                row.querySelector(
+                    ".quotation-item-price"
+                );
+
+            // ----------------------------------------------
+            // CHECK INPUTS EXIST
+            // ----------------------------------------------
+
+            if (
+                !itemNameInput ||
+                !quantityInput ||
+                !unitPriceInput
+            ) {
+
+                return;
+
+            }
+
+            // ----------------------------------------------
+            // GET VALUES
+            // ----------------------------------------------
+
+            const itemName =
+                itemNameInput.value.trim();
+
+            const description =
+                descriptionInput
+                    ? descriptionInput.value.trim()
+                    : "";
+
+            const quantity =
+                parseFloat(
+                    quantityInput.value
+                ) || 0;
+
+            const uom =
+                uomInput
+                    ? uomInput.value.trim()
+                    : "";
+
+            const unitPrice =
+                parseFloat(
+                    unitPriceInput.value
+                ) || 0;
+
+            // ----------------------------------------------
+            // CALCULATE AMOUNT
+            // ----------------------------------------------
+
+            const amount =
+                quantity *
+                unitPrice;
+
+            // ----------------------------------------------
+            // ADD ITEM
+            // ----------------------------------------------
+
+            if (itemName) {
+
+                items.push({
+
+                    item_name:
+                        itemName,
+
+                    description:
+                        description,
+
+                    quantity:
+                        quantity,
+
+                    uom:
+                        uom,
+
+                    unit_price:
+                        unitPrice,
+
+                    amount:
+                        amount
+
+                });
+
+            }
+
+        }
+    );
+
+    // ======================================================
+    // CHECK ITEMS AFTER READING
+    // ======================================================
+
+    if (items.length === 0) {
+
+        alert(
+            "Add at least one item."
+        );
+
+        return;
+
+    }
+
+    // ======================================================
+    // VALIDATE QUANTITY AND PRICE
+    // ======================================================
+
+    for (
+        const item of items
+    ) {
+
+        if (
+            item.quantity <= 0
+        ) {
+
+            alert(
+                `Please enter a valid quantity for ${item.item_name}.`
+            );
+
+            return;
 
         }
 
-    )
-
-
-    .then(response=>response.json())
-
-
-    .then(data=>{
-
-
-        console.log(data);
-
-
-
-        if(data.success){
-
+        if (
+            item.unit_price <= 0
+        ) {
 
             alert(
-                "Quotation saved successfully"
+                `Please enter a unit price for ${item.item_name}.`
             );
 
+            return;
+
+        }
+
+    }
+
+    // ======================================================
+    // CALCULATE GRAND TOTAL
+    // ======================================================
+
+    const totalAmount =
+        items.reduce(
+            (
+                total,
+                item
+            ) => {
+
+                return (
+                    total +
+                    item.amount
+                );
+
+            },
+            0
+        );
+
+    // ======================================================
+    // PREPARE DATA
+    // ======================================================
+
+    const quotationData = {
+
+        qrf_id:
+            parseInt(qrfId),
+
+        supplier_id:
+            parseInt(supplierId),
+
+        delivery_date:
+            deliveryDate || null,
+
+        payment_terms:
+            paymentTerms || null,
+
+        warranty:
+            warranty || null,
+
+        total_amount:
+            totalAmount,
+
+        items:
+            items
+
+    };
+
+    // ======================================================
+    // DEBUG
+    // ======================================================
+
+    console.log(
+        "QUOTATION DATA TO SAVE:",
+        quotationData
+    );
+	
+    // ======================================================
+    // SEND TO FLASK
+    // ======================================================
+
+    try {
+
+        const response =
+            await fetch(
+                "/procurement/api/quotation/save",
+                {
+
+                    method:
+                        "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            quotationData
+                        )
+
+                }
+            );
+
+        // ==================================================
+        // READ RESPONSE
+        // ==================================================
+
+        const result =
+            await response.json();
+
+        // ==================================================
+        // CHECK RESPONSE
+        // ==================================================
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            console.error(
+                "Save quotation response:",
+                result
+            );
+
+            alert(
+                result.message ||
+                "Failed to save quotation."
+            );
+
+            return;
+
+        }
+
+        // ==================================================
+        // SUCCESS
+        // ==================================================
+
+        alert(
+            "Quotation saved successfully."
+        );
+
+        // ==================================================
+        // CLOSE FORM
+        // ==================================================
+
+        hideQuotationEntry();
+
+        // ==================================================
+        // RELOAD QUOTATIONS
+        // ==================================================
+
+        if (
+            typeof loadQuotations ===
+            "function"
+        ) {
 
             loadQuotations();
 
-
         }
 
-        else{
+    }
 
-
-            alert(
-                data.message
-            );
-
-
-        }
-
-
-    })
-
-
-    .catch(error=>{
-
+    catch (error) {
 
         console.error(
-            "SAVE ERROR",
+            "Save quotation error:",
             error
         );
 
-
         alert(
-            "Server error"
+            "An error occurred while saving the quotation."
         );
 
-
-    });
-
-
+    }
 
 }
-
-// =====================================================
-// REMOVE ITEM
-// =====================================================
-
-function removeQuotationRow(btn){
-
-
-    btn.closest("tr").remove();
-
-
-}
-
-
-
-
 
 
 
@@ -570,10 +999,8 @@ function removeQuotationRow(btn){
 
 function calculateQuotation(input){
 
-
     let row =
     input.closest("tr");
-
 
 
     let qty =
@@ -582,12 +1009,10 @@ function calculateQuotation(input){
     ) || 0;
 
 
-
     let price =
     parseFloat(
         row.querySelector(".qprice").value
     ) || 0;
-
 
 
     row.querySelector(
@@ -596,7 +1021,6 @@ function calculateQuotation(input){
     (qty * price).toFixed(2);
 
 
-
 }
 
 
@@ -604,297 +1028,3 @@ function calculateQuotation(input){
 
 
 
-
-// =====================================================
-// SAVE QUOTATION
-// =====================================================
-
-function saveQuotation(){
-
-
-
-    let qrf_id =
-    document.getElementById(
-        "quotationQrfSelect"
-    ).value;
-
-
-
-    let supplier_id =
-    document.getElementById(
-        "quotationSupplierId"
-    ).value;
-
-
-
-    let delivery_date =
-    document.getElementById(
-        "quotationDeliveryDate"
-    ).value;
-
-
-
-    let payment_terms =
-    document.getElementById(
-        "quotationPaymentTerms"
-    ).value;
-
-
-
-    let warranty =
-    document.getElementById(
-        "quotationWarranty"
-    ).value;
-
-
-
-
-
-    if(!qrf_id){
-
-
-        alert(
-            "Please select QRF"
-        );
-
-        return;
-
-    }
-
-
-
-    if(!supplier_id){
-
-
-        alert(
-            "Supplier missing"
-        );
-
-        return;
-
-    }
-
-
-
-
-
-    let items=[];
-
-
-
-    document
-    .querySelectorAll(
-        "#quotationItemTable tbody tr"
-    )
-    .forEach(row=>{
-
-
-
-        let item_name =
-        row.querySelector(
-            ".qitem"
-        ).value;
-
-
-
-        let description =
-        row.querySelector(
-            ".qdesc"
-        ).value;
-
-
-
-        let quantity =
-        row.querySelector(
-            ".qqty"
-        ).value;
-
-
-
-        let unit_price =
-        row.querySelector(
-            ".qprice"
-        ).value;
-
-
-
-
-        items.push({
-
-
-            item_name:item_name,
-
-
-            description:description,
-
-
-            quantity:quantity,
-
-
-            unit_price:unit_price
-
-
-        });
-
-
-
-    });
-
-
-
-
-
-
-    if(items.length===0){
-
-
-        alert(
-            "No quotation items found"
-        );
-
-
-        return;
-
-    }
-
-
-
-
-
-
-    let payload = {
-
-
-        qrf_id:qrf_id,
-
-
-        supplier_id:supplier_id,
-
-
-        delivery_date:delivery_date,
-
-
-        payment_terms:payment_terms,
-
-
-        warranty:warranty,
-
-
-        items:items
-
-
-    };
-
-
-
-
-
-
-
-    fetch(
-        "/procurement/Quotation_entry",
-        {
-
-
-            method:"POST",
-
-
-            headers:{
-
-
-                "Content-Type":
-                "application/json"
-
-
-            },
-
-
-            body:
-            JSON.stringify(payload)
-
-
-        }
-
-    )
-
-
-
-    .then(response=>response.json())
-
-
-
-    .then(data=>{
-
-
-
-        if(data.success){
-
-
-            alert(
-                "Quotation Saved Successfully\n"
-                + data.quotation_no
-            );
-
-
-            location.reload();
-
-
-
-        }
-
-        else{
-
-
-            alert(
-                data.message
-            );
-
-
-        }
-
-
-
-    })
-
-
-
-    .catch(error=>{
-
-
-        console.error(
-            "SAVE QUOTATION ERROR:",
-            error
-        );
-
-
-        alert(
-            "Server error saving quotation"
-        );
-
-
-    });
-
-
-
-}
-
-
-
-
-
-
-
-
-// =====================================================
-// HIDE FORM
-// =====================================================
-
-function hideQuotationEntry(){
-
-
-    document.getElementById(
-        "quotationEntryForm"
-    ).style.display="none";
-
-
-}

@@ -1360,55 +1360,269 @@ function selectQuotation(radio){
             alert("Failed to load quotation details.");
         });
 }
+// ============================================================
+// LOAD QUOTATION REQUESTS
+// ============================================================
 
-function loadQuotationRequests(){
+function loadQuotationRequests() {
+
     selectedQuotationId = null;
+
     selectedQuotationMode = "request";
+
     quotationViewMode = "request";
 
-    fetch("/hod/quotationRequest_data")
-        .then(res => {
-            if (!res.ok) throw new Error(`Quotation request list request failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            let body = document.getElementById("quotationBody");
-            body.innerHTML = "";
 
-            if (!data || data.length === 0) {
-                body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;">No quotation requests found.</td></tr>`;
-                return;
+    // ========================================================
+    // FETCH QRF DATA
+    // ========================================================
+
+    fetch("/hod/qrf/data")
+
+        .then(res => {
+
+            if (!res.ok) {
+
+                throw new Error(
+                    `Quotation request list request failed: ${res.status}`
+                );
+
             }
 
-            data.forEach(item => {
-                let row = document.createElement("tr");
-                row.style.cursor = "pointer";
-                row.innerHTML = `
-                    <td><input type="radio" name="quotationSelect" data-qrf-id="${item.qrf_id}"></td>
-                    <td>${item.qrf_no || "-"}</td>
-                    <td>${item.prs_no || "-"}</td>
-                    <td>${item.supplier_name || "-"}</td>
-                    <td>${item.status || "-"}</td>
-                    <td>${item.department || "-"}</td>
-                    <td>${item.request_date || "-"}</td>
-                `;
-                row.addEventListener("click", () => {
-                    const radio = row.querySelector("input[name='quotationSelect']");
-                    if (radio) {
-                        radio.checked = true;
-                        document.querySelectorAll("#quotationBody tr").forEach(r => r.classList.remove("selected"));
-                        row.classList.add("selected");
-                        quotationViewMode = "request";
-                        selectQuotation(radio);
-                    }
-                });
-                body.appendChild(row);
-            });
+            return res.json();
+
         })
+
+
+        // ====================================================
+        // PROCESS RESPONSE
+        // ====================================================
+
+        .then(response => {
+
+            console.log(
+                "QRF API Response:",
+                response
+            );
+
+
+            const body =
+                document.getElementById(
+                    "quotationBody"
+                );
+
+
+            if (!body) {
+
+                console.error(
+                    "quotationBody not found."
+                );
+
+                return;
+
+            }
+
+
+            // =================================================
+            // CLEAR TABLE
+            // =================================================
+
+            body.innerHTML = "";
+
+
+            // =================================================
+            // GET DATA ARRAY
+            // =================================================
+
+            const data =
+                response.data || [];
+
+
+            // =================================================
+            // NO QRF RECORDS
+            // =================================================
+
+            if (
+                data.length === 0
+            ) {
+
+                body.innerHTML = `
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            style="
+                                text-align:center;
+                                padding:16px;
+                            "
+                        >
+
+                            No quotation requests found.
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+                return;
+
+            }
+
+
+            // =================================================
+            // CREATE TABLE ROWS
+            // =================================================
+
+            data.forEach(item => {
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                row.style.cursor =
+                    "pointer";
+
+
+                // =============================================
+                // CREATE ROW
+                // =============================================
+
+                row.innerHTML = `
+
+                    <td>
+
+                        <input
+                            type="radio"
+                            name="quotationSelect"
+                            data-qrf-id="${item.qrf_id || ""}"
+                        >
+
+                    </td>
+
+
+                    <td>
+                        ${item.qrf_no || "-"}
+                    </td>
+
+
+                    <td>
+                        ${item.prs_no || "-"}
+                    </td>
+
+
+                    <td>
+                        ${item.requester_name || "-"}
+                    </td>
+
+
+                    <td>
+                        ${item.status || "PENDING"}
+                    </td>
+
+
+                    <td>
+                        ${item.department_name || "-"}
+                    </td>
+
+
+                    <td>
+                        ${item.request_date || "-"}
+                    </td>
+
+                `;
+
+
+                // =============================================
+                // ROW CLICK
+                // =============================================
+
+                row.addEventListener(
+                    "click",
+                    () => {
+
+                        const radio =
+                            row.querySelector(
+                                "input[name='quotationSelect']"
+                            );
+
+
+                        if (radio) {
+
+                            // Check radio
+                            radio.checked =
+                                true;
+
+
+                            // Remove previous selection
+                            document
+                                .querySelectorAll(
+                                    "#quotationBody tr"
+                                )
+                                .forEach(
+                                    r =>
+                                        r.classList.remove(
+                                            "selected"
+                                        )
+                                );
+
+
+                            // Select current row
+                            row.classList.add(
+                                "selected"
+                            );
+
+
+                            // Set view mode
+                            quotationViewMode =
+                                "request";
+
+
+                            // Select QRF
+                            selectQuotation(
+                                radio
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                // =============================================
+                // ADD ROW TO TABLE
+                // =============================================
+
+                body.appendChild(
+                    row
+                );
+
+            });
+
+        })
+
+
+        // ====================================================
+        // ERROR HANDLING
+        // ====================================================
+
         .catch(error => {
-            console.error(error);
-            alert("Failed to load quotation request list.");
+
+            console.error(
+                "QRF Loading Error:",
+                error
+            );
+
+
+            alert(
+                "Failed to load quotation request list."
+            );
+
         });
+
 }
 
 function showSupplierDetails(supplier){

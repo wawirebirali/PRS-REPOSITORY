@@ -172,3 +172,10 @@ CREATE TABLE requisitions (
         ON DELETE RESTRICT
 
 ) ENGINE=InnoDB;
+
+
+
+
+ALTER TABLE quotation_records_items
+ADD COLUMN uom VARCHAR(50) NULL
+AFTER quantity;

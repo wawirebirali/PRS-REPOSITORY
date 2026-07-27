@@ -1796,6 +1796,30 @@ Date
 
                 </div>
 
+
+
+                <div class="form-group">
+
+                    <label for="QTNo">
+                        QUOTATION NUMBER
+                    </label>
+
+                    <input
+                        type="text"
+                        id="QTNo"
+                        name="quotation_number"
+                        readonly
+                        placeholder="Generating..."
+                    >
+
+                </div>
+
+
+
+
+
+
+
                 <!-- ======================================
                         DELIVERY / PAYMENT
                 ======================================= -->
@@ -1902,8 +1926,7 @@ Date
 
                     </h3>
 
-                    <table
-                        id="quotationItemsTable">
+                    <table id="quotationItemsTable">
 
                         <thead>
 
@@ -1911,7 +1934,7 @@ Date
 
                                 <th>Item</th>
                                 <th>Description</th>
-                                <th>Qty</th>
+                                <th>Quantity / UOM</th>
                                 <th>Unit Price</th>
                                 <th>Total</th>
                                 <th>Action</th>
@@ -1920,12 +1943,13 @@ Date
 
                         </thead>
 
-                        <tbody
-                            id="quotationItemsTableBody">
+                        <tbody id="quotationItemsTableBody">
 
                         </tbody>
 
                     </table>
+
+                    
 
                 </div>
 
@@ -2240,7 +2264,6 @@ Date
 <!-- =====================================================
         PURCHASE ORDER MODULE
 ===================================================== -->
-
 <!-- =====================================================
         PURCHASE ORDER MODULE
 ===================================================== -->
@@ -2249,30 +2272,60 @@ Date
 
     <div class="container">
 
-        <!-- ================= LEFT PANEL ================= -->
+        <!-- =================================================
+                LEFT PANEL
+        ================================================== -->
 
         <div class="left">
+
+            <!-- ================= HEADER ================= -->
 
             <div class="header">
                 Purchase Order Management
             </div>
 
+
+            <!-- ================= ACTIONS / SEARCH ================= -->
+
             <div class="search">
 
-                <button class="btn primary"
-                        onclick="window.location.href='/procurement/create_grn'">
+                <!-- CREATE GRN -->
+
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="window.location.href='/procurement/create_grn'">
+
                     + Create GRN
+
                 </button>
 
-                <button class="btn primary"
-                        onclick="showPOQuotationBox()">
+
+                <!-- CREATE PO FROM QUOTATION -->
+
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="showPOQuotationBox()">
+
                     + Create PO From Quotation
+
                 </button>
 
-                <button class="btn primary"
-                        onclick="downloadPDF('poPrintArea','PO_Slip')">
+
+                <!-- DOWNLOAD PDF -->
+
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="downloadPDF('poPrintArea', 'PO_Slip')">
+
                     Download PDF
+
                 </button>
+
+
+                <!-- SEARCH -->
 
                 <input
                     id="poSearch"
@@ -2282,18 +2335,33 @@ Date
 
             </div>
 
+
             <br>
 
-            <button class="btn primary"
-                    onclick="printPO()">
+
+            <!-- ================= PRINT BUTTON ================= -->
+
+            <button
+                type="button"
+                class="btn primary"
+                onclick="printPO()">
+
                 Print PO
+
             </button>
 
-            <br><br>
 
-            <!-- ================= PO TABLE ================= -->
+            <br>
+            <br>
 
-            <table id="poTable" class="data-table">
+
+            <!-- =================================================
+                    PURCHASE ORDER TABLE
+            ================================================== -->
+
+            <table
+                id="poTable"
+                class="data-table">
 
                 <thead>
 
@@ -2311,6 +2379,7 @@ Date
 
                 </thead>
 
+
                 <tbody id="poBody">
 
                     <!-- Loaded by JavaScript -->
@@ -2319,35 +2388,56 @@ Date
 
             </table>
 
-            <!-- ==========================================
-                    CREATE PO FROM QUOTATION
-            =========================================== -->
 
-            <div id="poQuotationBox"
-                 class="po-quotation-box"
-                 style="display:none;">
+            <!-- =================================================
+                    CREATE PO FROM QUOTATION
+            ================================================== -->
+
+            <div
+                id="poQuotationBox"
+                class="po-quotation-box"
+                style="display:none;">
+
+
+                <!-- ================= HEADER ================= -->
 
                 <div class="header">
 
-                    SELECT APPROVED QUOTATION
+                    CREATE PURCHASE ORDER
 
                 </div>
 
+
+                <!-- =================================================
+                        SELECT PRS
+                ================================================== -->
+
                 <div class="form-group">
 
-                    <label>Quotation No</label>
+                    <label for="po_prs_id">
 
-                    <select id="po_quotation_id"
-                            onchange="loadQuotationForPO()">
+                        PRS Number
+
+                    </label>
+
+
+                    <select
+                        id="po_prs_id"
+                        onchange="loadPRSQuotationsForPO()">
 
                         <option value="">
-                            -- Select Quotation --
+
+                            -- Select PRS --
+
                         </option>
 
-                        {% for q in quotations %}
 
-                        <option value="{{ q.quotation_id }}">
-                            {{ q.quotation_no }}
+                        {% for r in requisitions %}
+
+                        <option value="{{ r.requisition_id }}">
+
+                            {{ r.prs_no }}
+
                         </option>
 
                         {% endfor %}
@@ -2356,73 +2446,384 @@ Date
 
                 </div>
 
-                <div class="form-group">
 
-                    <label>Supplier</label>
+                <!-- =================================================
+                        QUOTATION COMPARISON
+                ================================================== -->
 
-                    <input
-                        type="text"
-                        id="po_supplier"
-                        readonly>
+                <div
+                    id="poQuotationComparison"
+                    class="quotation-comparison"
+                    style="display:none;">
 
-                </div>
 
-                <div class="form-group">
+                    <h3>
 
-                    <label>Department</label>
+                        Available Quotations
 
-                    <input
-                        type="text"
-                        id="po_department"
-                        readonly>
+                    </h3>
 
-                </div>
 
-                <div class="items-section">
-
-                    <h3>Quotation Items</h3>
-
-                    <table id="poItemsTable">
+                    <table
+                        id="poQuotationComparisonTable">
 
                         <thead>
 
                             <tr>
 
-                                <th>Item</th>
-                                <th>Description</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
+                                <th>Select</th>
+                                <th>Quotation No</th>
+                                <th>Supplier</th>
+                                <th>Total Amount</th>
+                                <th>Delivery Days</th>
+                                <th>Warranty</th>
 
                             </tr>
 
                         </thead>
 
-                        <tbody id="poQuotationItemsBody">
+
+                        <tbody
+                            id="poQuotationComparisonBody">
+
+                            <tr>
+
+                                <td
+                                    colspan="6"
+                                    style="text-align:center;">
+
+                                    Select a PRS to load quotations.
+
+                                </td>
+
+                            </tr>
 
                         </tbody>
 
                     </table>
 
+
+                    <br>
+
+
+                    <!-- COMPARE -->
+
+                    <button
+                        type="button"
+                        class="btn primary"
+                        onclick="comparePOQuotations()">
+
+                        Compare Quotations
+
+                    </button>
+
+
+                    <!-- SELECT APPROVED -->
+
+                    <button
+                        type="button"
+                        class="btn success"
+                        onclick="selectApprovedQuotation()">
+
+                        Select Approved Quotation
+
+                    </button>
+
+
                 </div>
 
-                <div class="form-actions">
 
-                    <button
-                        class="btn success"
-                        onclick="createPO()">
+                <!-- =================================================
+                        SELECTED APPROVED QUOTATION
+                ================================================== -->
 
-                        Create Purchase Order
+                <div
+                    id="selectedPOQuotation"
+                    style="display:none;">
 
-                    </button>
 
-                    <button
-                        class="btn danger"
-                        onclick="hidePOQuotationBox()">
+                    <!-- ================= HEADER ================= -->
 
-                        Cancel
+                    <div class="header">
 
-                    </button>
+                        SELECTED APPROVED QUOTATION
+
+                    </div>
+
+
+                    <!-- =================================================
+                            QUOTATION NUMBER
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_quotation_id">
+
+                            Quotation No
+
+                        </label>
+
+
+                        <select
+                            id="po_quotation_id"
+                            onchange="loadQuotationForPO()">
+
+                            <option value="">
+
+                                -- Select Quotation --
+
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- =================================================
+                            SUPPLIER
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_supplier">
+
+                            Supplier
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="po_supplier"
+                            readonly>
+
+
+                        <input
+                            type="hidden"
+                            id="po_supplier_id">
+
+                    </div>
+
+
+                    <!-- =================================================
+                            DEPARTMENT
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_department">
+
+                            Department
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="po_department"
+                            readonly>
+
+
+                        <input
+                            type="hidden"
+                            id="po_department_id">
+
+                    </div>
+
+
+                    <!-- =================================================
+                            PRS NUMBER
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_prs_number">
+
+                            PRS Number
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="po_prs_number"
+                            readonly>
+
+                    </div>
+
+
+                    <!-- =================================================
+                            PO NUMBER
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_number">
+
+                            PO Number
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="po_number"
+                            readonly
+                            placeholder="Auto-generated">
+
+                    </div>
+
+
+                    <!-- =================================================
+                            PO DATE
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_date">
+
+                            PO Date
+
+                        </label>
+
+
+                        <input
+                            type="datetime-local"
+                            id="po_date"
+                            readonly>
+
+                    </div>
+
+
+                    <!-- =================================================
+                            CREATED BY
+                    ================================================== -->
+
+                    <div class="form-group">
+
+                        <label for="po_created_by">
+
+                            Created By
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="po_created_by"
+                            value="{{ session.username }}"
+                            readonly>
+
+                    </div>
+
+
+                    <!-- =================================================
+                            QUOTATION ITEMS
+                    ================================================== -->
+
+                    <div class="items-section">
+
+                        <h3>
+
+                            Quotation Items
+
+                        </h3>
+
+
+                        <table id="poItemsTable">
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>Item</th>
+                                    <th>Description</th>
+                                    <th>Qty</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+
+                                </tr>
+
+                            </thead>
+
+
+                            <tbody id="poQuotationItemsBody">
+
+                                <tr>
+
+                                    <td
+                                        colspan="5"
+                                        style="text-align:center;">
+
+                                        Select a quotation to load items.
+
+                                    </td>
+
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+
+
+                        <!-- ================= TOTAL ================= -->
+
+                        <div class="totalBox">
+
+                            <strong>
+
+                                Total Amount:
+
+                            </strong>
+
+
+                            UGX
+
+
+                            <span id="poTotalAmount">
+
+                                0.00
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =================================================
+                            FORM ACTIONS
+                    ================================================== -->
+
+                    <div class="form-actions">
+
+
+                        <!-- CREATE PO -->
+
+                        <button
+                            type="button"
+                            class="btn success"
+                            onclick="createPO()">
+
+                            Create Purchase Order
+
+                        </button>
+
+
+                        <!-- CANCEL -->
+
+                        <button
+                            type="button"
+                            class="btn danger"
+                            onclick="hidePOQuotationBox()">
+
+                            Cancel
+
+                        </button>
+
+
+                    </div>
+
 
                 </div>
 
@@ -2430,100 +2831,201 @@ Date
 
         </div>
 
-        <!-- ================= RIGHT PANEL STARTS HERE ================= -->
+
+        <!-- =================================================
+                RIGHT PANEL
+        ================================================== -->
 
         <div class="right">
 
-            <div class="slip" id="poPrintArea">
+            <!-- =================================================
+                    PO PRINT AREA
+            ================================================== -->
 
-                <!-- =====================================================
-                        RIGHT PANEL
-        ====================================================== -->
+            <div
+                id="poPrintArea"
+                class="slip">
 
-        <div class="right">
-
-            <div id="poPrintArea" class="slip">
 
                 <!-- ================= HEADER ================= -->
 
                 <div class="header">
 
-                    <h2>PURCHASE ORDER</h2>
+                    <h2>
+                        PURCHASE ORDER
+                    </h2>
+
 
                     <p>
-                        <b>Official Procurement Document</b>
+
+                        <b>
+                            Official Procurement Document
+                        </b>
+
                     </p>
 
                 </div>
 
-                <!-- ================= BASIC INFORMATION ================= -->
+
+                <!-- =================================================
+                        BASIC INFORMATION
+                ================================================== -->
 
                 <div class="info-section">
 
-                    <div class="box">
 
-                        <p>
-                            <b>PO Number :</b>
-                            <span id="poNumber">-</span>
-                        </p>
-
-                        <p>
-                            <b>Date :</b>
-                            <span id="poDate">-</span>
-                        </p>
-
-                        <p>
-                            <b>PRS No :</b>
-                            <span id="poPRS">-</span>
-                        </p>
-
-                        <p>
-                            <b>Status :</b>
-                            <span id="poStatus">-</span>
-                        </p>
-
-                    </div>
+                    <!-- PO INFORMATION -->
 
                     <div class="box">
 
                         <p>
-                            <b>Supplier :</b>
-                            <span id="poSupplier">-</span>
+
+                            <b>
+                                PO Number :
+                            </b>
+
+                            <span id="poNumber">
+                                -
+                            </span>
+
                         </p>
 
-                        <p>
-                            <b>Address :</b>
-                            <span id="poAddress">-</span>
-                        </p>
 
                         <p>
-                            <b>Phone :</b>
-                            <span id="poPhone">-</span>
+
+                            <b>
+                                Date :
+                            </b>
+
+                            <span id="poDate">
+                                -
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            <b>
+                                PRS No :
+                            </b>
+
+                            <span id="poPRS">
+                                -
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            <b>
+                                Status :
+                            </b>
+
+                            <span id="poStatus">
+                                -
+                            </span>
+
                         </p>
 
                     </div>
+
+
+                    <!-- SUPPLIER INFORMATION -->
+
+                    <div class="box">
+
+                        <p>
+
+                            <b>
+                                Supplier :
+                            </b>
+
+                            <span id="poSupplier">
+                                -
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            <b>
+                                Address :
+                            </b>
+
+                            <span id="poAddress">
+                                -
+                            </span>
+
+                        </p>
+
+
+                        <p>
+
+                            <b>
+                                Phone :
+                            </b>
+
+                            <span id="poPhone">
+                                -
+                            </span>
+
+                        </p>
+
+                    </div>
+
 
                 </div>
 
-                <!-- ================= DELIVERY DETAILS ================= -->
+
+                <!-- =================================================
+                        DELIVERY DETAILS
+                ================================================== -->
 
                 <div class="supplier-section">
 
-                    <p>
-                        <b>Delivery Address :</b>
-                        <span id="poDelivery">-</span>
-                    </p>
 
                     <p>
-                        <b>Expected Delivery Date :</b>
-                        <span id="poDeliveryDate">-</span>
+
+                        <b>
+                            Delivery Address :
+                        </b>
+
+                        <span id="poDelivery">
+                            -
+                        </span>
+
                     </p>
+
+
+                    <p>
+
+                        <b>
+                            Expected Delivery Date :
+                        </b>
+
+                        <span id="poDeliveryDate">
+                            -
+                        </span>
+
+                    </p>
+
 
                 </div>
 
-                <!-- ================= PURCHASE ORDER ITEMS ================= -->
 
-                <h3>Purchase Order Items</h3>
+                <!-- =================================================
+                        PURCHASE ORDER ITEMS
+                ================================================== -->
+
+                <h3>
+
+                    Purchase Order Items
+
+                </h3>
+
 
                 <table class="items-table">
 
@@ -2541,117 +3043,178 @@ Date
 
                     </thead>
 
+
                     <tbody id="poItemsBody">
+
+                        <!-- Loaded by JavaScript -->
 
                     </tbody>
 
                 </table>
 
+
                 <br>
 
-                <!-- ================= TOTAL ================= -->
+
+                <!-- =================================================
+                        TOTAL AMOUNT
+                ================================================== -->
 
                 <div class="info-section">
 
                     <div class="box">
 
                         <p>
-                            <b>Total Amount :</b>
-                            <span id="poTotal">0.00</span>
+
+                            <b>
+                                Total Amount :
+                            </b>
+
+                            <span id="poTotal">
+                                0.00
+                            </span>
+
                         </p>
 
                     </div>
 
                 </div>
 
+
                 <hr>
 
+
+                <!-- ================= NOTE ================= -->
+
                 <p>
-                    Kindly supply the listed items within the agreed delivery period.
+
+                    Kindly supply the listed items within the agreed
+                    delivery period.
+
                 </p>
 
-                <!-- ================= SIGNATURES ================= -->
+
+                <!-- =================================================
+                        SIGNATURES
+                ================================================== -->
 
                 <div class="signature-section">
 
-                    <!-- PREPARED BY -->
+
+                    <!-- ================= PREPARED BY ================= -->
 
                     <div class="sig-box">
 
-                        <h4>Prepared By</h4>
+                        <h4>
+                            Prepared By
+                        </h4>
+
 
                         <img
                             id="poPreparedBySig"
                             style="height:60px;display:none;">
 
-                        <p id="poPreparedBy">-</p>
 
-                        <small id="poPreparedDate">-</small>
+                        <p id="poPreparedBy">
+                            -
+                        </p>
+
+
+                        <small id="poPreparedDate">
+                            -
+                        </small>
 
                     </div>
 
-                    <!-- HOD -->
+
+                    <!-- ================= HOD ================= -->
 
                     <div class="sig-box">
 
-                        <h4>HOD Approval</h4>
+                        <h4>
+                            HOD Approval
+                        </h4>
+
 
                         <img
                             id="poHodSig"
                             style="height:60px;display:none;">
 
-                        <p id="po_hod_Approval">-</p>
 
-                        <small id="po_hod_ApprovalDate">-</small>
+                        <p id="po_hod_Approval">
+                            -
+                        </p>
+
+
+                        <small id="po_hod_ApprovalDate">
+                            -
+                        </small>
+
 
                         <p>
 
                             Status :
-                            <span id="po_hod_Status">-</span>
+
+                            <span id="po_hod_Status">
+                                -
+                            </span>
 
                         </p>
 
                     </div>
 
-                    <!-- CEO -->
+
+                    <!-- ================= CEO ================= -->
 
                     <div class="sig-box">
 
-                        <h4>CEO Approval</h4>
+                        <h4>
+                            CEO Approval
+                        </h4>
+
 
                         <img
                             id="poCeoSig"
                             style="height:60px;display:none;">
 
-                        <p id="po_ceo_Approval">-</p>
 
-                        <small id="po_ceo_ApprovalDate">-</small>
+                        <p id="po_ceo_Approval">
+                            -
+                        </p>
+
+
+                        <small id="po_ceo_ApprovalDate">
+                            -
+                        </small>
+
 
                         <p>
 
                             Status :
-                            <span id="po_ceo_Status">-</span>
+
+                            <span id="po_ceo_Status">
+                                -
+                            </span>
 
                         </p>
 
                     </div>
 
+
                 </div>
+
 
             </div>
 
         </div>
-        <!-- END RIGHT PANEL -->
 
     </div>
-    <!-- END CONTAINER -->
 
 </div>
-<!-- END PURCHASE ORDER MODULE -->
 
-
-
-
+<!-- =====================================================
+        END PURCHASE ORDER MODULE
+===================================================== -->
 
 
 

@@ -778,208 +778,566 @@ def enterQuotation():
 # =========================
 # GET QRF DETAILS
 # =========================
-@procurement_dashboard_bp.route("/get_qrf_details/<int:qrf_id>")
-def get_qrf_details(qrf_id):
+@procurement_dashboard_bp.route(
+    "/api/quotation-request/<int:qrf_id>",
+    methods=["GET"]
+)
+def get_quotation_request_details(qrf_id):
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
-    cursor.execute("""
-        SELECT
-            s.supplier_id,
-            s.supplier_name
-        FROM quotation_request_suppliers qrs
-        INNER JOIN suppliers s
-            ON qrs.supplier_id = s.supplier_id
-        WHERE qrs.qrf_id = %s
-        LIMIT 1
-    """, (qrf_id,))
+    try:
 
-    supplier = cursor.fetchone()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            material_name,
-            description,
-            quantity
-        FROM quotation_request_items
-        WHERE qrf_id = %s
-    """, (qrf_id,))
+        # ==========================================
+        # LOAD QRF
+        # ==========================================
 
-    items = cursor.fetchall()
+        cursor.execute("""
+            SELECT
+                qrf_id,
+                qrf_no,
+                requisition_id,
+                request_date,
+                deadline_date,
+                status,
+                remarks
+            FROM quotation_requests
+            WHERE qrf_id = %s
+        """, (qrf_id,))
 
-    cursor.close()
-    conn.close()
+        qrf = cursor.fetchone()
 
-    return jsonify({
-        "supplier_id": supplier["supplier_id"] if supplier else "",
-        "supplier_name": supplier["supplier_name"] if supplier else "",
-        "items": items
-    })
+        if not qrf:
+
+            return jsonify({
+                "success": False,
+                "message": "Quotation Request not found."
+            }), 404
 
 
+        # ==========================================
+        # LOAD SUPPLIERS ATTACHED TO QRF
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                qrs.id,
+                qrs.supplier_id,
+                s.supplier_name,
+                qrs.supplier_response,
+                qrs.selected_supplier
+            FROM quotation_request_suppliers qrs
+            JOIN suppliers s
+                ON qrs.supplier_id = s.supplier_id
+            WHERE qrs.qrf_id = %s
+            ORDER BY s.supplier_name ASC
+        """, (qrf_id,))
+
+        suppliers = cursor.fetchall()
+
+
+        # ==========================================
+        # LOAD QRF ITEMS
+        # ==========================================
+
+        cursor.execute("""
+            SELECT
+                *
+            FROM quotation_request_items
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+        items = cursor.fetchall()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "qrf": qrf,
+
+            "suppliers": suppliers,
+
+            "items": items
+
+        })
+
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 # =========================
 # SAVE QUOTATION (POST)
-# =========================
-@procurement_dashboard_bp.route("/Quotation_entry", methods=["POST"])
+# ==========================================================
+# SAVE QUOTATION
+# ==========================================================
+@procurement_dashboard_bp.route(
+    "/api/quotation/save",
+    methods=["POST"]
+)
 def save_quotation():
 
     conn = None
     cursor = None
 
     try:
-        data = request.get_json()
 
-        qrf_id = data.get("qrf_id")
-        supplier_id = data.get("supplier_id")
-        payment_terms = data.get("payment_terms")
-        warranty = data.get("warranty")
-        items = data.get("items", [])
-        delivery_date = data.get("delivery_date")
+        # ==============================================
+        # GET JSON DATA
+        # ==============================================
 
-        # =========================
-        # VALIDATION
-        # =========================
-        if not qrf_id:
-            return jsonify({"success": False, "message": "QRF is required"}), 400
-
-        if not supplier_id:
-            return jsonify({"success": False, "message": "Supplier is required"}), 400
-
-        if not delivery_date:
-            return jsonify({"success": False, "message": "Delivery date is required"}), 400
-
-        if not items:
-            return jsonify({"success": False, "message": "Add at least one item"}), 400
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # =========================
-        # GENERATE QUOTATION NO
-        # =========================
-        cursor.execute("""
-            SELECT quotation_no
-            FROM quotations
-            ORDER BY quotation_id DESC
-            LIMIT 1
-        """)
-
-        last_record = cursor.fetchone()
-
-        if last_record and last_record[0]:
-            try:
-                last_no = last_record[0]
-                number = int(last_no.split("/")[-1]) + 1
-            except:
-                number = 1
-        else:
-            number = 1
-
-        quotation_no = f"QT/{datetime.now().year}/{number:04d}"
-
-        # =========================
-        # TOTAL AMOUNT
-        # =========================
-        total_amount = sum(
-            float(i.get("quantity", 0)) * float(i.get("unit_price", 0))
-            for i in items
+        data = request.get_json(
+            silent=True
         )
 
-        quotation_date = datetime.now()
+        print(
+            "RECEIVED QUOTATION DATA:",
+            data
+        )
 
-        # =========================
-        # INSERT QUOTATION HEADER
-        # =========================
+
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No quotation data received."
+
+            }), 400
+
+
+        # ==============================================
+        # GET DATA
+        # ==============================================
+
+        qrf_id = data.get(
+            "qrf_id"
+        )
+
+        supplier_id = data.get(
+            "supplier_id"
+        )
+
+        delivery_date = data.get(
+            "delivery_date"
+        )
+
+        payment_terms = data.get(
+            "payment_terms"
+        )
+
+        warranty = data.get(
+            "warranty"
+        )
+
+        total_amount = data.get(
+            "total_amount",
+            0
+        )
+
+        items = data.get(
+            "items",
+            []
+        )
+
+
+        # ==============================================
+        # VALIDATE HEADER
+        # ==============================================
+
+        if not qrf_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "QRF is required."
+
+            }), 400
+
+
+        if not supplier_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Supplier is required."
+
+            }), 400
+
+
+        # ==============================================
+        # VALIDATE ITEMS
+        # ==============================================
+
+        if not items:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Add at least one item."
+
+            }), 400
+
+
+        # ==============================================
+        # GET LOGGED-IN USER
+        # ==============================================
+
+        created_by = session.get(
+            "user_id"
+        )
+
+
+        if not created_by:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "User session not found."
+
+            }), 401
+
+
+        # ==============================================
+        # DATABASE CONNECTION
+        # ==============================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ==============================================
+        # GENERATE QUOTATION NUMBER
+        # ==============================================
+
         cursor.execute("""
+            SELECT
+                COUNT(*) AS total
+            FROM quotations
+        """)
+
+        result = cursor.fetchone()
+
+        quotation_count = (
+            result["total"] or 0
+        ) + 1
+
+
+        quotation_no = (
+            f"QT/"
+            f"{datetime.now().year}/"
+            f"{quotation_count:04d}"
+        )
+
+
+        # ==============================================
+        # INSERT QUOTATION HEADER
+        # ==============================================
+
+        cursor.execute("""
+
             INSERT INTO quotations (
+
                 qrf_id,
                 supplier_id,
                 quotation_no,
                 quotation_date,
                 total_amount,
-                delivery_date,
-                payment_terms,
                 warranty,
-                status
+                payment_terms,
+                status,
+                delivery_date,
+                created_by
+
             )
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+
+            VALUES (
+
+                %s,
+                %s,
+                %s,
+                CURDATE(),
+                %s,
+                %s,
+                %s,
+                'PENDING',
+                %s,
+                %s
+
+            )
+
         """, (
+
             qrf_id,
             supplier_id,
             quotation_no,
-            quotation_date,
             total_amount,
-            delivery_date,
-            payment_terms,
             warranty,
-            "PENDING"
+            payment_terms,
+            delivery_date,
+            created_by
+
         ))
+
+
+        # ==============================================
+        # GET QUOTATION ID
+        # ==============================================
 
         quotation_id = cursor.lastrowid
 
-        # =========================
-        # INSERT ITEMS
-        # =========================
+
+        # ==============================================
+        # INSERT QUOTATION ITEMS
+        # ==============================================
+
         for item in items:
+
+            item_name = item.get(
+                "item_name"
+            )
+
+            description = item.get(
+                "description"
+            )
+
+            quantity = item.get(
+                "quantity",
+                0
+            )
+
+            unit_price = item.get(
+                "unit_price",
+                0
+            )
+
+
+            # ------------------------------------------
+            # UOM
+            # ------------------------------------------
+
+            uom = item.get(
+                "uom"
+            )
+
+
+            # ------------------------------------------
+            # VALIDATE ITEM
+            # ------------------------------------------
+
+            if not item_name:
+
+                continue
+
+
+            # ------------------------------------------
+            # INSERT ITEM
+            # ------------------------------------------
+
             cursor.execute("""
+
                 INSERT INTO quotation_records_items (
+
                     quotation_id,
                     item_name,
                     description,
                     quantity,
+                    uom,
                     unit_price
+
                 )
-                VALUES (%s,%s,%s,%s,%s)
+
+                VALUES (
+
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+
+                )
+
             """, (
+
                 quotation_id,
-                item.get("item_name"),
-                item.get("description"),
-                item.get("quantity"),
-                item.get("unit_price")
+                item_name,
+                description,
+                quantity,
+                uom,
+                unit_price
+
             ))
 
-        # =========================
-        # UPDATE QRF SUPPLIER STATUS
-        # =========================
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-            SET supplier_response = 'RESPONDED',
-                quotation_id = %s
-            WHERE qrf_id = %s
-            AND supplier_id = %s
-        """, (
-            quotation_id,
-            qrf_id,
-            supplier_id
-        ))
+
+        # ==============================================
+        # COMMIT
+        # ==============================================
 
         conn.commit()
 
+
+        # ==============================================
+        # CLOSE
+        # ==============================================
+
+        cursor.close()
+
+        conn.close()
+
+
+        # ==============================================
+        # RETURN SUCCESS
+        # ==============================================
+
         return jsonify({
+
             "success": True,
-            "message": "Quotation saved successfully",
-            "quotation_no": quotation_no,
-            "quotation_id": quotation_id,
-            "redirect": url_for("procurement_dashboard.procurement_dashboard")
-        })
+
+            "message":
+                "Quotation saved successfully.",
+
+            "quotation_id":
+                quotation_id,
+
+            "quotation_no":
+                quotation_no
+
+        }), 201
+
 
     except Exception as e:
+
+        # ==============================================
+        # ROLLBACK
+        # ==============================================
+
         if conn:
+
             conn.rollback()
 
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+
+
+        print(
+            "SAVE QUOTATION ERROR:",
+            str(e)
+        )
+
+
         return jsonify({
+
             "success": False,
-            "message": str(e)
+
+            "message":
+                str(e)
+
         }), 500
 
+    
+@procurement_dashboard_bp.route("/api/next-quotation-number")
+def next_quotation_number():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        current_year = datetime.now().year
+
+        cursor.execute("""
+            SELECT quotation_no
+            FROM quotations
+            WHERE quotation_no LIKE %s
+            ORDER BY quotation_id DESC
+            LIMIT 1
+        """, (
+            f"QT/{current_year}/%",
+        ))
+
+        result = cursor.fetchone()
+
+        if result and result["quotation_no"]:
+
+            # Example:
+            # QT/2026/005
+
+            last_number = int(
+                result["quotation_no"].split("/")[-1]
+            )
+
+            next_number = last_number + 1
+
+        else:
+
+            next_number = 1
+
+
+        quotation_no = (
+            f"QT/"
+            f"{current_year}/"
+            f"{next_number:03d}"
+        )
+
+
+        return {
+            "success": True,
+            "quotation_no": quotation_no
+        }
+
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "message": str(e)
+        }, 500
+
+
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-# =========================
-# COMPARE SUPPLIERS PAGE
+
+        cursor.close()
+        conn.close()
 
 @procurement_dashboard_bp.route("/compare_suppliers")
 def compare_suppliers():
@@ -1104,439 +1462,66 @@ def get_quotation_items(quotation_id):
     return jsonify(items)
 
 
-@procurement_dashboard_bp.route("/save_best_supplier", methods=["POST"])
-def save_best_supplier():
-
-    data = request.get_json()
-
-    quotation_id = data.get("quotation_id")
-
-    if not quotation_id:
-        return jsonify({
-            "success": False,
-            "message": "Quotation ID is required."
-        }), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-
-        # Get QRF ID of the selected quotation
-        cursor.execute("""
-            SELECT qrf_id
-            FROM quotations
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        quotation = cursor.fetchone()
-
-        if not quotation:
-            return jsonify({
-                "success": False,
-                "message": "Quotation not found."
-            }), 404
-
-        qrf_id = quotation["qrf_id"]
-
-        # Reset all suppliers to NO
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-            SET selected_supplier = 'NO'
-            WHERE qrf_id = %s
-        """, (qrf_id,))
-
-        # Set the selected supplier to YES
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-            SET selected_supplier = 'YES'
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        # Update quotation statuses
-        cursor.execute("""
-            UPDATE quotations
-            SET status = 'REJECTED'
-            WHERE qrf_id = %s
-        """, (qrf_id,))
-
-        cursor.execute("""
-            UPDATE quotations
-            SET status = 'SELECTED'
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        conn.commit()
 
 
-        return jsonify({
-            "success": True,
-            "message": "Best supplier saved successfully.",
-            "redirect_url": "/procurement/create_po"
-            
-        })
-
-    except Exception as e:
-        conn.rollback()
-
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 500
-
-    finally:
-        cursor.close()
-        conn.close()
-
-@procurement_dashboard_bp.route("/validate_quotation/<int:quotation_id>/<int:prs_id>")
-def validate_quotation(quotation_id, prs_id):
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT COUNT(*)
-        FROM quotations q
-        JOIN quotation_requests qr ON q.qrf_id = qr.qrf_id
-        WHERE q.quotation_id = %s
-        AND qr.requisition_id = %s
-    """, (quotation_id, prs_id))
-
-    valid = cursor.fetchone()[0] > 0
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({"valid": valid})
-
-# PO STARTS HERE
-
-# ==================================================
-# PO STARTS HERE
-# ==================================================
-
-from flask import request, jsonify, render_template
-from datetime import datetime
 
 
-# ==================================================
-# CREATE PO PAGE
-# ==================================================
-@procurement_dashboard_bp.route("/create_po")
-def create_po_page():
-    return render_template("create_PO.html")
+# ============================================================
+# PURCHASE ORDER / QUOTATION WORKFLOW
+# ============================================================
 
 
-# ==================================================
-# GET PRS LIST
-# ==================================================
-@procurement_dashboard_bp.route("/get_prs_list")
+# ============================================================
+# 1. GET PRS LIST FOR PO FORM
+# ============================================================
+
+@procurement_dashboard_bp.route("/get_prs_list", methods=["GET"])
 def get_prs_list():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
+
         cursor.execute("""
-            SELECT requisition_id, prs_no
+            SELECT
+                requisition_id,
+                prs_no
             FROM requisitions
             ORDER BY requisition_id DESC
         """)
 
-        return jsonify(cursor.fetchall())
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-# ==================================================
-# GET USERS
-# ==================================================
-@procurement_dashboard_bp.route("/get_users")
-def get_users():
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        cursor.execute("""
-            SELECT user_id, username
-            FROM users
-        """)
-
-        return jsonify(cursor.fetchall())
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-# ==================================================
-# GET SELECTED SUPPLIER
-# ==================================================
-@procurement_dashboard_bp.route("/get_selected_supplier/<int:prs_id>")
-def get_selected_supplier(prs_id):
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-
-        cursor.execute("""
-            SELECT
-                s.supplier_id,
-                s.supplier_name,
-                qrs.quotation_id,
-                q.quotation_no
-            FROM quotation_request_suppliers qrs
-            JOIN suppliers s
-                ON s.supplier_id = qrs.supplier_id
-            JOIN quotations q
-                ON q.quotation_id = qrs.quotation_id
-            JOIN quotation_requests qr
-                ON qr.qrf_id = qrs.qrf_id
-            WHERE qr.requisition_id = %s
-            AND LOWER(qrs.selected_supplier) = 'yes'
-            LIMIT 1
-        """, (prs_id,))
-
-        return jsonify(cursor.fetchone())
-
-    finally:
-        cursor.close()
-        conn.close()
-
-
-
-@procurement_dashboard_bp.route("/create_po_from_selected", methods=["POST"])
-def create_po_from_selected():
-
-    data = request.get_json()
-    quotation_id = data.get("quotation_id")
-
-    if not quotation_id:
-        return jsonify({
-            "success": False,
-            "message": "Quotation ID is required"
-        }), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-
-        # ==================================================
-        # CHECK IF PO ALREADY EXISTS
-        # ==================================================
-        cursor.execute("""
-            SELECT purchase_order_id
-            FROM purchase_orders
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        if cursor.fetchone():
-            return jsonify({
-                "success": False,
-                "message": "Purchase Order already exists"
-            }), 409
-
-        # ==================================================
-        # FIND QRF AND REQUISITION FOR THIS QUOTATION
-        # ==================================================
-        cursor.execute("""
-            SELECT
-                q.qrf_id,
-                qr.requisition_id
-            FROM quotations q
-            JOIN quotation_requests qr
-                ON qr.qrf_id = q.qrf_id
-            WHERE q.quotation_id = %s
-        """, (quotation_id,))
-
-        quotation_row = cursor.fetchone()
-
-        if not quotation_row:
-            return jsonify({
-                "success": False,
-                "message": "Quotation not found"
-            }), 404
-
-        qrf_id = quotation_row["qrf_id"]
-        requisition_id = quotation_row["requisition_id"]
-
-        # ==================================================
-        # MARK THIS QUOTATION AS THE SELECTED SUPPLIER
-        # ==================================================
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-            SET selected_supplier = 'NO'
-            WHERE qrf_id = %s
-        """, (qrf_id,))
-
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-            SET selected_supplier = 'YES'
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        # ==================================================
-        # GET SUPPLIER DETAILS
-        # ==================================================
-        cursor.execute("""
-            SELECT
-                qrs.supplier_id,
-                s.supplier_name,
-                q.quotation_no
-            FROM quotation_request_suppliers qrs
-            JOIN suppliers s ON s.supplier_id = qrs.supplier_id
-            JOIN quotations q ON q.quotation_id = qrs.quotation_id
-            WHERE qrs.qrf_id = %s
-            AND qrs.quotation_id = %s
-            AND LOWER(qrs.selected_supplier) = 'yes'
-            LIMIT 1
-        """, (qrf_id, quotation_id))
-
-        supplier = cursor.fetchone()
-
-        if not supplier:
-            return jsonify({
-                "success": False,
-                "message": "Supplier not found"
-            }), 404
-
-        supplier_id = supplier["supplier_id"]
-        supplier_name = supplier["supplier_name"]
-        quotation_no = supplier["quotation_no"]
-
-        # ==================================================
-        # GET ITEMS
-        # ==================================================
-        cursor.execute("""
-            SELECT item_name, description, quantity, unit_price
-            FROM quotation_records_items
-            WHERE quotation_id = %s
-        """, (quotation_id,))
-
-        items = cursor.fetchall()
-
-        if not items:
-            return jsonify({
-                "success": False,
-                "message": "No quotation items found"
-            }), 404
-
-        # ==================================================
-        # CALCULATE TOTAL
-        # ==================================================
-        total_amount = sum(
-            float(i["quantity"] or 0) * float(i["unit_price"] or 0)
-            for i in items
-        )
-
-        # ==================================================
-        # GENERATE SEQUENTIAL PO NUMBER (0001, 0002...)
-        # ==================================================
-        cursor.execute("""
-            SELECT po_number
-            FROM purchase_orders
-            ORDER BY purchase_order_id DESC
-            LIMIT 1
-        """)
-
-        last_po = cursor.fetchone()
-
-        if last_po and last_po["po_number"]:
-            try:
-                last_number = int(last_po["po_number"])
-            except:
-                last_number = 0
-            next_number = last_number + 1
-        else:
-            next_number = 1
-
-        po_number = str(next_number).zfill(4)   # 0001 format
-
-        # ==================================================
-        # INSERT PO HEADER
-        # ==================================================
-        cursor.execute("""
-            INSERT INTO purchase_orders(
-                requisition_id,
-                quotation_id,
-                supplier_id,
-                po_number,
-                order_date,
-                total_amount,
-                status
-            )
-            VALUES(%s,%s,%s,%s,%s,%s,%s)
-        """, (
-            requisition_id,
-            quotation_id,
-            supplier_id,
-            po_number,
-            datetime.now(),
-            total_amount,
-            "PENDING"
-        ))
-
-        po_id = cursor.lastrowid
-
-        # ==================================================
-        # INSERT PO ITEMS
-        # ==================================================
-        for item in items:
-            cursor.execute("""
-                INSERT INTO purchase_order_items(
-                    purchase_order_id,
-                    item_name,
-                    description,
-                    quantity,
-                    unit_price
-                )
-                VALUES(%s,%s,%s,%s,%s)
-            """, (
-                po_id,
-                item["item_name"],
-                item["description"],
-                item["quantity"],
-                item["unit_price"]
-            ))
-
-        # ==================================================
-        # COMMIT ONLY AFTER SUCCESS
-        # ==================================================
-        conn.commit()
+        prs_list = cursor.fetchall()
 
         return jsonify({
             "success": True,
-            "po_id": po_id,
-            "po_number": po_number,
-            "quotation_no": quotation_no,
-            "quotation_id": quotation_id,
-            "supplier_id": supplier_id,
-            "supplier_name": supplier_name
+            "data": prs_list
         })
 
     except Exception as e:
-        conn.rollback()
+
+        print("Error loading PRS list:", e)
+
         return jsonify({
             "success": False,
-            "message": str(e)
+            "message": str(e),
+            "data": []
         }), 500
 
     finally:
+
         cursor.close()
         conn.close()
 
-# ==================================================
-# GET PRS QUOTATIONS
-# ==================================================
-# ==========================================
-# GET PRS QUOTATIONS FOR PO
-# ==========================================
-@procurement_dashboard_bp.route("/get_po_prs_quotations/<int:prs_id>")
+
+# ============================================================
+# 2. GET ALL QUOTATIONS FOR SELECTED PRS
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/get_po_prs_quotations/<int:prs_id>",
+    methods=["GET"]
+)
 def get_po_prs_quotations(prs_id):
 
     conn = get_db_connection()
@@ -1548,19 +1533,35 @@ def get_po_prs_quotations(prs_id):
             SELECT
                 q.quotation_id,
                 q.quotation_no,
-                s.supplier_name,
+                q.quotation_date,
                 q.total_amount,
                 q.delivery_date,
-                q.warranty
-            FROM quotation_request_suppliers qrs
-            JOIN quotation_requests qr
-                ON qr.qrf_id = qrs.qrf_id
-            JOIN quotations q
-                ON q.quotation_id = qrs.quotation_id
-            JOIN suppliers s
-                ON s.supplier_id = qrs.supplier_id
+                q.warranty,
+                q.payment_terms,
+                q.status,
+
+                s.supplier_id,
+                s.supplier_name,
+                s.address,
+                s.phone,
+
+                qr.qrf_id,
+                qr.qrf_no,
+                qr.requisition_id
+
+            FROM quotations q
+
+            INNER JOIN quotation_requests qr
+                ON q.qrf_id = qr.qrf_id
+
+            INNER JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
             WHERE qr.requisition_id = %s
-            ORDER BY q.quotation_id DESC
+
+            ORDER BY q.total_amount ASC,
+                     q.quotation_id DESC
+
         """, (prs_id,))
 
         quotations = cursor.fetchall()
@@ -1572,16 +1573,1088 @@ def get_po_prs_quotations(prs_id):
 
     except Exception as e:
 
+        print(
+            "Error loading PO quotations:",
+            e
+        )
+
         return jsonify({
             "success": False,
-            "message": str(e)
+            "message": str(e),
+            "data": []
         }), 500
 
     finally:
-        cursor.close()
-        conn.close()         
 
-# GRN STARTS HERE
+        cursor.close()
+        conn.close()
+
+
+# ============================================================
+# 3. SAVE SELECTED / APPROVED QUOTATION
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/save_best_supplier",
+    methods=["POST"]
+)
+def save_best_supplier():
+
+    data = request.get_json() or {}
+
+    quotation_id = data.get("quotation_id")
+
+    if not quotation_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Quotation ID is required."
+        }), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # =====================================================
+        # GET QUOTATION DETAILS
+        # =====================================================
+
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.qrf_id,
+                q.supplier_id,
+                qr.requisition_id
+
+            FROM quotations q
+
+            INNER JOIN quotation_requests qr
+                ON q.qrf_id = qr.qrf_id
+
+            WHERE q.quotation_id = %s
+
+        """, (quotation_id,))
+
+        quotation = cursor.fetchone()
+
+        if not quotation:
+
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found."
+            }), 404
+
+
+        qrf_id = quotation["qrf_id"]
+
+
+        # =====================================================
+        # RESET ALL SUPPLIERS FOR THIS QRF
+        # =====================================================
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'NO'
+
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+
+        # =====================================================
+        # SELECT SUPPLIER FOR THIS QUOTATION
+        # =====================================================
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'YES'
+
+            WHERE qrf_id = %s
+            AND quotation_id = %s
+        """, (
+            qrf_id,
+            quotation_id
+        ))
+
+
+        # =====================================================
+        # RESET QUOTATION STATUS
+        # =====================================================
+
+        cursor.execute("""
+            UPDATE quotations
+
+            SET status = 'REJECTED'
+
+            WHERE qrf_id = %s
+        """, (qrf_id,))
+
+
+        # =====================================================
+        # MARK SELECTED QUOTATION
+        # =====================================================
+
+        cursor.execute("""
+            UPDATE quotations
+
+            SET status = 'SELECTED'
+
+            WHERE quotation_id = %s
+        """, (quotation_id,))
+
+
+        conn.commit()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Quotation selected successfully.",
+
+            "quotation_id":
+                quotation_id,
+
+            "qrf_id":
+                qrf_id,
+
+            "requisition_id":
+                quotation["requisition_id"]
+
+        })
+
+
+    except Exception as e:
+
+        conn.rollback()
+
+        print(
+            "Error selecting quotation:",
+            e
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+# ============================================================
+# 4. GET SELECTED QUOTATION FOR PRS
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/get_selected_quotation/<int:prs_id>",
+    methods=["GET"]
+)
+def get_selected_quotation(prs_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+
+                q.quotation_id,
+                q.quotation_no,
+                q.quotation_date,
+                q.total_amount,
+                q.delivery_date,
+                q.warranty,
+                q.payment_terms,
+                q.status,
+
+                s.supplier_id,
+                s.supplier_name,
+
+                qr.qrf_id,
+                qr.qrf_no,
+                qr.requisition_id
+
+            FROM quotations q
+
+            INNER JOIN quotation_requests qr
+                ON q.qrf_id = qr.qrf_id
+
+            INNER JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
+            WHERE qr.requisition_id = %s
+
+            AND q.status = 'SELECTED'
+
+            LIMIT 1
+
+        """, (prs_id,))
+
+        quotation = cursor.fetchone()
+
+        if not quotation:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No approved quotation found."
+
+            }), 404
+
+
+        return jsonify({
+
+            "success": True,
+
+            "data": quotation
+
+        })
+
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+# ============================================================
+# GET NEXT PURCHASE ORDER NUMBER
+# FORMAT: PO/YEAR/0001
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/api/next-po-number",
+    methods=["GET"]
+)
+def next_po_number():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # CURRENT YEAR
+        # ====================================================
+
+        current_year = datetime.now().year
+
+
+        # ====================================================
+        # GET LAST PO FOR CURRENT YEAR
+        # ====================================================
+
+        cursor.execute("""
+            SELECT po_number
+            FROM purchase_orders
+            WHERE po_number LIKE %s
+            ORDER BY purchase_order_id DESC
+            LIMIT 1
+        """, (
+            f"PO/{current_year}/%",
+        ))
+
+        last_po = cursor.fetchone()
+
+
+        # ====================================================
+        # GENERATE NEXT SEQUENCE
+        # ====================================================
+
+        if last_po and last_po.get("po_number"):
+
+            last_po_number = str(
+                last_po["po_number"]
+            ).strip()
+
+
+            try:
+
+                # Example:
+                # PO/2026/0001
+                #
+                # Split:
+                # ["PO", "2026", "0001"]
+
+                parts = last_po_number.split("/")
+
+
+                if (
+                    len(parts) == 3 and
+                    parts[0] == "PO"
+                ):
+
+                    last_number = int(
+                        parts[2]
+                    )
+
+                else:
+
+                    last_number = 0
+
+
+            except (
+                ValueError,
+                IndexError
+            ):
+
+                last_number = 0
+
+        else:
+
+            last_number = 0
+
+
+        # ====================================================
+        # NEXT NUMBER
+        # ====================================================
+
+        next_number = (
+            last_number + 1
+        )
+
+
+        # ====================================================
+        # FINAL PO NUMBER
+        # ====================================================
+
+        po_number = (
+            f"PO/{current_year}/"
+            f"{next_number:04d}"
+        )
+
+
+        return jsonify({
+
+            "success":
+                True,
+
+            "po_number":
+                po_number
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "Error generating next PO number:",
+            e
+        )
+
+
+        return jsonify({
+
+            "success":
+                False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+
+
+# ==========================================================
+# GET SINGLE QUOTATION FOR PURCHASE ORDER
+# API NAME:
+# /procurement/api/quotation-for-po/<quotation_id>
+# ==========================================================
+# ==========================================================
+# GET SINGLE QUOTATION FOR PURCHASE ORDER
+# UNIQUE API NAME:
+# /procurement/api/quotation-for-po/<quotation_id>
+# ==========================================================
+
+@procurement_dashboard_bp.route(
+    "/api/quotation-for-po/<int:quotation_id>",
+    methods=["GET"]
+)
+def get_quotation_for_po_details(quotation_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ==================================================
+        # GET QUOTATION HEADER
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.qrf_id,
+                q.supplier_id,
+                q.quotation_no,
+                q.quotation_date,
+                q.total_amount,
+                q.delivery_date,
+                q.warranty,
+                q.payment_terms,
+                q.status,
+
+                s.supplier_name,
+
+                qr.qrf_no,
+                qr.requisition_id,
+
+                r.prs_no,
+                r.department_id,
+
+                d.department_name
+
+            FROM quotations q
+
+            INNER JOIN suppliers s
+                ON s.supplier_id = q.supplier_id
+
+            INNER JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
+
+            INNER JOIN requisitions r
+                ON r.requisition_id = qr.requisition_id
+
+            LEFT JOIN departments d
+                ON d.department_id = r.department_id
+
+            WHERE q.quotation_id = %s
+
+            LIMIT 1
+        """, (quotation_id,))
+
+        quotation = cursor.fetchone()
+
+        # ==================================================
+        # CHECK QUOTATION
+        # ==================================================
+
+        if not quotation:
+
+            return jsonify({
+                "success": False,
+                "message": "Quotation not found."
+            }), 404
+
+
+        # ==================================================
+        # GET QUOTATION ITEMS
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                item_id,
+                quotation_id,
+                item_name,
+                description,
+                quantity,
+                unit_price,
+                amount
+
+            FROM quotation_records_items
+
+            WHERE quotation_id = %s
+
+            ORDER BY item_id ASC
+        """, (quotation_id,))
+
+        items = cursor.fetchall()
+
+
+        # ==================================================
+        # RETURN DATA
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "quotation": quotation,
+
+            "items": items
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "ERROR GETTING QUOTATION FOR PO:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load quotation for Purchase Order.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
+
+
+# ==========================================================
+# CREATE PURCHASE ORDER FROM SELECTED QUOTATION
+# ==========================================================
+
+@procurement_dashboard_bp.route(
+    "/create_po_from_selected",
+    methods=["POST"]
+)
+def create_po_from_selected():
+
+    data = request.get_json(silent=True) or {}
+
+    quotation_id = data.get("quotation_id")
+
+    prs_id = data.get("prs_id")
+
+
+    # ======================================================
+    # VALIDATE INPUT
+    # ======================================================
+
+    if not quotation_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Quotation ID is required."
+        }), 400
+
+
+    if not prs_id:
+
+        return jsonify({
+            "success": False,
+            "message": "PRS ID is required."
+        }), 400
+
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+
+    try:
+
+        # ==================================================
+        # CHECK IF PURCHASE ORDER ALREADY EXISTS
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                purchase_order_id,
+                po_number
+
+            FROM purchase_orders
+
+            WHERE quotation_id = %s
+
+            LIMIT 1
+
+        """, (quotation_id,))
+
+
+        existing_po = cursor.fetchone()
+
+
+        if existing_po:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    f"Purchase Order {existing_po['po_number']} "
+                    f"already exists for this quotation.",
+
+                "po_id":
+                    existing_po["purchase_order_id"],
+
+                "po_number":
+                    existing_po["po_number"]
+
+            }), 409
+
+
+        # ==================================================
+        # GET QUOTATION
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                q.quotation_id,
+                q.qrf_id,
+                q.supplier_id,
+                q.quotation_no,
+                q.total_amount,
+                q.status,
+
+                qr.requisition_id,
+
+                s.supplier_name
+
+            FROM quotations q
+
+            INNER JOIN quotation_requests qr
+                ON qr.qrf_id = q.qrf_id
+
+            INNER JOIN suppliers s
+                ON s.supplier_id = q.supplier_id
+
+            WHERE q.quotation_id = %s
+
+            LIMIT 1
+
+        """, (quotation_id,))
+
+
+        quotation = cursor.fetchone()
+
+
+        if not quotation:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Quotation not found."
+
+            }), 404
+
+
+        # ==================================================
+        # VERIFY PRS MATCHES QUOTATION
+        # ==================================================
+
+        if int(
+            quotation["requisition_id"]
+        ) != int(prs_id):
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "The selected quotation does not belong "
+                    "to the selected PRS."
+
+            }), 400
+
+
+        requisition_id = quotation["requisition_id"]
+
+
+        supplier_id = quotation["supplier_id"]
+
+
+        supplier_name = quotation["supplier_name"]
+
+
+        quotation_no = quotation["quotation_no"]
+
+
+        # ==================================================
+        # GET QUOTATION ITEMS
+        # ==================================================
+
+        cursor.execute("""
+            SELECT
+                item_name,
+                description,
+                quantity,
+                unit_price
+
+            FROM quotation_records_items
+
+            WHERE quotation_id = %s
+
+            ORDER BY item_id ASC
+
+        """, (quotation_id,))
+
+
+        items = cursor.fetchall()
+
+
+        if not items:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "No quotation items found."
+
+            }), 404
+
+
+        # ==================================================
+        # CALCULATE TOTAL
+        # ==================================================
+
+        total_amount = 0
+
+
+        for item in items:
+
+            quantity = float(
+                    item["quantity"] or 0
+                )
+
+
+            unit_price =float(
+                    item["unit_price"] or 0
+                )
+
+
+            total_amount += (
+                quantity *
+                unit_price
+            )
+
+
+        # ==================================================
+        # GENERATE PO NUMBER
+        #
+        # FORMAT:
+        # PO/2026/0001
+        # PO/2026/0002
+        # PO/2026/0003
+        # ==================================================
+
+        current_year = datetime.now().year
+
+
+        cursor.execute("""
+            SELECT
+                po_number
+
+            FROM purchase_orders
+
+            WHERE po_number LIKE %s
+
+            ORDER BY purchase_order_id DESC
+
+            LIMIT 1
+
+        """, (
+            f"PO/{current_year}/%",
+        ))
+
+
+        last_po = cursor.fetchone()
+
+
+        if last_po and last_po["po_number"]:
+
+            try:
+
+                last_number =int(
+                        last_po["po_number"]
+                        .split("/")[-1]
+                    )
+
+            except (
+                ValueError,
+                IndexError
+            ):
+
+                last_number = 0
+
+        else:
+
+            last_number = 0
+
+
+        next_number = last_number + 1
+
+
+        po_number = f"PO/{current_year}/{next_number:04d}"
+
+
+        # ==================================================
+        # INSERT PURCHASE ORDER
+        #
+        # YOUR TABLE HAS:
+        #
+        # purchase_order_id
+        # requisition_id
+        # quotation_id
+        # po_number
+        # order_date
+        # status
+        # total_amount
+        # supplier_id
+        # ==================================================
+
+        cursor.execute("""
+            INSERT INTO purchase_orders (
+                requisition_id,
+                quotation_id,
+                po_number,
+                order_date,
+                status,
+                total_amount,
+                supplier_id
+            )
+
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+
+        """, (
+
+            requisition_id,
+
+            quotation_id,
+
+            po_number,
+
+            datetime.now(),
+
+            "Pending",
+
+            total_amount,
+
+            supplier_id
+
+        ))
+
+
+        # ==================================================
+        # GET NEW PO ID
+        # ==================================================
+
+        po_id = cursor.lastrowid
+
+
+        # ==================================================
+        # INSERT PURCHASE ORDER ITEMS
+        # ==================================================
+
+        for item in items:
+
+            cursor.execute("""
+                INSERT INTO purchase_order_items (
+                    purchase_order_id,
+                    item_name,
+                    description,
+                    quantity,
+                    unit_price
+                )
+
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+
+            """, (
+
+                po_id,
+
+                item["item_name"],
+
+                item["description"],
+
+                item["quantity"],
+
+                item["unit_price"]
+
+            ))
+
+
+        # ==================================================
+        # MARK SELECTED QUOTATION
+        # ==================================================
+
+        cursor.execute("""
+            UPDATE quotations
+
+            SET status = 'SELECTED'
+
+            WHERE quotation_id = %s
+
+        """, (quotation_id,))
+
+
+        # ==================================================
+        # MARK OTHER QUOTATIONS AS REJECTED
+        # ==================================================
+
+        cursor.execute("""
+            UPDATE quotations
+
+            SET status = 'REJECTED'
+
+            WHERE qrf_id = %s
+
+            AND quotation_id != %s
+
+        """, (
+            quotation["qrf_id"],
+            quotation_id
+        ))
+
+
+        # ==================================================
+        # MARK SELECTED SUPPLIER
+        # ==================================================
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'NO'
+
+            WHERE qrf_id = %s
+
+        """, (
+            quotation["qrf_id"],
+        ))
+
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'YES'
+
+            WHERE qrf_id = %s
+
+            AND quotation_id = %s
+
+        """, (
+            quotation["qrf_id"],
+            quotation_id
+        ))
+
+
+        # ==================================================
+        # COMMIT EVERYTHING
+        # ==================================================
+
+        conn.commit()
+
+
+        # ==================================================
+        # SUCCESS RESPONSE
+        # ==================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Purchase Order created successfully.",
+
+            "po_id":
+                po_id,
+
+            "po_number":
+                po_number,
+
+            "quotation_id":
+                quotation_id,
+
+            "quotation_no":
+                quotation_no,
+
+            "supplier_id":
+                supplier_id,
+
+            "supplier_name":
+                supplier_name,
+
+            "requisition_id":
+                requisition_id,
+
+            "total_amount":
+                total_amount
+
+        }), 201
+
+
+    except Exception as e:
+
+        conn.rollback()
+
+
+        print(
+            "CREATE PO ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to create Purchase Order.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+
+        conn.close()
+
 
 
 

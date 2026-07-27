@@ -4,51 +4,235 @@ from datetime import datetime
 
 hod_dashboard_bp = Blueprint("hod_dashboard", __name__)
 
+
+def get_hod_department(cursor):
+
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+
+    cursor.execute("""
+        SELECT
+
+            d.department_id,
+
+            d.department_name
+
+        FROM users u
+
+        INNER JOIN departments d
+
+            ON TRIM(
+                LOWER(u.department)
+            )
+            =
+            TRIM(
+                LOWER(d.department_name)
+            )
+
+        WHERE u.user_id = %s
+
+        LIMIT 1
+
+    """, (
+        user_id,
+    ))
+
+
+    return cursor.fetchone()
+
 # =========================================================
 # DASHBOARD PAGE
 # =========================================================
+# ============================================================
+# HOD DASHBOARD PAGE
+# ============================================================
+# ============================================================
+# HOD DASHBOARD PAGE
+# ============================================================
+
 @hod_dashboard_bp.route("/", methods=["GET"])
 def hod_dashboard():
 
+    # ========================================================
+    # CHECK USER ROLE
+    # ========================================================
+
     if session.get("user_role") != "hod":
-        return redirect(url_for("auth.login"))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT 
-            r.requisition_id,
-            r.prs_no,
-            d.department_name,
-
-            COALESCE(a.hod_status,'Pending') AS hod_status,
-            r.submission_date,
-            COALESCE(a.hod_approved_at,'-') AS hod_approved_at,
-
-            COALESCE(a.ceo_status,'Pending') AS ceo_status,
-            COALESCE(a.ceo_approved_at,'-') AS ceo_approved_at
-
-        FROM requisitions r
-
-        LEFT JOIN departments d 
-            ON r.department_id = d.department_id
-
-        LEFT JOIN approvals a 
-            ON a.module_name = 'PRS'
-            AND a.document_id = r.requisition_id
-
-        ORDER BY r.requisition_id DESC
-    """)
-
-    requisitions = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return render_template("hod_dashboard.html", requisitions=requisitions)
+        return redirect(
+            url_for("auth.login")
+        )
 
 
+    conn = None
+    cursor = None
+
+
+    try:
+
+        # ====================================================
+        # DATABASE CONNECTION
+        # ====================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET LOGGED-IN USER DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(
+            cursor
+        )
+
+
+        # ====================================================
+        # CHECK DEPARTMENT
+        # ====================================================
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Logged-in HOD department could not be determined."
+
+            }), 400
+
+
+        # ====================================================
+        # GET DEPARTMENT INFORMATION
+        # ====================================================
+
+        department_id = department[
+            "department_id"
+        ]
+
+        department_name = department[
+            "department_name"
+        ]
+
+
+        # ====================================================
+        # LOAD REQUISITIONS FOR LOGGED-IN
+        # HOD DEPARTMENT ONLY
+        #
+        # STATUS:
+        # Gets status ONLY from approvals.final_status
+        #
+        # If final_status is NULL:
+        # status = PENDING
+        #
+        # DUE:
+        # Current date - submission date
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                r.requisition_id,
+
+                r.prs_no,
+
+                d.department_name,
+
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS status,
+
+                DATEDIFF(
+                    CURDATE(),
+                    DATE(r.submission_date)
+                ) AS due,
+
+                r.submission_date
+
+
+            FROM requisitions r
+
+
+            LEFT JOIN departments d
+
+                ON r.department_id =
+                   d.department_id
+
+
+            LEFT JOIN approvals a
+
+                ON a.module_name = 'PRS'
+
+                AND a.document_id =
+                    r.requisition_id
+
+
+            WHERE r.department_id = %s
+
+
+            ORDER BY
+                r.requisition_id DESC
+
+        """, (
+            department_id,
+        ))
+
+
+        requisitions = cursor.fetchall()
+
+
+        # ====================================================
+        # RENDER HOD DASHBOARD
+        # ====================================================
+
+        return render_template(
+
+            "hod_dashboard.html",
+
+            requisitions=requisitions,
+
+            department_id=department_id,
+
+            department_name=department_name
+
+        )
+
+
+    except Exception as e:
+
+        print(
+            "HOD Dashboard Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
 # =========================================================
 # REQUISITION DETAILS API
 # =========================================================
@@ -429,52 +613,184 @@ def get_signature(document_id, module_name):
 # QRF MODULE (HOD DASHBOARD EXTENSION)
 # =========================================================
 
+# ============================================================
+# QRF DATA FOR LOGGED-IN USER'S DEPARTMENT
+# ============================================================
+
 @hod_dashboard_bp.route("/qrf/data")
 def qrf_data():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
-    cursor.execute("""
-        SELECT 
-            qr.qrf_id,
-            qr.qrf_no,
-            qr.request_date,
+    try:
 
-            COALESCE(a.final_status, 'PENDING') AS status,
+        # ====================================================
+        # DATABASE CONNECTION
+        # ====================================================
 
-            r.prs_no,
-            d.department_name,
-            u.username AS requester_name
+        conn = get_db_connection()
 
-        FROM quotation_requests qr
-
-        LEFT JOIN approvals a 
-            ON a.module_name = 'QRF'
-            AND a.document_id = qr.qrf_id
-
-        LEFT JOIN requisitions r 
-            ON qr.requisition_id = r.requisition_id
-
-        LEFT JOIN departments d 
-            ON r.department_id = d.department_id
-
-        LEFT JOIN users u 
-            ON qr.requested_by = u.user_id
-
-        ORDER BY qr.qrf_id DESC
-    """)
-
-    rows = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(rows)
+        cursor = conn.cursor(
+            dictionary=True
+        )
 
 
+        # ====================================================
+        # GET LOGGED-IN USER DEPARTMENT
+        # ====================================================
+
+        department = get_hod_department(
+            cursor
+        )
 
 
+        # ====================================================
+        # CHECK DEPARTMENT
+        # ====================================================
+
+        if not department:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Logged-in user's department could not be determined.",
+
+                "data": []
+
+            }), 400
+
+
+        # ====================================================
+        # GET DEPARTMENT ID
+        # ====================================================
+
+        department_id = department[
+            "department_id"
+        ]
+
+
+        # ====================================================
+        # LOAD QRF DATA FOR LOGGED-IN USER'S DEPARTMENT
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                qr.qrf_id,
+
+                qr.qrf_no,
+
+                qr.request_date,
+
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS status,
+
+                r.prs_no,
+
+                d.department_name,
+
+                u.username AS requester_name
+
+
+            FROM quotation_requests qr
+
+
+            LEFT JOIN approvals a
+
+                ON a.module_name = 'QRF'
+
+                AND a.document_id =
+                    qr.qrf_id
+
+
+            LEFT JOIN requisitions r
+
+                ON qr.requisition_id =
+                   r.requisition_id
+
+
+            LEFT JOIN departments d
+
+                ON r.department_id =
+                   d.department_id
+
+
+            LEFT JOIN users u
+
+                ON qr.requested_by =
+                   u.user_id
+
+
+            WHERE r.department_id = %s
+
+
+            ORDER BY
+                qr.qrf_id DESC
+
+        """, (
+            department_id,
+        ))
+
+
+        rows = cursor.fetchall()
+
+
+        # ====================================================
+        # RETURN DATA
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "department_id":
+                department_id,
+
+            "department_name":
+                department[
+                    "department_name"
+                ],
+
+            "data":
+                rows
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "QRF Data Error:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "error":
+                str(e),
+
+            "data": []
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+        if conn:
+
+            conn.close()
 
 
 # ==========================================================
