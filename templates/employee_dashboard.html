@@ -227,85 +227,383 @@ onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
 
 
 
-<!-- ================= CREATE FORM ================= -->
+
+    <!-- =======================================================
+                    CREATE DEPARTMENT BUDGET
+    ======================================================= -->
+
+
+    <div id="createBudgetTab"
+         class="create-budget-card"
+         style="display:none;">
 
 
 
-<div id="createForm" style="display:none;">
+        <div class="predict-header">
+
+
+            <h2>
+                Create Department Budget
+            </h2>
+
+
+        </div>
 
 
 
-<div class="form-header">
-
-
-<h2>
-Create Purchase Requisition
-</h2>
 
 
 
-<button
-type="button"
-class="btn danger"
-onclick="hideCreateForm()">
+
+        <div class="predict-grid">
 
 
-Cancel
 
 
-</button>
+
+            <!-- ==========================================
+                DEPARTMENT
+            ========================================== -->
+
+            <div class="form-group">
+
+                <label for="budgetDepartment">
+                    Department
+                </label>
+
+                <select id="budgetDepartment">
+
+                    <option value="">
+                        Select Department
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- ==========================================
+                COMPANY BUDGET NUMBER
+            ========================================== -->
+
+            <div class="form-group">
+
+                <label for="companyBudget">
+                    Company Budget
+                </label>
+
+                <input
+                    type="text"
+                    id="companyBudget"
+                    placeholder="Select department first"
+                    readonly>
+
+            </div>
+
+
+            <!-- ==========================================
+                HIDDEN COMPANY BUDGET ID
+            ========================================== -->
+
+            <input
+                type="hidden"
+                id="companyBudgetId">
+
+
+
+            <!-- Budget Item -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Budget Item
+                </label>
+
+
+
+                <input
+                    type="text"
+                    id="budgetItem"
+                    placeholder="Enter Budget Item">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Quantity -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Quantity
+                </label>
+
+
+
+                <input
+                    type="number"
+                    id="budgetQuantity"
+                    value="0"
+                    min="1">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Unit Cost -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Unit Cost
+                </label>
+
+
+
+                <input
+                    type="number"
+                    id="budgetUnitCost"
+                    placeholder="Enter Unit Cost">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Budget Type -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Budget Type
+                </label>
+
+
+
+                <select id="budgetType">
+
+
+                    <option value="">
+                        Select Type
+                    </option>
+
+
+                    <option value="Monthly">
+                        Monthly
+                    </option>
+
+
+                    <option value="Quarterly">
+                        Quarterly
+                    </option>
+
+
+                    <option value="Yearly">
+                        Yearly
+                    </option>
+
+
+                </select>
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Start Date -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Start Date
+                </label>
+
+
+
+                <input
+                    type="date"
+                    id="budgetStart">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- End Date -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    End Date
+                </label>
+
+
+
+                <input
+                    type="date"
+                    id="budgetEnd">
+
+
+
+            </div>
+
+
+
+
+
+
+
+
+
+            <!-- Remarks -->
+
+
+            <div class="form-group">
+
+
+                <label>
+                    Remarks
+                </label>
+
+
+
+                <textarea
+                    id="budgetRemarks"
+                    placeholder="Enter remarks">
+
+                </textarea>
+
+
+
+            </div>
+
+
+
+
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <div class="button-area">
+
+
+
+            <button
+                class="predict-btn"
+                onclick="submitBudget()">
+
+
+
+                Save Budget
+
+
+
+            </button>
+
+
+
+
+
+
+            <button
+                class="cancel-btn"
+                onclick="closeCreateBudget()">
+
+
+
+                Cancel
+
+
+
+            </button>
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+        <div id="budgetMessage"
+             style="margin-top:15px;">
+
+
+
+        </div>
+
+
+
+
+
+    </div>
+
+
 
 
 
 </div>
-
-
-
-
-
-<form method="POST"
-action="{{url_for('requisition.submit_requisition')}}">
-
-
-
-
-
-<div class="form-row">
-
-
-<div>
-
-<label>
-Department
-</label>
-
-
-<input
-type="text"
-value="{{session.department}}"
-readonly>
-
-</div>
-
-
-
-
-
-<div>
-
-<label>
-Created By
-</label>
-
-
-<input
-type="text"
-value="{{session.username}}"
-readonly>
-
-
-</div>
-
 
 
 

@@ -542,8 +542,8 @@ Date
                     </button>
 
                     <button
-                        class="btn primary"
                         type="button"
+                        class="btn primary"
                         onclick="showCreateForm()">
 
                         + Create Requisition
@@ -611,62 +611,133 @@ Date
 
             </div>
 
-            <!-- ==========================================
-                    CREATE FORM
-            =========================================== -->
+
+            <!-- ======================================================
+                        CREATE REQUISITION FORM
+            ======================================================= -->
+
 
             <div id="createForm" style="display:none;">
 
+
+
                 <div class="form-header">
 
-                    <h2>Create Purchase Requisition</h2>
 
-                    <button
-                        type="button"
-                        class="btn danger"
-                        onclick="hideCreateForm()">
+                    <h2>
+                        Create Purchase Requisition
+                    </h2>
 
-                        Cancel
 
-                    </button>
+
+
+
 
                 </div>
 
+
+
+
+
+
+
                 <form
                     method="POST"
-                    action="{{ url_for('requisition.submit_requisition') }}">
+                    action="{{url_for('requisition.submit_requisition')}}">
+
+
+
+
 
                     <div class="form-row">
 
-                            <div>
+                        <div>
 
-                                <label>
-                                    Department
-                                </label>
+                            <label for="prs_no">
+                                PRS Number
+                            </label>
+
+                            <input
+                            type="text"
+                            id="prs_no"
+                            name="prs_no"
+                            readonly
+                            placeholder="Generating PRS Number..."
+                        >
 
 
-                                <input
-                                    type="text"
-                                    value="{{ session.department_name }}"
-                                    readonly>
+                        </div>
 
 
-                            </div>
 
                         <div>
 
-                            <label>Created By</label>
+                            <label for="department">
+                                Department
+                            </label>
+                            
+
+                            <select
+                                id="department"
+                                name="department_id"
+                                required>
+
+                                <option value="">
+                                    Select Department
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+
+                                    <div>
+
+                            <label for="budgetItem">
+                                Budget Item
+                            </label>
+
+                           <select
+                                id="departmentBudgetItem"
+                                name="department_budget_id"
+                                required
+                            >
+                                <option value="">
+                                    Select Budget Item
+                                </option>
+                            </select>
+                        </div>
+
+
+
+
+
+                        <div>
+
+                            <label>
+                                Created By
+                            </label>
+
 
                             <input
                                 type="text"
-                                value="{{ session.username }}"
+                                value="{{session.username}}"
                                 readonly>
 
                         </div>
 
+
+
+
+
+
                         <div>
 
-                            <label>Date</label>
+                            <label>
+                                Submission Date
+                            </label>
+
 
                             <input
                                 type="date"
@@ -676,35 +747,74 @@ Date
 
                         </div>
 
+
+
                     </div>
 
+
+
+
+
+
                     <br>
+
+
+
+
+
 
                     <div class="controls">
 
+
                         <button
                             type="button"
+                            class="btn success"
                             onclick="addRow()">
+
 
                             + Add Item
 
+
                         </button>
+
+
+
+
 
                         <button
                             type="button"
+                            class="btn danger"
                             onclick="removeRow()">
+
+
 
                             Remove Item
 
+
                         </button>
+
+
 
                     </div>
 
+
+
+
+
+
+
                     <br>
+
+
+
+
+
 
                     <table id="reqTable">
 
+
                         <thead>
+
 
                             <tr>
 
@@ -719,42 +829,89 @@ Date
 
                             </tr>
 
+
                         </thead>
+
+
+
 
                         <tbody>
 
+
                         </tbody>
+
+
 
                     </table>
 
+
+
+
+
+
+
                     <br>
 
-                    <div class="form-actions">
+
+
+
+
+
+                    <div style="text-align:right;">
+
+
 
                         <button
-                            class="btn primary"
-                            type="submit">
+                            type="submit"
+                            class="btn primary">
+
 
                             Submit Requisition
 
+
                         </button>
+
+
+
+
+
 
                         <button
                             type="button"
-                            class="btn secondary"
+                            class="btn danger"
                             onclick="hideCreateForm()">
 
-                            Back
+
+
+                            Cancel
+
 
                         </button>
 
+
+
+
                     </div>
+
+
+
+
+
 
                 </form>
 
+
+
             </div>
 
+
+
+
+
         </div>
+
+
+
 
         <!-- ==================================================
                         RIGHT PANEL
@@ -1020,14 +1177,7 @@ Date
 
             <div class="search">
 
-                <button
-                    type="button"
-                    class="btn primary"
-                    onclick="window.location.href='/procurement/Quotation_entry'">
-
-                    Quotation Entry
-
-                </button>
+                
 
                 <button
                     type="button"
@@ -1652,14 +1802,7 @@ Date
             =========================================== -->
             <div class="search">
 
-                <button
-                    type="button"
-                    class="btn primary"
-                    onclick="window.location.href='/procurement/create_po'">
-
-                    + Create PO
-
-                </button>
+                
 
                 <button
                     type="button"
@@ -2291,14 +2434,7 @@ Date
 
                 <!-- CREATE GRN -->
 
-                <button
-                    type="button"
-                    class="btn primary"
-                    onclick="window.location.href='/procurement/create_grn'">
-
-                    + Create GRN
-
-                </button>
+                
 
 
                 <!-- CREATE PO FROM QUOTATION -->
@@ -3220,723 +3356,754 @@ Date
 
 
 
-<!-- ================= GRN MODULE ================= -->
-<div id="grn" class="module">
+<!-- ============================================================
+     GRN MODULE
+     GOODS RECEIVED NOTE MANAGEMENT
+============================================================ -->
 
+<div id="grn" class="module">
 
     <div class="container">
 
 
-        <!-- =====================================================
-                            LEFT PANEL
-                      GRN LISTING
+        <!-- ====================================================
+             LEFT PANEL
+             GRN LISTING
         ===================================================== -->
 
         <div class="left">
 
+            <!-- ================= HEADER ================= -->
 
             <div class="header">
 
-                GOODS RECEIVED NOTE (GRN)
+                <h2>
+                    GOODS RECEIVED NOTE (GRN)
+                </h2>
 
             </div>
 
 
+            <!-- ================= ACTION BAR ================= -->
 
             <div class="search">
 
-
-                <button class="btn primary"
-                        onclick="window.location.href='/procurement/create_invoice'">
-
-                    + Create Invoice
-
-                </button>
+                
 
 
-
-                <button class="btn primary"
-                        onclick="openGRNForm()">
-
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="openGRNForm()"
+                >
                     + Create GRN
-
                 </button>
 
 
-
-                <button class="btn primary"
-                        onclick="downloadPDF('grnPrintArea','GRN_Slip')">
-
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="downloadPDF('grnPrintArea', 'GRN_Slip')"
+                >
                     Download PDF
-
                 </button>
 
 
-
-                <input type="text"
-                       id="grnSearch"
-                       placeholder="Search GRN or PRS..."
-                       onkeyup="searchGRN()">
-
-
+                <input
+                    type="text"
+                    id="grnSearch"
+                    placeholder="Search GRN or PRS..."
+                    onkeyup="searchGRN()"
+                >
 
             </div>
 
 
+            <!-- ================= PRINT BUTTON ================= -->
 
+            <div class="action-buttons">
 
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="printGRN()"
+                >
+                    Print GRN
+                </button>
 
-            <button class="btn primary"
-                    onclick="printGRN()">
-
-                Print GRN
-
-            </button>
-
-
-
+            </div>
 
 
             <!-- ================= GRN TABLE ================= -->
 
-            <table id="grnTable">
+            <div class="table-wrapper">
+
+                <table id="grnTable">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Select
+                            </th>
+
+                            <th>
+                                GRN No
+                            </th>
+
+                            <th>
+                                PRS No
+                            </th>
+
+                            <th>
+                                Supplier
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Department
+                            </th>
+
+                            <th>
+                                Date
+                            </th>
+
+                        </tr>
+
+                    </thead>
 
 
-                <thead>
+                    <tbody id="grnBody">
 
-                    <tr>
+                        <!-- GRN records loaded by JavaScript -->
 
-                        <th>Select</th>
+                    </tbody>
 
-                        <th>GRN NO</th>
+                </table>
 
-                        <th>PRS NO</th>
-
-                        <th>Supplier</th>
-
-                        <th>Status</th>
-
-                        <th>Department</th>
-
-                        <th>Date</th>
-
-                    </tr>
-
-
-                </thead>
-
-
-
-                <tbody id="grnBody">
-
-
-                </tbody>
-
-
-
-            </table>
-
-
+            </div>
 
         </div>
 
 
-
-
-
-
-
-        <!-- =====================================================
-                            MIDDLE PANEL
-                         CREATE GRN FORM
+        <!-- ====================================================
+             MIDDLE PANEL
+             CREATE GRN FORM
         ===================================================== -->
 
-
-        <div class="middle"
-             id="grnFormBox">
-
-
-
-            <button class="back-btn"
-                    onclick="closeGRNForm()">
-
-                ⬅ Back
-
-            </button>
+        <div
+            class="middle"
+            id="grnFormBox"
+            style="display:none;"
+        >
 
 
+            <!-- ================= CREATE GRN FORM ================= -->
+
+            <form
+                id="grnForm"
+                method="POST"
+                action="/procurement/save_grn"
+            >
 
 
-
-            <form method="POST"
-                  action="/procurement/save_grn">
-
-
-
-
+                <!-- ================= FORM HEADER ================= -->
 
                 <div class="header">
 
-                    CREATE GOODS RECEIVED NOTE
+                    <h2>
+                        CREATE GOODS RECEIVED NOTE
+                    </h2>
 
                 </div>
 
 
-
-
+                <!-- =================================================
+                     BASIC GRN INFORMATION
+                ================================================== -->
 
                 <div class="grid">
 
 
-
-
-
-                    <!-- PO NUMBER -->
+                    <!-- ================= PO NUMBER ================= -->
 
                     <div class="form-group">
 
+                        <label for="po_id">
 
-                        <label>
-
-                            PO Number
+                            Purchase Order
 
                         </label>
 
 
-
-                        <select id="po_id"
-                                name="po_id"
-                                required>
-
-
+                        <select
+                            id="po_id"
+                            name="po_id"
+                            onchange="loadPOForGRN(this.value)"
+                            required
+                        >
 
                             <option value="">
 
-                                -- Select PO --
+                                -- Select Purchase Order --
 
                             </option>
-
 
 
                             {% for po in pos %}
 
+                            <option
+                                value="{{ po.purchase_order_id }}"
+                            >
 
-                            <option value="{{po.purchase_order_id}}">
-
-                                {{po.po_number}}
+                                {{ po.po_number }}
 
                             </option>
 
-
                             {% endfor %}
-
-
 
                         </select>
 
-
-
                     </div>
 
 
-
-
-
-
-
-                    <!-- CREATED BY -->
-
+                    <!-- ================= GRN NUMBER ================= -->
 
                     <div class="form-group">
 
-
-                        <label>
-
-                            Created By
-
-                        </label>
-
-
-
-                        <input type="text"
-                               value="{{session.username}}"
-                               readonly>
-
-
-                    </div>
-
-
-
-
-
-
-
-                    <!-- SUPPLIER -->
-
-
-                    <div class="form-group">
-
-
-                        <label>
-
-                            Supplier
-
-                        </label>
-
-
-
-                        <input id="supplier_name"
-                               readonly>
-
-
-
-
-                        <input type="hidden"
-                               id="supplier_id"
-                               name="supplier_id">
-
-
-                    </div>
-
-
-
-
-
-
-
-                    <!-- GRN NUMBER -->
-
-
-                    <div class="form-group">
-
-
-                        <label>
+                        <label for="grn_no">
 
                             GRN Number
 
                         </label>
 
 
-
-                        <input id="grn_no"
-                               name="grn_no"
-                               readonly>
-
+                        <input
+                            type="text"
+                            id="grn_no"
+                            name="grn_no"
+                            placeholder="GRN/2026/0001"
+                            readonly
+                        >
 
                     </div>
 
 
-
-
-
-
-
-
-                    <!-- RECEIVED DATE -->
-
+                    <!-- ================= SUPPLIER ================= -->
 
                     <div class="form-group">
 
+                        <label for="supplier_name">
 
-                        <label>
+                            Supplier
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="supplier_name"
+                            name="supplier_name"
+                            placeholder="Supplier will load automatically"
+                            readonly
+                        >
+
+
+                        <input
+                            type="hidden"
+                            id="supplier_id"
+                            name="supplier_id"
+                        >
+
+                    </div>
+
+
+                    <!-- ================= CREATED BY ================= -->
+
+                    <div class="form-group">
+
+                        <label for="created_by">
+
+                            Created By
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="created_by"
+                            name="created_by"
+                            value="{{ session.username }}"
+                            readonly
+                        >
+
+                    </div>
+
+
+                    <!-- ================= CREATION DATE ================= -->
+
+                    <div class="form-group">
+
+                        <label for="creation_date">
+
+                            Creation Date
+
+                        </label>
+
+
+                        <input
+                            type="datetime-local"
+                            id="creation_date"
+                            name="creation_date"
+                            readonly
+                        >
+
+                    </div>
+
+
+                    <!-- ================= RECEIVED DATE ================= -->
+
+                    <div class="form-group">
+
+                        <label for="grnReceived_date">
 
                             Received Date
 
                         </label>
 
 
-
-                        <input type="datetime-local"
-                               id="creation_date"
-                               name="received_date"
-                               readonly>
-
-
+                        <input
+                            type="date"
+                            id="grnReceived_date"
+                            name="received_date"
+                            required
+                        >
 
                     </div>
-
-
-
 
                 </div>
 
 
+                <!-- =================================================
+                     GRN SUMMARY
+                ================================================== -->
+
+                <div class="grn-summary">
+
+                    <div class="summary-item">
+
+                        <strong>
+                            PO Number:
+                        </strong>
+
+                        <span id="selectedPONumber">
+                            -
+                        </span>
+
+                    </div>
 
 
+                    <div class="summary-item">
+
+                        <strong>
+                            Supplier:
+                        </strong>
+
+                        <span id="selectedSupplierName">
+                            -
+                        </span>
+
+                    </div>
 
 
+                    <div class="summary-item">
+
+                        <strong>
+                            GRN Number:
+                        </strong>
+
+                        <span id="selectedGRNNumber">
+                            -
+                        </span>
+
+                    </div>
+
+                </div>
 
 
-                <!-- ================= GRN ITEMS ================= -->
+                <!-- =================================================
+                     RECEIVED ITEMS HEADER
+                ================================================== -->
+
+                <div class="section-header">
+
+                    <h3>
+                        Purchase Order Items
+                    </h3>
+
+                    <p>
+                        Select a Purchase Order above to load its items.
+                    </p>
+
+                </div>
 
 
-                <h3>
+                <!-- =================================================
+                     GRN ITEMS TABLE
+                ================================================== -->
 
-                    Received Items
+               <!-- =================================================
+     GRN ITEMS TABLE
+================================================== -->
 
-                </h3>
+                <div class="table-wrapper">
+
+                    <table id="grnEntryTable">
+
+                        <thead>
+
+                            <tr>
+
+                                <!-- MATERIAL -->
+                                <th>
+                                    Material
+                                </th>
+
+                                <!-- DESCRIPTION -->
+                                <th>
+                                    Description
+                                </th>
+
+                                <!-- ORIGINAL PO QUANTITY -->
+                                <th>
+                                    Ordered Qty
+                                </th>
+
+                                <!-- TOTAL RECEIVED BEFORE THIS GRN -->
+                                <th>
+                                    Already Received
+                                </th>
+
+                                <!-- BALANCE BEFORE CURRENT GRN -->
+                                <th>
+                                    Balance
+                                </th>
+
+                                <!-- QUANTITY RECEIVED NOW -->
+                                <th>
+                                    Receive Now
+                                </th>
+
+                                <!-- QUANTITY REJECTED NOW -->
+                                <th>
+                                    Rejected Qty
+                                </th>
+
+                                <!-- BALANCE AFTER CURRENT GRN -->
+                                <th>
+                                    Remaining Balance
+                                </th>
+
+                                <!-- AUTOMATIC REMARK -->
+                                <th>
+                                    Remarks
+                                </th>
+
+                            </tr>
+
+                        </thead>
 
 
+                        <tbody id="grnEntryBody">
+
+                            <tr>
+
+                                <td
+                                    colspan="9"
+                                    style="text-align:center;"
+                                >
+
+                                    Select a Purchase Order
+                                    to load items.
+
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <!-- =================================================
+                     FORM BUTTONS
+                ================================================== -->
+
+                <div class="form-actions">
+
+                    <button
+                        type="submit"
+                        class="btn success"
+                    >
+
+                        Save GRN
+
+                    </button>
 
 
+                    <button
+                        type="button"
+                        class="btn danger"
+                        onclick="closeGRNForm()"
+                    >
 
-                <table id="grnEntryTable">
+                        Close
 
+                    </button>
 
-                    <thead>
-
-                        <tr>
-
-                            <th>Material</th>
-
-                            <th>Description</th>
-
-                            <th>Ordered</th>
-
-                            <th>Received</th>
-
-
-                        </tr>
-
-
-                    </thead>
-
-
-
-
-                    <tbody id="grnEntryBody">
-
-
-                    </tbody>
-
-
-
-                </table>
-
-
-
-
-
-
-
-                <button class="btn success">
-
-                    Save GRN
-
-                </button>
-
-
+                </div>
 
 
             </form>
 
-
-
         </div>
 
 
-
-
-
-
-
-
-
-        <!-- =====================================================
-                            RIGHT PANEL
-                         GRN VIEW SLIP
+        <!-- ====================================================
+             RIGHT PANEL
+             GRN VIEW / PRINT SLIP
         ===================================================== -->
-
 
         <div class="right">
 
 
-
-            <div class="slip"
-                 id="grnPrintArea">
-
-
-
+            <div
+                class="slip"
+                id="grnPrintArea"
+            >
 
 
-                <!-- HEADER -->
-
+                <!-- =================================================
+                     GRN SLIP HEADER
+                ================================================== -->
 
                 <div class="header">
 
-
                     <h2>
-
                         GOODS RECEIVED NOTE (GRN)
-
                     </h2>
-
 
 
                     <p>
 
-                        <b>
-
+                        <strong>
                             Official Receiving Document
-
-                        </b>
+                        </strong>
 
                     </p>
-
-
 
                 </div>
 
 
-
-
-
-
-
-                <!-- ================= INFORMATION ================= -->
-
+                <!-- =================================================
+                     GRN INFORMATION
+                ================================================== -->
 
                 <div class="info-section">
 
 
+                    <!-- ================= LEFT INFORMATION ================= -->
 
                     <div class="box">
 
 
-
                         <p>
 
-                            <b>GRN Number:</b>
+                            <strong>
+                                GRN Number:
+                            </strong>
 
                             <span id="grnNumber">
-
                                 -
-
                             </span>
-
 
                         </p>
 
 
-
-
-
                         <p>
 
-                            <b>Date:</b>
+                            <strong>
+                                Date:
+                            </strong>
 
                             <span id="grnDate">
-
                                 -
-
                             </span>
 
-
                         </p>
-
-
-
 
 
                         <p>
 
-                            <b>PO Number:</b>
+                            <strong>
+                                PO Number:
+                            </strong>
 
                             <span id="grnPO">
-
                                 -
-
                             </span>
 
-
                         </p>
-
-
 
                     </div>
 
 
-
-
-
-
+                    <!-- ================= RIGHT INFORMATION ================= -->
 
                     <div class="box">
 
 
-
                         <p>
 
-                            <b>Supplier:</b>
+                            <strong>
+                                Supplier:
+                            </strong>
 
                             <span id="grnSupplier">
-
                                 -
-
                             </span>
-
 
                         </p>
 
 
-
-
-
                         <p>
 
-                            <b>Received By:</b>
+                            <strong>
+                                Received By:
+                            </strong>
 
                             <span id="grnReceiver">
-
                                 -
-
                             </span>
 
-
                         </p>
-
-
-
 
 
                         <p>
 
-                            <b>Status:</b>
+                            <strong>
+                                Status:
+                            </strong>
 
                             <span id="grnStatus">
-
                                 -
-
                             </span>
-
 
                         </p>
 
-
-
                     </div>
-
-
 
                 </div>
 
 
-
-
-
-
-
-
-                <!-- ================= DELIVERY DETAILS ================= -->
-
+                <!-- =================================================
+                     DELIVERY DETAILS
+                ================================================== -->
 
                 <div class="supplier-section">
 
 
                     <p>
 
-                        <b>Delivery Location:</b>
+                        <strong>
+                            Delivery Location:
+                        </strong>
 
                         <span id="grnLocation">
-
                             -
-
                         </span>
 
-
                     </p>
-
-
-
 
 
                     <p>
 
-                        <b>Receiving Date:</b>
+                        <strong>
+                            Receiving Date:
+                        </strong>
 
                         <span id="grnReceivingDate">
-
                             -
-
                         </span>
 
-
                     </p>
-
-
 
                 </div>
 
 
-
-
-
-
-
-
-
-                <!-- ================= ITEMS ================= -->
-
+                <!-- =================================================
+                     RECEIVED ITEMS
+                ================================================== -->
 
                 <h3>
-
                     Received Items
-
                 </h3>
 
 
+                <div class="table-wrapper">
+
+                    <table class="items-table">
 
 
+                        <thead>
 
-                <table class="items-table">
+                            <tr>
 
+                                <th>
+                                    Material
+                                </th>
 
-                    <thead>
+                                <th>
+                                    Description
+                                </th>
 
+                                <th>
+                                    Ordered Qty
+                                </th>
 
-                        <tr>
+                                <th>
+                                    Received Qty
+                                </th>
 
+                                <th>
+                                    Balance
+                                </th>
 
-                            <th>Material</th>
+                            </tr>
 
-                            <th>Description</th>
-
-                            <th>Ordered Qty</th>
-
-                            <th>Received Qty</th>
-
-                            <th>Balance</th>
-
-
-                        </tr>
-
-
-                    </thead>
-
-
-
-
-
-                    <tbody id="grnItemsBody">
+                        </thead>
 
 
-                    </tbody>
+                        <tbody id="grnItemsBody">
+
+                            <!-- GRN items loaded here -->
+
+                        </tbody>
 
 
+                    </table>
+
+                </div>
 
 
-                </table>
-
-
-
-
-
-
-
-
-
-                <!-- ================= TOTAL ================= -->
-
+                <!-- =================================================
+                     TOTAL ITEMS
+                ================================================== -->
 
                 <div class="info-section">
 
@@ -3944,285 +4111,190 @@ Date
                     <div class="box">
 
 
-                        <b>
-
+                        <strong>
                             Total Items Received:
-
-                        </b>
-
+                        </strong>
 
 
                         <span id="grnTotal">
-
                             0
-
                         </span>
 
-
-
                     </div>
-
 
                 </div>
 
 
-
-
-
-
-
-
-
-                <!-- ================= SIGNATURES ================= -->
-
+                <!-- =================================================
+                     SIGNATURES
+                ================================================== -->
 
                 <div class="signature-section">
 
 
-
-
-
-                    <!-- RECEIVED BY -->
-
+                    <!-- ================= RECEIVED BY ================= -->
 
                     <div class="sig-box">
 
 
-                        <b>
-
+                        <strong>
                             Received By
-
-                        </b>
-
+                        </strong>
 
 
-                        <img id="grnPreparedSignature"
-                             style="height:60px;display:none;">
-
-
-
+                        <img
+                            id="grnPreparedSignature"
+                            style="height:60px;display:none;"
+                            alt="Received By Signature"
+                        >
 
 
                         <p id="grnPreparedName">
-
                             -
+                        </p>
+
+
+                        <p>
+
+                            Date:
+
+                            <span id="grnPreparedDate">
+                                -
+                            </span>
 
                         </p>
 
 
+                        <p>
 
+                            Status:
 
-                        Date:
+                            <span id="grnPreparedStatus">
+                                -
+                            </span>
 
-                        <span id="grnPreparedDate">
-
-                            -
-
-                        </span>
-
-
-
-
-
-                        <br>
-
-
-
-
-
-                        Status:
-
-                        <span id="grnPreparedStatus">
-
-                            -
-
-                        </span>
-
-
+                        </p>
 
                     </div>
 
 
-
-
-
-
-
-
-
-                    <!-- HOD -->
-
+                    <!-- ================= HOD APPROVAL ================= -->
 
                     <div class="sig-box">
 
 
-                        <b>
-
+                        <strong>
                             HOD Approval
-
-                        </b>
-
+                        </strong>
 
 
-                        <img id="grnHodSignature"
-                             style="height:60px;display:none;">
-
-
-
+                        <img
+                            id="grnHodSignature"
+                            style="height:60px;display:none;"
+                            alt="HOD Signature"
+                        >
 
 
                         <p id="grnHodName">
-
                             -
+                        </p>
+
+
+                        <p>
+
+                            Date:
+
+                            <span id="grnHodDate">
+                                -
+                            </span>
 
                         </p>
 
 
+                        <p>
 
+                            Status:
 
-                        Date:
+                            <span id="grnHodStatus">
+                                PENDING
+                            </span>
 
-                        <span id="grnHodDate">
-
-                            -
-
-                        </span>
-
-
-
-
-
-                        <br>
-
-
-
-
-
-                        Status:
-
-                        <span id="grnHodStatus">
-
-                            PENDING
-
-                        </span>
-
-
+                        </p>
 
                     </div>
 
 
-
-
-
-
-
-
-
-                    <!-- CEO -->
-
+                    <!-- ================= CEO APPROVAL ================= -->
 
                     <div class="sig-box">
 
 
-                        <b>
-
+                        <strong>
                             CEO Approval
-
-                        </b>
-
+                        </strong>
 
 
-                        <img id="grnCeoSignature"
-                             style="height:60px;display:none;">
-
-
-
+                        <img
+                            id="grnCeoSignature"
+                            style="height:60px;display:none;"
+                            alt="CEO Signature"
+                        >
 
 
                         <p id="grnCeoName">
-
                             -
+                        </p>
+
+
+                        <p>
+
+                            Date:
+
+                            <span id="grnCeoDate">
+                                -
+                            </span>
 
                         </p>
 
 
+                        <p>
 
+                            Status:
 
-                        Date:
+                            <span id="grnCeoStatus">
+                                PENDING
+                            </span>
 
-                        <span id="grnCeoDate">
-
-                            -
-
-                        </span>
-
-
-
-
-
-                        <br>
-
-
-
-
-
-                        Status:
-
-                        <span id="grnCeoStatus">
-
-                            PENDING
-
-                        </span>
-
-
+                        </p>
 
                     </div>
 
-
-
-
-
                 </div>
 
 
-
-
-
-
-
-
+                <!-- =================================================
+                     FOOTER
+                ================================================== -->
 
                 <div class="footer">
 
-
                     <p>
 
-                        The above goods were received in good condition unless otherwise stated.
+                        The above goods were received in good condition
+                        unless otherwise stated.
 
                     </p>
 
-
                 </div>
-
-
-
 
 
             </div>
 
-
         </div>
-
-
-
-
-
 
     </div>
 
-
 </div>
-
 
 </div>
 

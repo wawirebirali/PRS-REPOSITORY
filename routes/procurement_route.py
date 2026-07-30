@@ -2660,73 +2660,505 @@ def create_po_from_selected():
 
 
 
-# =========================================
+
+from datetime import datetime
+
+# Make sure these already exist in your project:
+# from your_database_file import get_db_connection
+# from your procurement blueprint import procurement_dashboard_bp
+
+
+# ============================================================
 # CREATE GRN PAGE
-## =========================================
-# CREATE GRN PAGE
-# =========================================
-@procurement_dashboard_bp.route("/create_grn")
+# PROCUREMENT DASHBOARD
+# URL:
+# /procurement/create_grn
+# ============================================================
+
+@procurement_dashboard_bp.route("/create_grn", methods=["GET"])
 def create_grn():
 
     conn = get_db_connection()
 
     cursor = conn.cursor(dictionary=True)
 
-    # =====================================
-    # PURCHASE ORDERS
-    # =====================================
-    cursor.execute("""
+    try:
 
-        SELECT
-            purchase_order_id,
-            po_number,supplier_id
+        # ====================================================
+        # LOAD PURCHASE ORDERS
+        # Only load POs that can still receive goods
+        # ====================================================
 
-        FROM purchase_orders
+        cursor.execute("""
+            SELECT
+                po.purchase_order_id,
+                po.po_number,
+                po.supplier_id,
+                s.supplier_name,
+                po.requisition_id,
+                po.status
 
-        ORDER BY purchase_order_id DESC
+            FROM purchase_orders po
 
-    """)
+            LEFT JOIN suppliers s
+                ON s.supplier_id = po.supplier_id
 
-    pos = cursor.fetchall()
+            WHERE po.status IN (
+                'Pending',
+                'Approved'
+            )
 
+            ORDER BY
+                po.purchase_order_id DESC
+        """)
 
-    
-
-
-    # =====================================
-    # USERS
-    # =====================================
-    cursor.execute("""
-
-        SELECT
-            user_id,
-            username
-
-        FROM users
-
-        ORDER BY username ASC
-
-    """)
-
-    users = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return render_template(
-
-        "create_grn.html",
-
-        pos=pos,
-        users=users
-
-    )
+        pos = cursor.fetchall()
 
 
+        # ====================================================
+        # LOAD USERS
+        # ====================================================
 
-# =========================================
+        cursor.execute("""
+            SELECT
+                user_id,
+                username
+
+            FROM users
+
+            ORDER BY username ASC
+        """)
+
+        users = cursor.fetchall()
+
+
+        # ====================================================
+        # RETURN PAGE
+        # ====================================================
+
+        return render_template(
+            "create_grn.html",
+            pos=pos,
+            users=users
+        )
+
+
+    except Exception as e:
+
+        print(
+            "CREATE GRN PAGE ERROR:",
+            e
+        )
+
+        flash(
+            f"Error loading Create GRN page: {str(e)}",
+            "danger"
+        )
+
+        return redirect(
+            url_for(
+                "procurement_dashboard.procurement_dashboard"
+            )
+        )
+
+
+    finally:
+
+        cursor.close()
+
+        conn.close()
+
+
+# ============================================================
+# GENERATE NEXT GRN NUMBER
+#
+# Example:
+# GRN/2026/0001
+# GRN/2026/0002
+# GRN/2026/0003
+# ============================================================
+# ============================================================
+# GENERATE NEXT GRN NUMBER
+#
+# Format:
+# GRN/2026/0001
+# GRN/2026/0002
+# GRN/2026/0003
+# ============================================================
+from datetime import datetime
+from flask import jsonify
+
+# ============================================================
+# GENERATE NEXT GRN NUMBER
+#
+# FORMAT:
+# GRN/2026/0001
+# GRN/2026/0002
+# GRN/2026/0003
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/api/next_grn_number",
+    methods=["GET"]
+)
+def next_grn_number():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # CURRENT YEAR
+        # ====================================================
+
+        current_year = datetime.now().year
+
+
+        # ====================================================
+        # FIND LAST GRN NUMBER FOR CURRENT YEAR
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                grn_no
+            FROM grn
+            WHERE grn_no LIKE %s
+            ORDER BY grn_id DESC
+            LIMIT 1
+        """, (
+            f"GRN/{current_year}/%",
+        ))
+
+
+        last_grn = cursor.fetchone()
+
+
+        # ====================================================
+        # DETERMINE NEXT SEQUENCE NUMBER
+        # ====================================================
+
+        if not last_grn:
+
+            next_number = 1
+
+        else:
+
+            last_grn_no = (
+                last_grn.get("grn_no")
+                or ""
+            )
+
+
+            try:
+
+                # Example:
+                # GRN/2026/0005
+                #
+                # Split:
+                # ["GRN", "2026", "0005"]
+
+                last_sequence = int(
+                    last_grn_no.split("/")[-1]
+                )
+
+
+                next_number = (
+                    last_sequence + 1
+                )
+
+
+            except (ValueError, IndexError):
+
+                next_number = 1
+
+
+        # ====================================================
+        # CREATE NEXT GRN NUMBER
+        # ====================================================
+
+        grn_number = (
+
+            f"GRN/{current_year}/"
+            f"{next_number:04d}"
+
+        )
+
+
+        # ====================================================
+        # RETURN TO JAVASCRIPT
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "grn_no":
+                grn_number
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "NEXT GRN NUMBER ERROR:",
+            e
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+
+        conn.close()
+
+        
+# ============================================================
+# GET PO DETAILS AND ITEMS
+#
+# URL:
+# /procurement/get_po_items/5
+# ============================================================
+
+@procurement_dashboard_bp.route(
+    "/get_po_items/<int:po_id>",
+    methods=["GET"]
+)
+def get_po_items(po_id):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # ====================================================
+        # LOAD PO HEADER
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                po.purchase_order_id,
+                po.po_number,
+                po.supplier_id,
+                s.supplier_name,
+                po.requisition_id,
+                po.status
+
+            FROM purchase_orders po
+
+            LEFT JOIN suppliers s
+                ON s.supplier_id =
+                   po.supplier_id
+
+            WHERE
+                po.purchase_order_id = %s
+
+            LIMIT 1
+        """, (
+            po_id,
+        ))
+
+
+        po = cursor.fetchone()
+
+
+        # ====================================================
+        # CHECK PO
+        # ====================================================
+
+        if not po:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Purchase Order not found."
+
+            }), 404
+
+
+        # ====================================================
+        # LOAD PO ITEMS
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                poi.po_item_id,
+
+                poi.item_name,
+
+                poi.description,
+
+                poi.quantity,
+
+                poi.unit_price,
+
+                poi.total_price,
+
+                COALESCE(
+                    (
+                        SELECT
+                            SUM(
+                                gi.quantity_received
+                            )
+                        FROM grn_items gi
+
+                        INNER JOIN grn g
+                            ON g.grn_id =
+                               gi.grn_id
+
+                        WHERE
+                            g.po_id = %s
+
+                        AND gi.material_name =
+                            poi.item_name
+                    ),
+                    0
+                ) AS already_received
+
+            FROM purchase_order_items poi
+
+            WHERE
+                poi.purchase_order_id = %s
+
+            ORDER BY
+                poi.po_item_id ASC
+
+        """, (
+            po_id,
+            po_id
+        ))
+
+
+        items = cursor.fetchall()
+
+
+        # ====================================================
+        # CALCULATE BALANCE
+        # ====================================================
+
+        for item in items:
+
+            ordered = float(
+                item["quantity"]
+                or 0
+            )
+
+            received = float(
+                item["already_received"]
+                or 0
+            )
+
+
+            balance = (
+                ordered -
+                received
+            )
+
+
+            if balance < 0:
+
+                balance = 0
+
+
+            item[
+                "balance"
+            ] = balance
+
+
+        # ====================================================
+        # RETURN DATA
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "po": {
+
+                "purchase_order_id":
+                    po[
+                        "purchase_order_id"
+                    ],
+
+                "po_number":
+                    po[
+                        "po_number"
+                    ],
+
+                "supplier_id":
+                    po[
+                        "supplier_id"
+                    ],
+
+                "supplier_name":
+                    po[
+                        "supplier_name"
+                    ],
+
+                "requisition_id":
+                    po[
+                        "requisition_id"
+                    ],
+
+                "status":
+                    po[
+                        "status"
+                    ]
+
+            },
+
+            "items":
+                items
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "GET PO ITEMS ERROR:",
+            e
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+
+        conn.close()
+
+
+# ============================================================
 # SAVE GRN
-# =========================================
+#
+# URL:
+# POST /procurement/save_grn
+# ============================================================
+
 @procurement_dashboard_bp.route(
     "/save_grn",
     methods=["POST"]
@@ -2735,112 +3167,358 @@ def save_grn():
 
     conn = get_db_connection()
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(
+        dictionary=True
+    )
 
     try:
 
-        # =====================================
-        # HEADER DATA
-        # =====================================
-        grn_no = request.form["grn_no"]
+        # ====================================================
+        # CHECK LOGIN
+        # ====================================================
 
-        po_id = request.form["po_id"]
+        received_by = session.get(
+            "user_id"
+        )
 
-        received_by = session.get("user_id")
 
         if not received_by:
-            flash("User not logged in", "danger")
-            return redirect("/procurement/create_grn")
 
-        received_date = request.form["received_date"]
+            flash(
+                "User not logged in.",
+                "danger"
+            )
 
-        delivery_note_no = request.form.get(
-            "delivery_note_no"
+            return redirect(
+                url_for(
+                    "procurement_dashboard.procurement_dashboard"
+                )
+            )
+
+
+        # ====================================================
+        # GET FORM DATA
+        # ====================================================
+
+        po_id = request.form.get(
+            "po_id"
         )
 
-        main_remarks = request.form.get(
-            "main_remarks"
+        received_date = request.form.get(
+            "received_date"
+        )
+
+        delivery_note_no = (
+            request.form.get(
+                "delivery_note_no"
+            )
+            or None
+        )
+
+        main_remarks = (
+            request.form.get(
+                "main_remarks"
+            )
+            or ""
         )
 
 
-        # =====================================
-        # DETERMINE STATUS
-        # =====================================
-        remarks_list = request.form.getlist(
-            "remarks[]"
-        )
+        # ====================================================
+        # VALIDATE PO
+        # ====================================================
 
-        inspection_status = "ACCEPTED"
+        if not po_id:
 
-        if "PARTIAL" in remarks_list:
+            flash(
+                "Please select a Purchase Order.",
+                "danger"
+            )
 
-            inspection_status = "PARTIAL"
+            return redirect(
+                url_for(
+                    "procurement_dashboard.procurement_dashboard"
+                )
+            )
 
-        if "REJECTED" in remarks_list:
 
-            inspection_status = "REJECTED"
+        # ====================================================
+        # GENERATE GRN NUMBER
+        # SERVER SIDE
+        # ====================================================
+
+        current_year = datetime.now().year
 
 
-        # =====================================
-        # LOAD PO HEADER
-        # =====================================
         cursor.execute("""
-    SELECT
-        po.supplier_id,
-        s.supplier_name,
-        po.requisition_id
-    FROM purchase_orders po
-    INNER JOIN suppliers s
-        ON po.supplier_id = s.supplier_id
-    WHERE po.purchase_order_id = %s
-    LIMIT 1
-""", (po_id,))
+            SELECT
+                grn_no
 
+            FROM grn
+
+            WHERE grn_no LIKE %s
+
+            ORDER BY grn_id DESC
+
+            LIMIT 1
+        """, (
+            f"GRN/{current_year}/%",
+        ))
+
+
+        last_grn = cursor.fetchone()
+
+
+        if not last_grn:
+
+            next_number = 1
+
+        else:
+
+            try:
+
+                next_number = (
+                    int(
+                        last_grn[
+                            "grn_no"
+                        ].split("/")[-1]
+                    )
+                    + 1
+                )
+
+            except Exception:
+
+                next_number = 1
+
+
+        grn_no = (
+            f"GRN/{current_year}/"
+            f"{next_number:04d}"
+        )
+
+
+        # ====================================================
+        # LOAD PO
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                po.purchase_order_id,
+
+                po.po_number,
+
+                po.supplier_id,
+
+                po.requisition_id,
+
+                s.supplier_name
+
+            FROM purchase_orders po
+
+            LEFT JOIN suppliers s
+
+                ON s.supplier_id =
+                   po.supplier_id
+
+            WHERE
+                po.purchase_order_id = %s
+
+            LIMIT 1
+
+        """, (
+            po_id,
+        ))
 
 
         po = cursor.fetchone()
 
+
         if not po:
-            return redirect("/procurement/create_grn")
 
-        supplier_id = po["supplier_id"]
-        supplier_name = po["supplier_name"]
-        requisition_id = po["requisition_id"]
+            flash(
+                "Purchase Order not found.",
+                "danger"
+            )
+
+            return redirect(
+                url_for(
+                    "procurement_dashboard.procurement_dashboard"
+                )
+            )
 
 
-        # =====================================
-        # LOAD PO ITEMS
-        # =====================================
+        # ====================================================
+        # GET PO ITEMS
+        # ====================================================
+
         cursor.execute("""
             SELECT
+
+                po_item_id,
+
                 item_name,
+
                 description,
+
                 quantity
+
             FROM purchase_order_items
-            WHERE purchase_order_id = %s
-            ORDER BY po_item_id ASC
-        """, (po_id,))
+
+            WHERE
+                purchase_order_id = %s
+
+            ORDER BY
+                po_item_id ASC
+
+        """, (
+            po_id,
+        ))
+
 
         po_items = cursor.fetchall()
 
+
         if not po_items:
-            return redirect("/procurement/create_grn")
+
+            flash(
+                "This Purchase Order has no items.",
+                "danger"
+            )
+
+            return redirect(
+                url_for(
+                    "procurement_dashboard.procurement_dashboard"
+                )
+            )
 
 
-        # =====================================
+        # ====================================================
+        # GET RECEIVED ARRAYS
+        # ====================================================
+
+        qty_received = (
+            request.form.getlist(
+                "quantity_received[]"
+            )
+        )
+
+
+        qty_rejected = (
+            request.form.getlist(
+                "quantity_rejected[]"
+            )
+        )
+
+
+        remarks = (
+            request.form.getlist(
+                "remarks[]"
+            )
+        )
+
+
+        # ====================================================
+        # VALIDATE QUANTITIES
+        # ====================================================
+
+        valid_item_found = False
+
+        inspection_status = "ACCEPTED"
+
+
+        for i, po_item in enumerate(
+            po_items
+        ):
+
+            received_qty = 0
+
+            rejected_qty = 0
+
+
+            if i < len(
+                qty_received
+            ):
+
+                try:
+
+                    received_qty = float(
+                        qty_received[i]
+                        or 0
+                    )
+
+                except Exception:
+
+                    received_qty = 0
+
+
+            if i < len(
+                qty_rejected
+            ):
+
+                try:
+
+                    rejected_qty = float(
+                        qty_rejected[i]
+                        or 0
+                    )
+
+                except Exception:
+
+                    rejected_qty = 0
+
+
+            if (
+                received_qty > 0
+                or rejected_qty > 0
+            ):
+
+                valid_item_found = True
+
+
+            if (
+                rejected_qty > 0
+            ):
+
+                inspection_status = (
+                    "PARTIAL"
+                )
+
+
+        if not valid_item_found:
+
+            flash(
+                "Enter at least one received or rejected quantity.",
+                "danger"
+            )
+
+            return redirect(
+                url_for(
+                    "procurement_dashboard.procurement_dashboard"
+                )
+            )
+
+
+        # ====================================================
         # INSERT GRN HEADER
-        # =====================================
-        cursor.execute("""
+        # ====================================================
 
+        cursor.execute("""
             INSERT INTO grn (
 
                 grn_no,
+
                 po_id,
+
                 supplier_id,
+
                 received_by,
+
                 received_date,
+
                 delivery_note_no,
+
                 inspection_status,
+
                 remarks
 
             )
@@ -2848,12 +3526,19 @@ def save_grn():
             VALUES (
 
                 %s,
+
                 %s,
+
                 %s,
+
                 %s,
+
                 %s,
+
                 %s,
+
                 %s,
+
                 %s
 
             )
@@ -2861,58 +3546,111 @@ def save_grn():
         """, (
 
             grn_no,
+
             po_id,
-            supplier_id,
+
+            po[
+                "supplier_id"
+            ],
+
             received_by,
+
             received_date,
+
             delivery_note_no,
+
             inspection_status,
+
             main_remarks
 
         ))
 
 
-        # =====================================
-        # GET NEW GRN ID
-        # =====================================
         grn_id = cursor.lastrowid
 
 
-        # =====================================
-        # GET ITEM ARRAYS
-        # =====================================
-        qty_received = request.form.getlist(
-            "quantity_received[]"
-        )
+        # ====================================================
+        # INSERT GRN ITEMS
+        # ====================================================
 
-        qty_rejected = request.form.getlist(
-            "quantity_rejected[]"
-        )
+        for i, po_item in enumerate(
+            po_items
+        ):
 
-        remarks = request.form.getlist(
-            "remarks[]"
-        )
+            received_qty = 0
+
+            rejected_qty = 0
+
+            remark_value = ""
 
 
-        # =====================================
-        # INSERT ITEMS
-        # =====================================
-        for i, po_item in enumerate(po_items):
+            if i < len(
+                qty_received
+            ):
 
-            received_qty = qty_received[i] if i < len(qty_received) else 0
-            rejected_qty = qty_rejected[i] if i < len(qty_rejected) else 0
-            remark_value = remarks[i] if i < len(remarks) else ""
+                try:
+
+                    received_qty = float(
+                        qty_received[i]
+                        or 0
+                    )
+
+                except Exception:
+
+                    received_qty = 0
+
+
+            if i < len(
+                qty_rejected
+            ):
+
+                try:
+
+                    rejected_qty = float(
+                        qty_rejected[i]
+                        or 0
+                    )
+
+                except Exception:
+
+                    rejected_qty = 0
+
+
+            if i < len(
+                remarks
+            ):
+
+                remark_value = (
+                    remarks[i]
+                    or ""
+                )
+
+
+            # Skip completely empty items
+
+            if (
+                received_qty <= 0
+                and rejected_qty <= 0
+            ):
+
+                continue
+
 
             cursor.execute("""
-
                 INSERT INTO grn_items (
 
                     grn_id,
+
                     material_name,
+
                     description,
+
                     quantity_ordered,
+
                     quantity_received,
+
                     quantity_rejected,
+
                     remarks
 
                 )
@@ -2920,11 +3658,17 @@ def save_grn():
                 VALUES (
 
                     %s,
+
                     %s,
+
                     %s,
+
                     %s,
+
                     %s,
+
                     %s,
+
                     %s
 
                 )
@@ -2932,139 +3676,288 @@ def save_grn():
             """, (
 
                 grn_id,
-                po_item[0],
-                po_item[1],
-                po_item[2],
+
+                po_item[
+                    "item_name"
+                ],
+
+                po_item[
+                    "description"
+                ],
+
+                po_item[
+                    "quantity"
+                ],
+
                 received_qty,
+
                 rejected_qty,
+
                 remark_value
 
             ))
 
 
-        # =====================================
-        # UPDATE PO STATUS
-        # =====================================
+        # ====================================================
+        # DETERMINE PO STATUS
+        #
+        # Check all PO items against total received
+        # ====================================================
+
         cursor.execute("""
+            SELECT
 
-            UPDATE purchase_orders
+                poi.item_name,
 
-            SET status='Delivered'
+                poi.quantity,
 
-            WHERE purchase_order_id=%s
+                COALESCE(
+                    SUM(
+                        gi.quantity_received
+                    ),
+                    0
+                ) AS total_received
 
-        """, (po_id,))
+            FROM purchase_order_items poi
+
+            LEFT JOIN grn g
+
+                ON g.po_id =
+                   poi.purchase_order_id
+
+            LEFT JOIN grn_items gi
+
+                ON gi.grn_id =
+                   g.grn_id
+
+                AND gi.material_name =
+                    poi.item_name
+
+            WHERE
+                poi.purchase_order_id = %s
+
+            GROUP BY
+
+                poi.po_item_id,
+
+                poi.item_name,
+
+                poi.quantity
+
+        """, (
+            po_id,
+        ))
 
 
-        # =====================================
-        # SAVE
-        # =====================================
+        status_items = (
+            cursor.fetchall()
+        )
+
+
+        all_completed = True
+
+
+        for item in status_items:
+
+            ordered = float(
+                item[
+                    "quantity"
+                ]
+                or 0
+            )
+
+
+            total_received = float(
+                item[
+                    "total_received"
+                ]
+                or 0
+            )
+
+
+            if (
+                total_received <
+                ordered
+            ):
+
+                all_completed = False
+
+                break
+
+
+        # ====================================================
+        # UPDATE PO STATUS
+        # ====================================================
+
+        if all_completed:
+
+            cursor.execute("""
+                UPDATE purchase_orders
+
+                SET status = 'Delivered'
+
+                WHERE
+                    purchase_order_id = %s
+            """, (
+                po_id,
+            ))
+
+        else:
+
+            cursor.execute("""
+                UPDATE purchase_orders
+
+                SET status = 'Approved'
+
+                WHERE
+                    purchase_order_id = %s
+            """, (
+                po_id,
+            ))
+
+
+        # ====================================================
+        # COMMIT
+        # ====================================================
+
         conn.commit()
 
+
+        # ====================================================
+        # SUCCESS
+        # ====================================================
+
         flash(
-            "GRN Saved Successfully",
+            f"GRN {grn_no} saved successfully.",
             "success"
         )
 
+
         return redirect(
-            url_for("procurement_dashboard.procurement_dashboard")
+            url_for(
+                "procurement_dashboard.procurement_dashboard"
+            )
         )
+
 
     except Exception as e:
 
         conn.rollback()
 
-        print(e)
+
+        print(
+            "SAVE GRN ERROR:",
+            e
+        )
+
 
         flash(
-            f"Error Saving GRN: {str(e)}",
+            f"Error saving GRN: {str(e)}",
             "danger"
         )
 
+
         return redirect(
-            "/procurement/create_grn"
+            url_for(
+                "procurement_dashboard.procurement_dashboard"
+            )
         )
+
 
     finally:
 
         cursor.close()
+
         conn.close()
 
 
+# ============================================================
+# GET GRN ITEMS
+#
+# URL:
+# /procurement/get_grn_items/1
+# ============================================================
 
-# =========================================
-# GET PO ITEMS
-# =========================================
 @procurement_dashboard_bp.route(
-    "/get_po_items/<int:po_id>"
+    "/get_grn_items/<int:grn_id>",
+    methods=["GET"]
 )
-def get_po_items(po_id):
-
-    db = get_db_connection()
-
-    cursor = db.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT
-            po.supplier_id,
-            s.supplier_name
-        FROM purchase_orders po
-        LEFT JOIN suppliers s
-            ON s.supplier_id = po.supplier_id
-        WHERE po.purchase_order_id = %s
-        LIMIT 1
-    """, (po_id,))
-
-    po = cursor.fetchone()
-
-    cursor.execute("""
-
-        SELECT
-
-            po_item_id,
-            item_name,
-            description,
-            quantity,
-            unit_price
-
-        FROM purchase_order_items
-
-        WHERE purchase_order_id = %s
-
-    """, (po_id,))
-
-    items = cursor.fetchall()
-
-    cursor.close()
-    db.close()
-
-    return jsonify({
-        "supplier_id": po["supplier_id"] if po else "",
-        "supplier_name": po["supplier_name"] if po else "",
-        "items": items
-    })
-
-
-@procurement_dashboard_bp.route("/get_grn_items/<int:grn_id>")
 def get_grn_items(grn_id):
+
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            material_name,
-            remarks,
-            quantity_received
-        FROM grn_items
-        WHERE grn_id = %s
-    """, (grn_id,))
+    cursor = conn.cursor(
+        dictionary=True
+    )
 
-    items = cursor.fetchall()
+    try:
 
-    cursor.close()
-    conn.close()
+        cursor.execute("""
+            SELECT
 
-    return jsonify(items)
+                gi.grn_id,
+
+                gi.material_name,
+
+                gi.description,
+
+                gi.quantity_ordered,
+
+                gi.quantity_received,
+
+                gi.quantity_rejected,
+
+                gi.remarks
+
+            FROM grn_items gi
+
+            WHERE
+                gi.grn_id = %s
+
+            ORDER BY
+                gi.grn_item_id ASC
+
+        """, (
+            grn_id,
+        ))
+
+
+        items = cursor.fetchall()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "items":
+                items
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "GET GRN ITEMS ERROR:",
+            e
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        cursor.close()
+
+        conn.close()
 
 
 @procurement_dashboard_bp.route("/create_invoice")
