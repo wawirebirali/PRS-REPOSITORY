@@ -229,17 +229,19 @@ document.getElementById("grn_id")
 
     fetch("/procurement/get_grn_items/" + grn_id)
     .then(res => res.json())
-    .then(data => {
+    .then(payload => {
 
         let body = document.getElementById("itemsBody");
         body.innerHTML = "";
 
-        if (!data || data.length === 0) {
+        const items = Array.isArray(payload) ? payload : (payload.items || []);
+
+        if (!items.length) {
             body.innerHTML = createInvoiceRow();
             return;
         }
 
-        data.forEach(item => {
+        items.forEach(item => {
             body.innerHTML += createInvoiceRow(item);
         });
     });

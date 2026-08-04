@@ -43,7 +43,7 @@ function openModule(id,btn){
         loadGRNData();
     }
     if(id === "dashboard"){
-        loadDashboardData();
+        loadDashboard();
     }
 }
 

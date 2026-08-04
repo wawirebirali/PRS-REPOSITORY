@@ -957,8 +957,9 @@ def dashboard_data():
 
     cursor.execute("""
         SELECT COUNT(*) total
-        FROM requisitions
-        WHERE status IN ('PENDING','PENDING_HOD','PENDING_CEO')
+        FROM approvals
+        WHERE module_name = 'PRS'
+          AND LOWER(COALESCE(final_status, '')) IN ('pending', 'pending_hod', 'pending_ceo')
     """)
 
     pending_pr = cursor.fetchone()["total"]
@@ -1042,30 +1043,33 @@ def dashboard_data():
 
 
     cursor.execute("""
-        SELECT 
-        status,
-        COUNT(*) total
-
-        FROM requisitions
-
-        GROUP BY status
+        SELECT
+            final_status,
+            COUNT(*) total
+        FROM approvals
+        WHERE module_name = 'PRS'
+        GROUP BY final_status
     """)
-
 
     status_rows = cursor.fetchall()
 
-
-    status=[]
-
+    status_counts = {
+        "PENDING": 0,
+        "APPROVED": 0,
+        "REJECTED": 0
+    }
 
     for row in status_rows:
+        final_status = row.get("final_status")
+        if final_status in status_counts:
+            status_counts[final_status] = row["total"]
 
-        status.append(
-            row["total"]
-        )
-
-
-
+    status = [
+        status_counts["PENDING"],
+        status_counts["APPROVED"],
+        0,
+        status_counts["REJECTED"]
+    ]
 
 
     cursor.close()

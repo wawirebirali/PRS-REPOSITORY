@@ -124,6 +124,57 @@ function openModule(id, btn) {
 
 
 
+async function loadInvoices() {
+    try {
+        const response = await fetch("/procurement/invoice_data");
+        if (!response.ok) {
+            throw new Error("Invoice API request failed");
+        }
+
+        const invoices = await response.json();
+        const tbody = document.getElementById("invoiceBody");
+        if (!tbody) return;
+
+        tbody.innerHTML = "";
+
+        if (!Array.isArray(invoices) || invoices.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No invoices found.</td></tr>';
+            return;
+        }
+
+        invoices.forEach(invoice => {
+            tbody.innerHTML += `
+                <tr onclick="selectInvoiceRow(this)">
+                    <td>${invoice.invoice_number || "-"}</td>
+                    <td>${invoice.supplier_name || "-"}</td>
+                    <td>${invoice.po_number || "-"}</td>
+                    <td>${invoice.status || "-"}</td>
+                    <td>${invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString() : "-"}</td>
+                    <td>${Number(invoice.total_amount || 0).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+    } catch (error) {
+        console.error("Invoice load error:", error);
+    }
+}
+
+function selectInvoiceRow(row) {
+    if (!row) return;
+    document.querySelectorAll("#invoiceBody tr").forEach(item => item.classList.remove("selected"));
+    row.classList.add("selected");
+}
+
+function filterInvoiceRows() {
+    const search = document.getElementById("invoiceSearch").value.toLowerCase();
+    document.querySelectorAll("#invoiceBody tr").forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(search) ? "" : "none";
+    });
+}
+
+window.loadInvoices = loadInvoices;
+
 function showSupplierDetails(supplier){
     document.getElementById("supName").innerText = supplier.supplier_name || "-";
     document.getElementById("supContact").innerText = supplier.contact_person || "-";

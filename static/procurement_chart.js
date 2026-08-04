@@ -2,475 +2,161 @@
         PROCUREMENT DASHBOARD JS
 ===================================================== */
 
-
 let procurementActivityChart = null;
 let documentStatusChart = null;
 let departmentChart = null;
 let supplierChart = null;
 let materialChart = null;
 
+function setDashboardDate() {
+    const dashboardDateEl = document.getElementById("dashboardDate");
+    if (dashboardDateEl) {
+        dashboardDateEl.innerText = new Date().toLocaleDateString();
+    }
+}
 
+function destroyCharts() {
+    [procurementActivityChart, documentStatusChart, departmentChart, supplierChart, materialChart].forEach(chart => {
+        if (chart) {
+            chart.destroy();
+        }
+    });
 
-// =====================================================
-// LOAD DASHBOARD
-// =====================================================
+    procurementActivityChart = null;
+    documentStatusChart = null;
+    departmentChart = null;
+    supplierChart = null;
+    materialChart = null;
+}
 
-
-function loadDashboard(){
-
-
-fetch("/procurement/dashboard_data")
-
-
-.then(response=>{
-
-
-    if(!response.ok){
-
-        throw new Error(
-            "Dashboard API Error"
-        );
-
+function loadDashboard() {
+    if (typeof window.Chart === "undefined") {
+        console.error("Chart.js is not loaded.");
+        return;
     }
 
+    fetch("/procurement/dashboard_data")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Dashboard API Error");
+            }
+            return response.json();
+        })
+        .then(data => {
+            const safeArray = value => Array.isArray(value) ? value : [];
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const months = safeArray(data.months).map(month => monthNames[Number(month) - 1] || month);
 
-    return response.json();
+            const totalPR = document.getElementById("totalPR");
+            const pendingPR = document.getElementById("pendingPR");
+            const totalQRF = document.getElementById("totalQRF");
+            const totalPO = document.getElementById("totalPO");
+            const totalGRN = document.getElementById("totalGRN");
 
+            if (totalPR) totalPR.innerText = data.total_pr ?? 0;
+            if (pendingPR) pendingPR.innerText = data.pending_pr ?? 0;
+            if (totalQRF) totalQRF.innerText = data.total_qrf ?? 0;
+            if (totalPO) totalPO.innerText = data.total_po ?? 0;
+            if (totalGRN) totalGRN.innerText = data.total_grn ?? 0;
 
-})
+            destroyCharts();
 
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false
+            };
 
-.then(data=>{
+            const activityCanvas = document.getElementById("procurementActivityChart");
+            if (activityCanvas) {
+                procurementActivityChart = new Chart(activityCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: months,
+                        datasets: [
+                            { label: "Requisitions", data: safeArray(data.pr_monthly) },
+                            { label: "Purchase Orders", data: safeArray(data.po_monthly) },
+                            { label: "GRN", data: safeArray(data.grn_monthly) }
+                        ]
+                    },
+                    options: chartOptions
+                });
+            }
 
+            const documentStatusCanvas = document.getElementById("documentStatusChart");
+            if (documentStatusCanvas) {
+                documentStatusChart = new Chart(documentStatusCanvas, {
+                    type: "pie",
+                    data: {
+                        labels: ["Pending", "Approved", "Completed", "Rejected"],
+                        datasets: [{
+                            data: safeArray(data.status).length ? safeArray(data.status) : [1, 1, 1, 1]
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
 
+            const departmentCanvas = document.getElementById("departmentChart");
+            if (departmentCanvas) {
+                departmentChart = new Chart(departmentCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: safeArray(data.departments),
+                        datasets: [{ label: "Requests", data: safeArray(data.department_count) }]
+                    },
+                    options: chartOptions
+                });
+            }
 
-// ================= KPI CARDS =================
+            const supplierCanvas = document.getElementById("supplierChart");
+            if (supplierCanvas) {
+                supplierChart = new Chart(supplierCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: safeArray(data.suppliers),
+                        datasets: [{ label: "Purchase Orders", data: safeArray(data.supplier_orders) }]
+                    },
+                    options: chartOptions
+                });
+            }
 
+            const materialCanvas = document.getElementById("materialChart");
+            if (materialCanvas) {
+                materialChart = new Chart(materialCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: safeArray(data.materials),
+                        datasets: [{ label: "Quantity Requested", data: safeArray(data.material_qty) }]
+                    },
+                    options: chartOptions
+                });
+            }
 
-document.getElementById("totalPR").innerText =
-data.total_pr || 0;
-
-
-document.getElementById("pendingPR").innerText =
-data.pending_pr || 0;
-
-
-document.getElementById("totalQRF").innerText =
-data.total_qrf || 0;
-
-
-document.getElementById("totalPO").innerText =
-data.total_po || 0;
-
-
-document.getElementById("totalGRN").innerText =
-data.total_grn || 0;
-
-
-
-
-
-// Destroy old charts
-
-destroyCharts();
-
-
-
-
-
-// ================= MONTHLY ACTIVITY =================
-
-
-procurementActivityChart =
-new Chart(
-
-document.getElementById(
-"procurementActivityChart"
-),
-
-{
-
-
-type:"bar",
-
-
-data:{
-
-
-labels:data.months || [],
-
-
-datasets:[
-
-{
-
-label:"Requisitions",
-
-data:data.pr_monthly || []
-
-},
-
-
-{
-
-label:"Purchase Orders",
-
-data:data.po_monthly || []
-
-},
-
-
-{
-
-label:"GRN",
-
-data:data.grn_monthly || []
-
+            const recentTable = document.getElementById("recentProcurement");
+            if (recentTable) {
+                recentTable.innerHTML = "";
+                (data.recent_documents || []).forEach(doc => {
+                    recentTable.innerHTML += `
+                        <tr>
+                            <td>${doc.document || "-"}</td>
+                            <td>${doc.number || "-"}</td>
+                            <td>${doc.status || "-"}</td>
+                            <td>${doc.date || "-"}</td>
+                        </tr>
+                    `;
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Dashboard Error:", error);
+        });
 }
 
-
-]
-
-
-},
-
-
-options:{
-
-
-responsive:true
-
-
-}
-
-
-
-});
-
-
-
-
-
-
-
-
-// ================= DOCUMENT STATUS =================
-
-
-documentStatusChart =
-new Chart(
-
-document.getElementById(
-"documentStatusChart"
-),
-
-{
-
-
-type:"pie",
-
-
-data:{
-
-
-labels:[
-
-"Pending",
-
-"Approved",
-
-"Completed",
-
-"Rejected"
-
-],
-
-
-
-datasets:[{
-
-
-data:data.status || []
-
-
-}]
-
-}
-
-
-});
-
-
- 
-
-
-
-
-// ================= DEPARTMENT REQUESTS =================
-
-
-departmentChart =
-new Chart(
-
-document.getElementById(
-"departmentChart"
-),
-
-{
-
-
-type:"bar",
-
-
-data:{
-
-
-labels:data.departments || [],
-
-
-
-datasets:[{
-
-
-label:"Requests",
-
-
-data:data.department_count || []
-
-
-}]
-
-
-}
-
-
-
-});
-
-
-
-
-
-
-
-
-// ================= SUPPLIER ACTIVITY =================
-
-
-supplierChart =
-new Chart(
-
-document.getElementById(
-"supplierChart"
-),
-
-{
-
-
-type:"bar",
-
-
-data:{
-
-
-labels:data.suppliers || [],
-
-
-
-datasets:[{
-
-
-label:"Purchase Orders",
-
-
-data:data.supplier_orders || []
-
-
-}]
-
-
-}
-
-
-
-});
-
-
-
-
-
-
-
-
-// ================= MATERIAL DEMAND =================
-
-
-materialChart =
-new Chart(
-
-document.getElementById(
-"materialChart"
-),
-
-{
-
-
-type:"bar",
-
-
-data:{
-
-
-labels:data.materials || [],
-
-
-
-datasets:[{
-
-
-label:"Quantity Requested",
-
-
-data:data.material_qty || []
-
-
-}]
-
-
-}
-
-
-
-});
-
-
-
-
-
-
-// ================= RECENT DOCUMENTS =================
-
-
-let table =
-document.getElementById(
-"recentProcurement"
-);
-
-
-
-if(table){
-
-
-table.innerHTML="";
-
-
-
-(data.recent_documents || [])
-.forEach(doc=>{
-
-
-table.innerHTML += `
-
-<tr>
-
-<td>${doc.document || "-"}</td>
-
-<td>${doc.number || "-"}</td>
-
-<td>${doc.status || "-"}</td>
-
-<td>${doc.date || "-"}</td>
-
-</tr>
-
-`;
-
-
-});
-
-
-}
-
-
-
-
-})
-
-
-.catch(error=>{
-
-
-console.error(
-"Dashboard Error:",
-error
-);
-
-
-});
-
-}
-
-
-
-
-// =====================================================
-// DESTROY EXISTING CHARTS
-// =====================================================
-
-
-function destroyCharts(){
-
-
-
-if(procurementActivityChart){
-
-    procurementActivityChart.destroy();
-
-}
-
-
-
-if(documentStatusChart){
-
-    documentStatusChart.destroy();
-
-}
-
-
-
-if(departmentChart){
-
-    departmentChart.destroy();
-
-}
-
-
-
-if(supplierChart){
-
-    supplierChart.destroy();
-
-}
-
-
-
-if(materialChart){
-
-    materialChart.destroy();
-
-}
-
-
-}
-
-
-
-
-document.addEventListener("DOMContentLoaded",()=>{
-
-let d=new Date();
-
-document.getElementById("dashboardDate").innerHTML =
-d.toLocaleDateString();
-
+window.loadDashboard = loadDashboard;
+
+document.addEventListener("DOMContentLoaded", () => {
+    setDashboardDate();
+    if (document.getElementById("dashboard")) {
+        loadDashboard();
+    }
 });

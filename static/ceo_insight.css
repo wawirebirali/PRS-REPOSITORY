@@ -144,24 +144,58 @@ canvas {
 /* ===============================
    TABLES (COMPACT PROFESSIONAL)
 ================================ */
+.table-container {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
 .dashboard-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.dashboard-table th {
-    background: #f3f6fb;
-    padding: 8px;
+.dashboard-table thead th {
+    background: #2f7f7f;
+    color: white;
+    padding: 8px 12px;
     text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    border-bottom: 1px solid #e5e7eb;
+    font-weight: bold;
+    font-size: 18px;
+    height: 28px;
 }
 
-.dashboard-table td {
-    padding: 8px;
-    border-bottom: 1px solid #f0f0f0;
+.dashboard-table tbody tr {
+    height: 42px;
+}
+
+.dashboard-table tbody td {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    color: #1f2937;
+    background: #ffffff;
+}
+
+.dashboard-table tbody tr:nth-child(even) td {
+    background: #fafafa;
+}
+
+.dashboard-table thead th:first-child {
+    border-top-left-radius: 12px;
+}
+
+.dashboard-table thead th:last-child {
+    border-top-right-radius: 12px;
+}
+
+.dashboard-table tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 12px;
+}
+
+.dashboard-table tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 12px;
 }
 
 .dashboard-table tr:hover {

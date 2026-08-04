@@ -388,6 +388,10 @@ def approve_document():
             "PAYMENT": ("payments", "payment_id")
         }
 
+        status_column_map = {
+            "PAYMENT": "payment_status"
+        }
+
         # -----------------------------
         # Create approval row if missing
         # -----------------------------
@@ -502,10 +506,11 @@ def approve_document():
             ))
 
             table, pk = table_map[module_name]
+            status_column = status_column_map.get(module_name, "status")
 
             cursor.execute(f"""
                 UPDATE {table}
-                SET status=%s
+                SET {status_column}=%s
                 WHERE {pk}=%s
             """, (
                 action,

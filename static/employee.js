@@ -1,4 +1,4 @@
-function openModule(id,button){
+function openModule(id, button) {
 
 
 let modules=document.querySelectorAll(".module");
@@ -12,24 +12,20 @@ module.classList.remove("active");
 
 
 
-document.getElementById(id).classList.add("active");
+const targetModule = document.getElementById(id);
+
+if (targetModule) {
+    targetModule.classList.add('active');
+}
 
 
 
-let buttons=document.querySelectorAll(".menu");
-
-
-buttons.forEach(function(btn){
-
-btn.classList.remove("active");
-
+document.querySelectorAll('.sidebar button, .menu').forEach(function (btn) {
+    btn.classList.remove('active');
 });
 
-
-if(button){
-
-button.classList.add("active");
-
+if (button) {
+    button.classList.add('active');
 }
 
 

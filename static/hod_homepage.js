@@ -66,16 +66,12 @@ function updateClock() {
         now.toLocaleTimeString();
 
     const element =
-        document.getElementById("dashboardDate");
+        document.getElementById("currentDate");
 
     if (element) {
 
         element.innerHTML =
-
-            `
-            <div>${date}</div>
-            <small>${time}</small>
-            `;
+            `<div>${date}</div><small>${time}</small>`;
 
     }
 
@@ -224,6 +220,18 @@ function loadDashboardSummary() {
 
                 rejectedCount.innerText =
                     data.rejected_prs || 0;
+
+            }
+
+            const pendingApprovalCount =
+                document.getElementById(
+                    "pendingApprovalCount"
+                );
+
+            if (pendingApprovalCount) {
+
+                pendingApprovalCount.innerText =
+                    data.pending_prs || 0;
 
             }
 
@@ -446,8 +454,7 @@ function loadRecentDocuments() {
             if (!response.ok) {
 
                 throw new Error(
-                    "HTTP Error: " +
-                    response.status
+                    "HTTP Error: " + response.status
                 );
 
             }
@@ -458,211 +465,81 @@ function loadRecentDocuments() {
 
         .then(data => {
 
-            console.log(
-                "Recent Documents:",
-                data
-            );
+            const pendingBody = document.getElementById("pendingApprovalTable");
+            const recentBody = document.getElementById("recentRequisitionTable");
 
+            const docs = Array.isArray(data) ? data : [];
 
-            const body =
-                document.getElementById(
-                    "recentDocuments"
-                );
+            const formatDate = (value) => {
+                if (!value) return "-";
+                const date = new Date(value);
+                return isNaN(date.getTime())
+                    ? "-"
+                    : date.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    });
+            };
 
+            const formatStatus = (value) => {
+                return (value || "PENDING").toUpperCase();
+            };
 
-            if (!body) {
+            if (pendingBody) {
+                pendingBody.innerHTML = "";
 
-                console.error(
-                    "recentDocuments table body not found."
-                );
+                const pendingDocs = docs.filter(doc => {
+                    const status = formatStatus(doc.status);
+                    return status === "PENDING" || status === "AWAITING";
+                });
 
-                return;
-
+                if (pendingDocs.length === 0) {
+                    pendingBody.innerHTML = `
+                        <tr><td colspan="5" style="text-align:center;">No pending approvals.</td></tr>
+                    `;
+                } else {
+                    pendingDocs.slice(0, 8).forEach(doc => {
+                        pendingBody.innerHTML += `
+                            <tr>
+                                <td>${doc.document_no || doc.prs_no || "-"}</td>
+                                <td>${doc.department || "-"}</td>
+                                <td>${doc.requested_by || doc.user || doc.created_by || "-"}</td>
+                                <td>${formatDate(doc.date || doc.created_at || doc.submission_date)}</td>
+                                <td>${formatStatus(doc.status)}</td>
+                            </tr>
+                        `;
+                    });
+                }
             }
 
+            if (recentBody) {
+                recentBody.innerHTML = "";
 
-            // ==========================================
-            // CLEAR EXISTING ROWS
-            // ==========================================
-
-            body.innerHTML = "";
-
-
-            // ==========================================
-            // CHECK DATA
-            // ==========================================
-
-            if (
-                !Array.isArray(data) ||
-                data.length === 0
-            ) {
-
-                body.innerHTML = `
-
-                    <tr>
-
-                        <td
-                            colspan="5"
-                            style="text-align:center;"
-                        >
-
-                            No recent documents found.
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-                return;
-
+                if (docs.length === 0) {
+                    recentBody.innerHTML = `
+                        <tr><td colspan="5" style="text-align:center;">No recent requisitions.</td></tr>
+                    `;
+                } else {
+                    docs.slice(0, 8).forEach(doc => {
+                        recentBody.innerHTML += `
+                            <tr>
+                                <td>${doc.document_no || doc.prs_no || "-"}</td>
+                                <td>${doc.department || "-"}</td>
+                                <td>${doc.requested_by || doc.user || doc.created_by || "-"}</td>
+                                <td>${formatStatus(doc.status)}</td>
+                                <td>${formatDate(doc.date || doc.created_at || doc.submission_date)}</td>
+                            </tr>
+                        `;
+                    });
+                }
             }
-
-
-            // ==========================================
-            // CREATE ROWS
-            // ==========================================
-
-            data.forEach(doc => {
-
-
-                // ======================================
-                // FORMAT DATE
-                // ======================================
-
-                let formattedDate = "-";
-
-
-                if (doc.date) {
-
-                    const date =
-                        new Date(doc.date);
-
-
-                    if (
-                        !isNaN(
-                            date.getTime()
-                        )
-                    ) {
-
-                        formattedDate =
-                            date.toLocaleDateString(
-                                "en-GB",
-                                {
-                                    day: "2-digit",
-                                    month: "short",
-                                    year: "numeric"
-                                }
-                            );
-
-                    }
-
-                }
-
-
-                // ======================================
-                // FORMAT STATUS
-                // ======================================
-
-                const status =
-                    (
-                        doc.status ||
-                        "PENDING"
-                    ).toUpperCase();
-
-
-                let statusClass =
-                    "badge-info";
-
-
-                if (
-                    status === "APPROVED" ||
-                    status === "COMPLETED"
-                ) {
-
-                    statusClass =
-                        "badge-success";
-
-                }
-
-                else if (
-                    status === "REJECTED"
-                ) {
-
-                    statusClass =
-                        "badge-danger";
-
-                }
-
-                else if (
-                    status === "PENDING"
-                ) {
-
-                    statusClass =
-                        "badge-warning";
-
-                }
-
-
-                // ======================================
-                // ADD ROW
-                // ======================================
-
-                body.innerHTML += `
-
-                    <tr>
-
-                        <td>
-                            ${doc.document_no || "-"}
-                        </td>
-
-                        <td>
-                            ${doc.department || "-"}
-                        </td>
-
-                        <td>
-
-                            <span class="badge badge-info">
-
-                                ${doc.module || "PRS"}
-
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            <span class="
-                                badge
-                                ${statusClass}
-                            ">
-
-                                ${status}
-
-                            </span>
-
-                        </td>
-
-                        <td>
-
-                            ${formattedDate}
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            });
 
         })
 
         .catch(error => {
 
-            console.error(
-                "Recent Documents Error:",
-                error
-            );
+            console.error("Recent Documents Error:", error);
 
         });
 
@@ -754,6 +631,8 @@ function loadCharts(){
 
     loadSupplierChart();
 
+    loadSpendingChart();
+
 }
 
 
@@ -769,50 +648,27 @@ function loadMonthlyChart(){
 
     .then(data=>{
 
-        const ctx =
-        document.getElementById("monthlyChart");
+        const ctx = document.getElementById("monthlyRequisitionChart");
 
         if(!ctx) return;
 
-        if(monthlyChart){
+        if(monthlyChart){ monthlyChart.destroy(); }
 
-            monthlyChart.destroy();
-
-        }
-
-        monthlyChart =
-        new Chart(ctx,{
+        monthlyChart = new Chart(ctx,{
 
             type:"bar",
 
             data:{
 
-                labels:data.labels,
+                labels:data.labels || [],
 
                 datasets:[{
 
-                    label:"Documents",
-
-                    data:data.values,
-
+                    label:"Requisitions",
+                    data:data.values || [],
                     borderWidth:1,
-
                     borderRadius:8,
-
-                    backgroundColor:[
-                        "#2563eb",
-                        "#3b82f6",
-                        "#60a5fa",
-                        "#93c5fd",
-                        "#1d4ed8",
-                        "#2563eb",
-                        "#60a5fa",
-                        "#3b82f6",
-                        "#2563eb",
-                        "#93c5fd",
-                        "#60a5fa",
-                        "#2563eb"
-                    ]
+                    backgroundColor:["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#1d4ed8", "#2563eb"]
 
                 }]
 
@@ -821,16 +677,8 @@ function loadMonthlyChart(){
             options:{
 
                 responsive:true,
-
                 maintainAspectRatio:false,
-
-                plugins:{
-
-                    legend:{
-                        display:false
-                    }
-
-                }
+                plugins:{ legend:{ display:false } }
 
             }
 
@@ -856,40 +704,25 @@ function loadDepartmentChart(){
 
     .then(data=>{
 
-        const ctx =
-        document.getElementById("departmentChart");
+        const ctx = document.getElementById("budgetChart");
 
         if(!ctx) return;
 
-        if(departmentChart){
+        if(departmentChart){ departmentChart.destroy(); }
 
-            departmentChart.destroy();
+        departmentChart = new Chart(ctx,{
 
-        }
-
-        departmentChart =
-        new Chart(ctx,{
-
-            type:"pie",
+            type:"bar",
 
             data:{
 
-                labels:data.labels,
+                labels:data.labels || [],
 
                 datasets:[{
 
-                    data:data.values,
-
-                    backgroundColor:[
-
-                        "#2563eb",
-                        "#16a34a",
-                        "#f59e0b",
-                        "#9333ea",
-                        "#dc2626",
-                        "#06b6d4"
-
-                    ]
+                    label:"Requests",
+                    data:data.values || [],
+                    backgroundColor:["#16a34a", "#3b82f6", "#f59e0b", "#9333ea", "#dc2626", "#06b6d4"]
 
                 }]
 
@@ -898,8 +731,8 @@ function loadDepartmentChart(){
             options:{
 
                 responsive:true,
-
-                maintainAspectRatio:false
+                maintainAspectRatio:false,
+                plugins:{ legend:{ display:false } }
 
             }
 
@@ -925,49 +758,24 @@ function loadStatusChart(){
 
     .then(data=>{
 
-        const ctx =
-        document.getElementById("statusChart");
+        const ctx = document.getElementById("approvalChart");
 
         if(!ctx) return;
 
-        if(statusChart){
+        if(statusChart){ statusChart.destroy(); }
 
-            statusChart.destroy();
-
-        }
-
-        statusChart =
-        new Chart(ctx,{
+        statusChart = new Chart(ctx,{
 
             type:"doughnut",
 
             data:{
 
-                labels:[
-
-                    "Approved",
-                    "Pending",
-                    "Rejected"
-
-                ],
+                labels:["Approved", "Pending", "Rejected"],
 
                 datasets:[{
 
-                    data:[
-
-                        data.approved,
-                        data.pending,
-                        data.rejected
-
-                    ],
-
-                    backgroundColor:[
-
-                        "#16a34a",
-                        "#f59e0b",
-                        "#dc2626"
-
-                    ]
+                    data:[data.approved || 0, data.pending || 0, data.rejected || 0],
+                    backgroundColor:["#16a34a", "#f59e0b", "#dc2626"]
 
                 }]
 
@@ -976,7 +784,6 @@ function loadStatusChart(){
             options:{
 
                 responsive:true,
-
                 maintainAspectRatio:false
 
             }
@@ -1003,40 +810,28 @@ function loadSupplierChart(){
 
     .then(data=>{
 
-        const ctx =
-        document.getElementById("supplierChart");
+        const ctx = document.getElementById("materialChart");
 
         if(!ctx) return;
 
-        if(supplierChart){
+        if(supplierChart){ supplierChart.destroy(); }
 
-            supplierChart.destroy();
-
-        }
-
-        supplierChart =
-        new Chart(ctx,{
+        supplierChart = new Chart(ctx,{
 
             type:"line",
 
             data:{
 
-                labels:data.labels,
+                labels:data.labels || [],
 
                 datasets:[{
 
                     label:"Orders",
-
-                    data:data.values,
-
+                    data:data.values || [],
                     fill:false,
-
                     borderWidth:3,
-
                     tension:.4,
-
                     borderColor:"#2563eb",
-
                     backgroundColor:"#2563eb"
 
                 }]
@@ -1046,8 +841,57 @@ function loadSupplierChart(){
             options:{
 
                 responsive:true,
-
                 maintainAspectRatio:false
+
+            }
+
+        });
+
+    })
+
+    .catch(console.error);
+
+}
+
+function loadSpendingChart(){
+
+    fetch("/hod/dashboard/monthly")
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        const ctx = document.getElementById("spendingChart");
+
+        if(!ctx) return;
+
+        const spendingChartInstance = new Chart(ctx,{
+
+            type:"line",
+
+            data:{
+
+                labels:data.labels || [],
+
+                datasets:[{
+
+                    label:"Spending",
+                    data:(data.values || []).map(value => value * 120),
+                    borderColor:"#9333ea",
+                    backgroundColor:"rgba(147,51,234,0.2)",
+                    borderWidth:2,
+                    tension:.3,
+                    fill:true
+
+                }]
+
+            },
+
+            options:{
+
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{ legend:{ display:false } }
 
             }
 

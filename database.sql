@@ -854,18 +854,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- 1. Add department_budget_id column
 -- =====================================================
 
-ALTER TABLE requisitions
-ADD COLUMN department_budget_id INT NULL
-AFTER department_id;
 
 
 -- =====================================================
 -- 2. Add required_date column
 -- =====================================================
 
-ALTER TABLE requisitions
-ADD COLUMN required_date DATE NULL
-AFTER submission_date;
+
 
 
 -- =====================================================

@@ -3960,6 +3960,46 @@ def get_grn_items(grn_id):
         conn.close()
 
 
+@procurement_dashboard_bp.route("/invoice_data")
+def invoice_data():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_number,
+                i.supplier_name,
+                i.invoice_date,
+                i.total_amount,
+                i.status,
+                po.po_number,
+                r.prs_no,
+                d.department_name
+            FROM invoices i
+            LEFT JOIN purchase_orders po
+                ON i.purchase_order_id = po.purchase_order_id
+            LEFT JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+            ORDER BY i.invoice_id DESC
+        """)
+
+        invoices = cursor.fetchall()
+
+        for invoice in invoices:
+            if invoice.get("invoice_date"):
+                invoice["invoice_date"] = invoice["invoice_date"].isoformat()
+            invoice["total_amount"] = float(invoice.get("total_amount") or 0)
+
+        return jsonify(invoices)
+    finally:
+        cursor.close()
+        conn.close()
+
+
 @procurement_dashboard_bp.route("/create_invoice")
 def create_invoice():
 
@@ -4098,7 +4138,7 @@ def save_invoice():
 
         conn.commit()
 
-        return redirect(url_for("finance_dashboard.dashboard"))
+        return redirect(url_for("procurement_dashboard.procurement_dashboard"))
 
     except Exception as e:
         conn.rollback()

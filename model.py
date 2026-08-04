@@ -125,33 +125,50 @@ def insert_user(username, email, password, user_role, department):
 # GET ALL REQUISITIONS (FOR ADMIN)
 # ==================================================
 def get_all_requisitions():
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
+
         cursor.execute("""
-            SELECT 
+            SELECT
+
                 r.requisition_id,
+
                 r.prs_no,
+
                 d.department_id,
-                r.status,
+
+                d.department_name,
+
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS status,
+
                 r.submission_date,
-                a.hod_approval_date
+
+                a.hod_approved_at
+
             FROM requisitions r
-            JOIN departments d 
-                ON r.department_id = d.department_id
-            LEFT JOIN approvals a 
-                ON r.requisition_id = a.requisition_id
+
+            JOIN departments d
+                ON d.department_id = r.department_id
+
+            LEFT JOIN approvals a
+                ON a.document_id = r.requisition_id
+               AND a.module_name = 'PRS'
+
             ORDER BY r.submission_date DESC
         """)
 
         return cursor.fetchall()
 
     finally:
+
         cursor.close()
         conn.close()
-
-
 # ==================================================
 # GET REQUISITION BY ID
 # ==================================================

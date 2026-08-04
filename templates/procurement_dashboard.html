@@ -996,7 +996,8 @@ Date
                                 <img
                                     id="sig_hod"
                                     src=""
-                                    style="display:none;height:60px;width:120px;object-fit:contain;">
+                                    class="signature-img"
+                                    style="display:none;">
 
                                 <br>
 
@@ -1020,7 +1021,8 @@ Date
                                 <img
                                     id="sig_ceo"
                                     src=""
-                                    style="display:none;height:60px;width:120px;object-fit:contain;">
+                                    class="signature-img"
+                                    style="display:none;">
 
                                 <br>
 
@@ -4294,6 +4296,72 @@ Date
 
     </div>
 
+</div>
+
+<!-- =====================================================
+        INVOICE MODULE
+===================================================== -->
+
+<div id="invoice" class="module">
+    <div class="container">
+        <div class="left">
+            <div class="header">
+                <h2>Invoice Management</h2>
+            </div>
+
+            <div class="search">
+                <button type="button" class="btn primary" onclick="window.location.href='/procurement/create_invoice'">
+                    + Create Invoice
+                </button>
+                <input type="text" id="invoiceSearch" placeholder="Search invoice or supplier..." onkeyup="filterInvoiceRows()">
+            </div>
+
+            <table id="invoiceTable" class="data-table">
+                <thead>
+                    <tr>
+                        <th>Invoice No</th>
+                        <th>Supplier</th>
+                        <th>PO No</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="invoiceBody"></tbody>
+            </table>
+        </div>
+
+        <div class="right">
+            <div class="slip">
+                <div class="header">
+                    <h2>Invoice Details</h2>
+                </div>
+                <div class="info-section">
+                    <div class="box">
+                        <p><b>Invoice No:</b> <span id="invoiceDetailNo">-</span></p>
+                        <p><b>Supplier:</b> <span id="invoiceDetailSupplier">-</span></p>
+                        <p><b>PO No:</b> <span id="invoiceDetailPo">-</span></p>
+                    </div>
+                    <div class="box">
+                        <p><b>Date:</b> <span id="invoiceDetailDate">-</span></p>
+                        <p><b>Status:</b> <span id="invoiceDetailStatus">-</span></p>
+                        <p><b>Total:</b> <span id="invoiceDetailTotal">-</span></p>
+                    </div>
+                </div>
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceDetailItems"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 </div>

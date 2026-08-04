@@ -1,48 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<title>PRS ERP Dashboard</title>
+
+<title>
+PRS ERP Employee Dashboard
+</title>
 
 
+<link rel="stylesheet" 
+href="{{ url_for('static', filename='hod_dashboard.css') }}">
 
-<link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='employee.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
-<style>
 
-</style>
+<link rel="stylesheet" 
+href="{{ url_for('static', filename='employee.css') }}">
+
+
+<link rel="stylesheet" 
+href="{{ url_for('static', filename='forms.css') }}">
+
+
 </head>
+
+
 
 <body>
 
-<!-- LOGOUT BUTTON -->
 
 
-<!-- SIDEBAR -->
+<!-- =====================================================
+                    SIDEBAR
+===================================================== -->
+
+
 <div class="sidebar">
+
 
     <h2>
         PRS SYSTEM <br>
         EMPLOYEE DASHBOARD
     </h2>
 
+
+
+
     <button class="active"
-            onclick="openModule('dashboardModule', this)">
-        dashboard
+            onclick="openModule('dashboardModule',this)">
+        Dashboard
     </button>
 
-    <button onclick="openModule('requisition', this)">
+
+
+
+
+    <button
+        onclick="openModule('requisition',this)">
         Requisition
     </button>
-    <button class="logout-btn" onclick="logoutUser()">
+
+
+
+
+
+    <button class="logout-btn"
+            onclick="logoutUser()">
         Logout
     </button>
 
 
 
-
 </div>
+
+
+
+
+
+
+
+
+
+<!-- =====================================================
+                    MAIN CONTENT
+===================================================== -->
+
 
 <div class="main">
 
@@ -50,14 +92,22 @@
 
 
 
+
+
 <!-- =====================================================
-        REQUISITION MODULE
+                REQUISITION MODULE
 ===================================================== -->
+
 
 <div id="requisition" class="module active">
 
 
+
 <div class="container">
+
+
+
+
 
 
 
@@ -65,14 +115,24 @@
                     LEFT PANEL
 ===================================================== -->
 
+
 <div class="left">
 
 
 
-<!-- ================= REQUISITION LIST ================= -->
+
+
+
+
+<!-- =====================================================
+                REQUISITION LIST
+===================================================== -->
 
 
 <div id="requisitionList">
+
+
+
 
 
 <div class="header">
@@ -83,21 +143,39 @@
 
 
 
+
+
+
+
+
 <div class="toolbar">
 
 
 <input
+
 type="text"
+
 id="prsSearch"
+
 placeholder="Search PRS..."
-onkeyup="searchPRS()">
+
+onkeyup="searchPRS()"
+
+>
+
+
+
+
 
 
 
 <button
-type="button"
+
 class="btn primary"
-onclick="showCreateForm()">
+
+onclick="showCreateForm()"
+
+>
 
 + Create Requisition
 
@@ -110,7 +188,15 @@ onclick="showCreateForm()">
 
 
 
+
+
+
+
 <br>
+
+
+
+
 
 
 
@@ -118,19 +204,33 @@ onclick="showCreateForm()">
 
 
 <button
+
 class="btn primary"
-onclick="window.print()">
+
+onclick="window.print()"
+
+>
 
 Print Slip
 
 </button>
 
 
+
 </div>
 
 
 
+
+
+
+
+
 <br>
+
+
+
+
 
 
 
@@ -140,18 +240,41 @@ Print Slip
 
 <thead>
 
+
 <tr>
 
-<th>Select</th>
-<th>PRS No</th>
-<th>Department</th>
-<th>Status</th>
-<th>Date</th>
+<th>
+Select
+</th>
+
+
+<th>
+PRS No
+</th>
+
+
+<th>
+Department
+</th>
+
+
+<th>
+Status
+</th>
+
+
+<th>
+Date
+</th>
 
 
 </tr>
 
+
 </thead>
+
+
+
 
 
 
@@ -160,12 +283,24 @@ Print Slip
 
 
 
+
+
 {% for req in requisitions %}
 
 
+
+
+
 <tr
+
 data-id="{{req.requisition_id}}"
-onclick="loadSlipFromRow(this)">
+
+onclick="loadSlipFromRow(this)"
+
+>
+
+
+
 
 
 
@@ -173,36 +308,71 @@ onclick="loadSlipFromRow(this)">
 
 
 <input
+
 type="radio"
+
 name="prs_select"
-onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
+
+onclick="
+event.stopPropagation();
+loadSlipFromRow(this.closest('tr'))
+"
+
+>
 
 
 </td>
 
 
 
+
+
+
+
 <td>
+
 {{req.prs_no}}
+
 </td>
 
 
 
+
+
+
+
 <td>
+
 {{req.department_name}}
+
 </td>
 
 
 
+
+
+
+
 <td>
+
 {{req.hod_status or 'PENDING'}}
+
 </td>
+
+
+
+
 
 
 
 <td>
+
 {{req.submission_date}}
+
 </td>
+
+
+
 
 
 
@@ -210,17 +380,27 @@ onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
 
 
 
+
+
+
 {% endfor %}
+
+
+
 
 
 
 </tbody>
 
 
+
 </table>
 
 
 
+
+
+
 </div>
 
 
@@ -228,383 +408,113 @@ onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
 
 
 
-    <!-- =======================================================
-                    CREATE DEPARTMENT BUDGET
-    ======================================================= -->
 
 
-    <div id="createBudgetTab"
-         class="create-budget-card"
-         style="display:none;">
 
 
 
-        <div class="predict-header">
 
 
-            <h2>
-                Create Department Budget
-            </h2>
+<!-- =====================================================
+              CREATE REQUISITION FORM
+===================================================== -->
 
 
-        </div>
 
 
+<div id="createForm" style="display:none;">
 
 
 
 
 
-        <div class="predict-grid">
 
 
+<div class="form-header">
 
 
+<h2>
 
-            <!-- ==========================================
-                DEPARTMENT
-            ========================================== -->
+Create Purchase Requisition
 
-            <div class="form-group">
-
-                <label for="budgetDepartment">
-                    Department
-                </label>
-
-                <select id="budgetDepartment">
-
-                    <option value="">
-                        Select Department
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <!-- ==========================================
-                COMPANY BUDGET NUMBER
-            ========================================== -->
-
-            <div class="form-group">
-
-                <label for="companyBudget">
-                    Company Budget
-                </label>
-
-                <input
-                    type="text"
-                    id="companyBudget"
-                    placeholder="Select department first"
-                    readonly>
-
-            </div>
-
-
-            <!-- ==========================================
-                HIDDEN COMPANY BUDGET ID
-            ========================================== -->
-
-            <input
-                type="hidden"
-                id="companyBudgetId">
-
-
-
-            <!-- Budget Item -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Budget Item
-                </label>
-
-
-
-                <input
-                    type="text"
-                    id="budgetItem"
-                    placeholder="Enter Budget Item">
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Quantity -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Quantity
-                </label>
-
-
-
-                <input
-                    type="number"
-                    id="budgetQuantity"
-                    value="0"
-                    min="1">
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Unit Cost -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Unit Cost
-                </label>
-
-
-
-                <input
-                    type="number"
-                    id="budgetUnitCost"
-                    placeholder="Enter Unit Cost">
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Budget Type -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Budget Type
-                </label>
-
-
-
-                <select id="budgetType">
-
-
-                    <option value="">
-                        Select Type
-                    </option>
-
-
-                    <option value="Monthly">
-                        Monthly
-                    </option>
-
-
-                    <option value="Quarterly">
-                        Quarterly
-                    </option>
-
-
-                    <option value="Yearly">
-                        Yearly
-                    </option>
-
-
-                </select>
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Start Date -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Start Date
-                </label>
-
-
-
-                <input
-                    type="date"
-                    id="budgetStart">
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- End Date -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    End Date
-                </label>
-
-
-
-                <input
-                    type="date"
-                    id="budgetEnd">
-
-
-
-            </div>
-
-
-
-
-
-
-
-
-
-            <!-- Remarks -->
-
-
-            <div class="form-group">
-
-
-                <label>
-                    Remarks
-                </label>
-
-
-
-                <textarea
-                    id="budgetRemarks"
-                    placeholder="Enter remarks">
-
-                </textarea>
-
-
-
-            </div>
-
-
-
-
-
-
-
-        </div>
-
-
-
-
-
-
-
-
-
-        <div class="button-area">
-
-
-
-            <button
-                class="predict-btn"
-                onclick="submitBudget()">
-
-
-
-                Save Budget
-
-
-
-            </button>
-
-
-
-
-
-
-            <button
-                class="cancel-btn"
-                onclick="closeCreateBudget()">
-
-
-
-                Cancel
-
-
-
-            </button>
-
-
-
-        </div>
-
-
-
-
-
-
-
-
-        <div id="budgetMessage"
-             style="margin-top:15px;">
-
-
-
-        </div>
-
-
-
-
-
-    </div>
-
-
+</h2>
 
 
 
 </div>
 
+
+
+
+
+
+
+
+
+<form
+
+method="POST"
+
+action="{{url_for('requisition.submit_requisition')}}"
+
+>
+
+
+
+
+
+
+
+
+
+<div class="form-row">
+
+
+
+
+
+
+
+<!-- ================= PRS NUMBER ================= -->
+
+
+<div>
+
+
+<label>
+
+PRS Number
+
+</label>
+
+
+
+<input
+
+type="text"
+
+id="generated_prs_no"
+
+name="prs_no"
+
+readonly
+
+placeholder="Generating PRS Number..."
+
+>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ================= DEPARTMENT ================= -->
 
 
 
@@ -612,22 +522,173 @@ onclick="event.stopPropagation();loadSlipFromRow(this.closest('tr'))">
 
 
 <label>
-Date
+
+Department
+
 </label>
 
 
+
+
+<select
+
+id="department"
+
+name="department_id"
+
+required
+
+>
+
+
+<option value="">
+
+Select Department
+
+</option>
+
+
+</select>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ================= BUDGET ITEM ================= -->
+
+
+
+<div>
+
+
+<label>
+
+Budget Item
+
+</label>
+
+
+
+
+<select
+
+id="departmentBudgetItem"
+
+name="department_budget_id"
+
+required
+
+>
+
+
+<option value="">
+
+Select Budget Item
+
+</option>
+
+
+
+</select>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ================= CREATED BY ================= -->
+
+
+
+<div>
+
+
+<label>
+
+Created By
+
+</label>
+
+
+
+
 <input
+
+type="text"
+
+value="{{session.username}}"
+
+readonly
+
+>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- ================= DATE ================= -->
+
+
+
+<div>
+
+
+<label>
+
+Submission Date
+
+</label>
+
+
+
+
+<input
+
 type="date"
+
 id="submission_date"
+
 name="submission_date"
-required>
+
+required
+
+>
+
 
 
 </div>
 
 
 
+
+
+
 </div>
+
+
 
 
 
@@ -638,40 +699,68 @@ required>
 <br>
 
 
+
+
+
+
+
+
+
+<!-- =====================================================
+                    ITEM BUTTONS
+===================================================== -->
 
 
 
 <div class="controls">
 
 
-<button
-type="button"
-class="btn success"
-onclick="addRow()">
 
+
+
+<button
+
+type="button"
+
+class="btn success"
+
+onclick="addRow()"
+
+>
 
 + Add Item
 
-
 </button>
+
+
+
 
 
 
 
 <button
-type="button"
-class="btn danger"
-onclick="removeRow()">
 
+type="button"
+
+class="btn danger"
+
+onclick="removeRow()"
+
+>
 
 Remove Item
 
-
 </button>
+
+
+
 
 
 
 </div>
+
+
+
 
 
 
@@ -683,7 +772,18 @@ Remove Item
 
 
 
+
+
+
+
+<!-- =====================================================
+                    ITEMS TABLE
+===================================================== -->
+
+
+
 <table id="reqTable">
+
 
 
 <thead>
@@ -692,14 +792,45 @@ Remove Item
 <tr>
 
 
-<th>No</th>
-<th>Material</th>
-<th>Description</th>
-<th>UOM</th>
-<th>Qty Stock</th>
-<th>Qty Required</th>
-<th>Required Date</th>
-<th>Remark</th>
+<th>
+No
+</th>
+
+
+<th>
+Material
+</th>
+
+
+<th>
+Description
+</th>
+
+
+<th>
+UOM
+</th>
+
+
+<th>
+Qty Stock
+</th>
+
+
+<th>
+Qty Required
+</th>
+
+
+<th>
+Required Date
+</th>
+
+
+<th>
+Remark
+</th>
+
 
 
 </tr>
@@ -710,14 +841,22 @@ Remove Item
 
 
 
+
+
 <tbody>
+
 
 
 </tbody>
 
 
 
+
+
 </table>
+
+
+
 
 
 
@@ -729,15 +868,62 @@ Remove Item
 
 
 
-<button
-type="submit"
-class="submit-btn">
 
+
+
+
+
+<div style="text-align:right;">
+
+
+
+
+
+
+
+<button
+
+type="submit"
+
+class="btn primary"
+
+>
 
 Submit Requisition
 
+</button>
+
+
+
+
+
+
+
+
+
+<button
+
+type="button"
+
+class="btn danger"
+
+onclick="hideCreateForm()"
+
+>
+
+Cancel
 
 </button>
+
+
+
+
+
+
+</div>
+
+
+
 
 
 
@@ -747,7 +933,6 @@ Submit Requisition
 
 
 
-</div>
 
 
 
@@ -757,6 +942,23 @@ Submit Requisition
 
 
 
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- END LEFT PANEL -->
 
 
 
@@ -772,7 +974,16 @@ Submit Requisition
 
 
 
+
+
+<!-- =====================================================
+                PURCHASE REQUISITION SLIP
+===================================================== -->
+
+
 <div id="printArea" class="slip">
+
+
 
 
 
@@ -788,49 +999,97 @@ PURCHASE REQUISITION SLIP
 
 
 
+
+
+
+<!-- ================= BASIC INFORMATION ================= -->
+
+
 <div class="info">
 
 
 <p>
-<b>PRS No:</b>
-<span id="prs_no">-</span>
+
+<b>
+PRS No:
+</b>
+
+<span id="slip_prs_no">
+-
+</span>
+
 </p>
 
 
 
 
+
 <p>
-<b>Department:</b>
-<span id="department_name">-</span>
+
+<b>
+Department:
+</b>
+
+<span id="department_name">
+-
+</span>
+
 </p>
 
 
 
 
+
 <p>
-<b>Submission:</b>
-<span id="submission">-</span>
+
+<b>
+Submission Date:
+</b>
+
+<span id="submission">
+-
+</span>
+
 </p>
 
 
 
 
+
 <p>
-<b>HOD Status:</b>
-<span id="hod_status">-</span>
+
+<b>
+HOD Status:
+</b>
+
+<span id="hod_status">
+-
+</span>
+
 </p>
 
 
 
 
+
 <p>
-<b>CEO Status:</b>
-<span id="ceo_status">-</span>
+
+<b>
+CEO Status:
+</b>
+
+<span id="ceo_status">
+-
+</span>
+
 </p>
 
 
 
 </div>
+
+
+
 
 
 
@@ -845,7 +1104,11 @@ Requested Items
 
 
 
+
+
+
 <table>
+
 
 
 <thead>
@@ -853,16 +1116,32 @@ Requested Items
 
 <tr>
 
-<th>No</th>
-<th>Material</th>
-<th>UOM</th>
-<th>Qty</th>
+<th>
+No
+</th>
+
+
+<th>
+Material
+</th>
+
+
+<th>
+UOM
+</th>
+
+
+<th>
+Quantity
+</th>
 
 
 </tr>
 
 
+
 </thead>
+
 
 
 
@@ -874,6 +1153,8 @@ Requested Items
 
 
 
+
+
 </table>
 
 
@@ -882,8 +1163,20 @@ Requested Items
 
 
 
+
+
+
+
+
+
+<!-- =====================================================
+                    APPROVAL SIGNATURES
+===================================================== -->
+
+
+
 <h3>
-Signatures
+Approval Signatures
 </h3>
 
 
@@ -891,7 +1184,16 @@ Signatures
 
 
 
+
 <div class="signature-section">
+
+
+
+
+
+
+
+<!-- ================= PREPARED BY ================= -->
 
 
 
@@ -903,24 +1205,48 @@ Prepared By
 </h4>
 
 
-<img
-id="sig_created_by"
-src=""
-style="display:none;height:60px;">
 
 
 
-<p>
-<b>Name:</b>
-<span id="created_by_name">-</span>
-</p>
+<img id="sig_created_by" src="" class="signature-img" style="display:none;">
+
+
+
+
 
 
 
 <p>
-<b>Date:</b>
-<span id="created_date">-</span>
+
+<b>
+Name:
+</b>
+
+<span id="created_by_name">
+-
+</span>
+
 </p>
+
+
+
+
+
+
+
+<p>
+
+<b>
+Date:
+</b>
+
+<span id="created_date">
+-
+</span>
+
+</p>
+
+
 
 
 
@@ -929,6 +1255,15 @@ style="display:none;height:60px;">
 
 
 
+
+
+
+
+
+
+
+
+<!-- ================= HOD APPROVAL ================= -->
 
 
 
@@ -941,24 +1276,53 @@ HOD Approval
 
 
 
-<img
-id="sig_hod"
-src=""
-style="display:none;height:60px;">
 
 
 
-<p>
-<b>Name:</b>
-<span id="hod_username">-</span>
-</p>
+<img id="sig_hod" src="" class="signature-img" style="display:none;">
+
+
+
+
 
 
 
 <p>
-<b>Date:</b>
-<span id="hod_approval_date">-</span>
+
+<b>
+Name:
+</b>
+
+
+<span id="hod_username">
+-
+</span>
+
+
 </p>
+
+
+
+
+
+
+
+<p>
+
+<b>
+Date:
+</b>
+
+
+<span id="hod_approval_date">
+-
+</span>
+
+
+</p>
+
+
+
 
 
 
@@ -967,6 +1331,16 @@ style="display:none;height:60px;">
 
 
 
+
+
+
+
+
+
+
+
+
+<!-- ================= CEO APPROVAL ================= -->
 
 
 
@@ -979,36 +1353,56 @@ CEO Approval
 
 
 
-<img
-id="sig_ceo"
-src=""
-style="display:none;height:60px;">
+
+
+
+
+<img id="sig_ceo" src="" class="signature-img" style="display:none;">
+
+
+
+
+
 
 
 
 <p>
-<b>Name:</b>
-<span id="ceo_username">-</span>
+
+<b>
+Name:
+</b>
+
+
+<span id="ceo_username">
+-
+</span>
+
+
 </p>
 
 
 
+
+
+
+
+
 <p>
-<b>Date:</b>
-<span id="ceo_approval_date">-</span>
+
+<b>
+Date:
+</b>
+
+
+<span id="ceo_approval_date">
+-
+</span>
+
+
 </p>
 
 
 
-</div>
-
-
-
-
-
-</div>
-
-
 
 
 
@@ -1018,89 +1412,154 @@ style="display:none;height:60px;">
 
 
 
+
+
+
+
 </div>
 
 
 
 
 
+
+
+
 </div>
 
 
+
+
+
+
 </div>
+
+
+
+
 
 
 
 
 
 <!-- =====================================================
-        DASHBOARD MODULE
+                    DASHBOARD MODULE
 ===================================================== -->
+
 
 <div id="dashboardModule" class="module">
 
 
-<!-- HEADER -->
+
+
+
+
+
+<!-- ================= HEADER ================= -->
+
+
 
 <div class="dashboard-header">
+
 
 <div>
 
 
 <h1>
+
 STATISTICS FOR MY REQUISITIONS 👋
+
 </h1>
 
 
 </div>
 
 
+
+
+
+
 <div class="date-box">
 
 
-<span id="currentDate"></span>
+<span id="currentDate">
+
+</span>
+
 
 </div>
 
 
+
+
+
 </div>
 
 
 
 
 
-<!-- ================= STATISTICS ================= -->
+
+
+
+
+<!-- =====================================================
+                    DASHBOARD CARDS
+===================================================== -->
+
 
 
 <div class="dashboard-cards">
 
 
 
+
+
+
+
+
 <!-- TOTAL -->
+
 
 <div class="dash-card">
 
+
 <div class="icon">
+
 📄
+
 </div>
 
+
+
 <div>
+
 
 <h3>
 Total Requisitions
 </h3>
 
-<h1>
-25
+
+<h1 id="totalPRS">
+
+0
+
 </h1>
+
+
 
 <p>
 Submitted
 </p>
 
-</div>
+
 
 </div>
+
+
+</div>
+
+
 
 
 
@@ -1110,29 +1569,55 @@ Submitted
 
 <!-- PENDING -->
 
+
+
 <div class="dash-card pending">
 
+
 <div class="icon">
+
 ⏳
+
 </div>
 
+
+
+
 <div>
+
 
 <h3>
 Pending
 </h3>
 
-<h1>
-8
+
+
+<h1 id="pendingPRS">
+
+0
+
 </h1>
+
+
 
 <p>
 Awaiting Approval
 </p>
 
-</div>
+
+
 
 </div>
+
+
+
+</div>
+
+
+
+
+
+
 
 
 
@@ -1142,29 +1627,55 @@ Awaiting Approval
 
 <!-- APPROVED -->
 
+
+
 <div class="dash-card approved">
 
+
 <div class="icon">
+
 ✅
+
 </div>
 
+
+
+
 <div>
+
 
 <h3>
 Approved
 </h3>
 
-<h1>
-14
+
+
+<h1 id="approvedPRS">
+
+0
+
 </h1>
+
+
 
 <p>
 Completed
 </p>
 
-</div>
+
+
 
 </div>
+
+
+
+</div>
+
+
+
+
+
+
 
 
 
@@ -1174,29 +1685,42 @@ Completed
 
 <!-- REJECTED -->
 
+
+
 <div class="dash-card rejected">
 
+
 <div class="icon">
+
 ❌
+
 </div>
 
 
+
+
 <div>
+
 
 <h3>
 Rejected
 </h3>
 
-<h1>
-3
+
+
+<h1 id="rejectedPRS">
+
+0
+
 </h1>
+
+
 
 <p>
 Returned
 </p>
 
 
-</div>
 
 
 </div>
@@ -1213,15 +1737,38 @@ Returned
 
 
 
-<!-- ================= CURRENT STAGE ================= -->
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- =====================================================
+                CURRENT APPROVAL STAGE
+===================================================== -->
+
 
 
 <div class="dashboard-section">
 
 
+
 <h2>
+
 🔄 Current Approval Stage
+
 </h2>
+
+
+
+
 
 
 
@@ -1231,19 +1778,33 @@ Returned
 
 
 
+
+
 <div class="stage-card">
 
+
 <h3>
+
 HOD Approval
+
 </h3>
 
-<h1>
-5
+
+<h1 id="hodPending">
+
+0
+
 </h1>
 
+
+
 <p>
+
 Waiting HOD Review
+
 </p>
+
+
 
 </div>
 
@@ -1252,19 +1813,35 @@ Waiting HOD Review
 
 
 
+
+
+
+
 <div class="stage-card">
 
+
 <h3>
+
 CEO Approval
+
 </h3>
 
-<h1>
-2
+
+<h1 id="ceoPending">
+
+0
+
 </h1>
 
+
+
 <p>
+
 Waiting CEO Decision
+
 </p>
+
+
 
 </div>
 
@@ -1275,19 +1852,33 @@ Waiting CEO Decision
 
 
 
+
+
 <div class="stage-card">
 
+
 <h3>
+
 Procurement
+
 </h3>
 
+
 <h1>
-4
+
+0
+
 </h1>
 
+
+
 <p>
+
 Processing Purchase
+
 </p>
+
+
 
 </div>
 
@@ -1298,21 +1889,37 @@ Processing Purchase
 
 
 
+
+
 <div class="stage-card">
 
+
 <h3>
+
 Finance
+
 </h3>
 
+
 <h1>
-1
+
+0
+
 </h1>
 
+
+
 <p>
+
 Payment Processing
+
 </p>
 
+
+
 </div>
+
+
 
 
 
@@ -1323,25 +1930,28 @@ Payment Processing
 
 <div class="stage-card">
 
+
 <h3>
+
 Completed
+
 </h3>
 
-<h1>
-10
+
+<h1 id="completedPRS">
+
+0
+
 </h1>
 
+
+
 <p>
+
 Finished Requests
+
 </p>
 
-</div>
-
-
-
-
-
-</div>
 
 
 </div>
@@ -1357,6 +1967,7 @@ Finished Requests
 
 
 
+</div>
 
 
 
@@ -1365,10 +1976,53 @@ Finished Requests
 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='/budget.js') }}"></script>
-<script src="{{ url_for('static', filename='/employee.js') }}"></script>
-<script src="{{ url_for('static', filename='/requisition.js') }}"></script>
+
+</div>
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+<!-- CLOSE MAIN -->
+
+
+
+
+
+
+<!-- =====================================================
+                    JAVASCRIPT FILES
+===================================================== -->
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+</script>
+
+
+
+
+<script src="{{ url_for('static', filename='employee.js') }}">
+</script>
+
+
+
+<script src="{{ url_for('static', filename='requisition.js') }}">
+</script>
+
+
+
 </body>
-</html>
 
+</html>
