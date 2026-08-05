@@ -42,81 +42,635 @@
 
 <div class="main">
 <!-- ==========================================================
-                CEO EXECUTIVE DASHBOARD
-========================================================== -->
-<!-- =====================================================
         CEO EXECUTIVE DASHBOARD MODULE
-===================================================== -->
-
+========================================================== -->
 
 <div id="insights" class="module dashboard-wrapper">
 
 
+    <!-- ======================================================
+            HEADER SECTION
+    ====================================================== -->
 
-<!-- =====================================================
-        HEADER SECTION
-===================================================== -->
-
-
-<div class="dashboard-header">
+    <div class="dashboard-header">
 
 
-    <div class="header-title">
+        <div class="header-title">
 
-        <h1>
-            CEO Executive Dashboard
-        </h1>
+            <h1>
+                CEO Executive Dashboard
+            </h1>
 
-        <p>
-            Executive overview of procurement, budget and payment performance
-        </p>
+            <p>
+                Executive overview of procurement, budget and payment performance
+            </p>
+
+        </div>
+
+
+
+        <div class="header-actions">
+
+
+            <input type="date" id="startDate">
+
+
+            <input type="date" id="endDate">
+
+
+            <select id="departmentFilter">
+
+                <option value="">
+                    All Departments
+                </option>
+
+            </select>
+
+
+
+            <select id="yearFilter">
+
+                <option value="2026">
+                    2026
+                </option>
+
+                <option value="2025">
+                    2025
+                </option>
+
+                <option value="2024">
+                    2024
+                </option>
+
+            </select>
+
+
+
+            <button 
+                class="quick-btn green"
+                onclick="loadCEODashboard()">
+
+                🔄 Refresh
+
+            </button>
+
+
+
+            <button class="quick-btn blue">
+
+                📄 Export PDF
+
+            </button>
+
+
+        </div>
+
 
     </div>
 
 
 
-    <div class="header-actions">
-
-
-        <input type="date" id="startDate">
-
-
-        <input type="date" id="endDate">
-
-
-        <select id="departmentFilter">
-
-            <option>All Departments</option>
-            <option>ICT</option>
-            <option>Finance</option>
-            <option>Procurement</option>
-            <option>Administration</option>
-            <option>Stores</option>
-            <option>HR</option>
-
-        </select>
 
 
 
-        <select id="yearFilter">
 
-            <option>2026</option>
-            <option>2025</option>
-            <option>2024</option>
-
-        </select>
+    <!-- ======================================================
+            KPI SUMMARY CARDS
+    ====================================================== -->
 
 
-
-        <button class="quick-btn green">
-            🔄 Refresh
-        </button>
+    <div class="kpi-container">
 
 
+        <div class="kpi-card green">
 
-        <button class="quick-btn blue">
-            📄 Export PDF
-        </button>
+            <div class="kpi-icon">
+                🏢
+            </div>
+
+            <div>
+
+                <h4>
+                    Departments
+                </h4>
+
+                <h2 id="totalDepartments">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card blue">
+
+            <div class="kpi-icon">
+                👥
+            </div>
+
+            <div>
+
+                <h4>
+                    Employees
+                </h4>
+
+                <h2 id="totalEmployees">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card purple">
+
+            <div class="kpi-icon">
+                🚚
+            </div>
+
+            <div>
+
+                <h4>
+                    Suppliers
+                </h4>
+
+                <h2 id="totalSuppliers">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card orange">
+
+            <div class="kpi-icon">
+                📄
+            </div>
+
+            <div>
+
+                <h4>
+                    Total PRS
+                </h4>
+
+                <h2 id="totalPRS">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card red">
+
+            <div class="kpi-icon">
+                ⏳
+            </div>
+
+            <div>
+
+                <h4>
+                    Pending PRS
+                </h4>
+
+                <h2 id="pendingPRS">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card blue">
+
+            <div class="kpi-icon">
+                🛒
+            </div>
+
+            <div>
+
+                <h4>
+                    Purchase Orders
+                </h4>
+
+                <h2 id="totalPO">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card green">
+
+            <div class="kpi-icon">
+                📦
+            </div>
+
+            <div>
+
+                <h4>
+                    Total GRNs
+                </h4>
+
+                <h2 id="totalGRN">
+                    0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card purple">
+
+            <div class="kpi-icon">
+                💰
+            </div>
+
+            <div>
+
+                <h4>
+                    Company Budget
+                </h4>
+
+                <h2 id="companyBudget">
+                    UGX 0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card orange">
+
+            <div class="kpi-icon">
+                📈
+            </div>
+
+            <div>
+
+                <h4>
+                    Budget Used
+                </h4>
+
+                <h2 id="budgetUsed">
+                    UGX 0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="kpi-card green">
+
+            <div class="kpi-icon">
+                💵
+            </div>
+
+            <div>
+
+                <h4>
+                    Balance
+                </h4>
+
+                <h2 id="budgetBalance">
+                    UGX 0
+                </h2>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+
+
+
+    <!-- ======================================================
+            BUDGET AND APPROVAL ANALYSIS
+    ====================================================== -->
+
+
+    <div class="dashboard-grid">
+
+
+        <div class="dashboard-card">
+
+
+            <h3>
+                Budget Utilization
+            </h3>
+
+
+            <div id="budgetUtilization">
+
+                <!-- Data loaded from API -->
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+
+
+        <div class="dashboard-card">
+
+
+            <h3>
+                Approval Workflow
+            </h3>
+
+
+
+            <table class="dashboard-table">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Stage
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody id="approvalTable">
+
+                    <!-- Dynamic Data -->
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <!-- ======================================================
+            ANALYTICS CHARTS
+    ====================================================== -->
+
+
+    <div class="dashboard-grid">
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Budget vs Spending
+            </h3>
+
+            <canvas id="budgetChart"></canvas>
+
+        </div>
+
+
+
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Cash Flow
+            </h3>
+
+            <canvas id="cashChart"></canvas>
+
+        </div>
+
+
+
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Department Budget
+            </h3>
+
+            <canvas id="departmentChart"></canvas>
+
+        </div>
+
+
+
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Supplier Payments
+            </h3>
+
+            <canvas id="supplierChart"></canvas>
+
+        </div>
+
+
+
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Purchase Orders
+            </h3>
+
+            <canvas id="poChart"></canvas>
+
+        </div>
+
+
+
+
+
+        <div class="dashboard-card">
+
+            <h3>
+                Procurement Cost Analysis
+            </h3>
+
+            <canvas id="procurementChart"></canvas>
+
+        </div>
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <!-- ======================================================
+            REPORT TABLES
+    ====================================================== -->
+
+
+    <div class="dashboard-grid">
+
+
+
+        <div class="dashboard-card">
+
+
+            <h3>
+                Top Departments
+            </h3>
+
+
+
+            <table class="dashboard-table">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Department
+                        </th>
+
+                        <th>
+                            Amount
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody id="topDepartments">
+
+                    <!-- Dynamic Data -->
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
+
+
+
+
+
+
+
+        <div class="dashboard-card">
+
+
+            <h3>
+                Top Suppliers
+            </h3>
+
+
+
+            <table class="dashboard-table">
+
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Supplier
+                        </th>
+
+                        <th>
+                            Amount
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+
+                <tbody id="topSuppliers">
+
+                    <!-- Dynamic Data -->
+
+                </tbody>
+
+
+            </table>
+
+
+        </div>
+
 
 
     </div>
@@ -124,668 +678,6 @@
 
 
 </div>
-
-
-
-
-
-<!-- =====================================================
-        KPI SUMMARY CARDS
-===================================================== -->
-
-
-<div class="kpi-container">
-
-
-
-<div class="kpi-card green">
-
-<div class="kpi-icon">🏢</div>
-
-<div>
-
-<h4>Departments</h4>
-
-<h2>12</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card blue">
-
-<div class="kpi-icon">👥</div>
-
-<div>
-
-<h4>Employees</h4>
-
-<h2>156</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card purple">
-
-<div class="kpi-icon">🚚</div>
-
-<div>
-
-<h4>Suppliers</h4>
-
-<h2>84</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card orange">
-
-<div class="kpi-icon">📄</div>
-
-<div>
-
-<h4>Total PRS</h4>
-
-<h2>235</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card red">
-
-<div class="kpi-icon">⏳</div>
-
-<div>
-
-<h4>Pending PRS</h4>
-
-<h2>18</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card blue">
-
-<div class="kpi-icon">🛒</div>
-
-<div>
-
-<h4>Purchase Orders</h4>
-
-<h2>96</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card green">
-
-<div class="kpi-icon">📦</div>
-
-<div>
-
-<h4>Total GRNs</h4>
-
-<h2>90</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card purple">
-
-<div class="kpi-icon">💰</div>
-
-<div>
-
-<h4>Company Budget</h4>
-
-<h2>UGX 15.8B</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card orange">
-
-<div class="kpi-icon">📈</div>
-
-<div>
-
-<h4>Budget Used</h4>
-
-<h2>UGX 9.6B</h2>
-
-</div>
-
-</div>
-
-
-
-
-
-<div class="kpi-card green">
-
-<div class="kpi-icon">💵</div>
-
-<div>
-
-<h4>Balance</h4>
-
-<h2>UGX 6.2B</h2>
-
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- =====================================================
-        BUDGET & APPROVAL ANALYSIS
-===================================================== -->
-
-
-<div class="dashboard-grid">
-
-
-
-<!-- BUDGET UTILIZATION -->
-
-
-<div class="dashboard-card">
-
-
-<h3>
-Budget Utilization
-</h3>
-
-
-
-<div class="progress-item">
-
-<span>
-ICT
-</span>
-
-<div class="progress">
-
-<span style="width:85%"></span>
-
-</div>
-
-<b>
-85%
-</b>
-
-</div>
-
-
-
-
-
-<div class="progress-item">
-
-<span>
-Finance
-</span>
-
-<div class="progress">
-
-<span style="width:68%"></span>
-
-</div>
-
-<b>
-68%
-</b>
-
-</div>
-
-
-
-
-
-<div class="progress-item">
-
-<span>
-Procurement
-</span>
-
-<div class="progress">
-
-<span style="width:79%"></span>
-
-</div>
-
-<b>
-79%
-</b>
-
-</div>
-
-
-
-
-
-<div class="progress-item">
-
-<span>
-Administration
-</span>
-
-<div class="progress">
-
-<span style="width:47%"></span>
-
-</div>
-
-<b>
-47%
-</b>
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<!-- APPROVAL WORKFLOW -->
-
-
-<div class="dashboard-card">
-
-
-<h3>
-Approval Workflow
-</h3>
-
-
-<table class="dashboard-table">
-
-
-<thead>
-
-<tr>
-
-<th>
-Stage
-</th>
-
-<th>
-Total
-</th>
-
-</tr>
-
-</thead>
-
-
-<tbody>
-
-
-<tr>
-<td>Pending HOD</td>
-<td>12</td>
-</tr>
-
-
-<tr>
-<td>Pending CEO</td>
-<td>5</td>
-</tr>
-
-
-<tr>
-<td>Pending Finance</td>
-<td>8</td>
-</tr>
-
-
-<tr>
-<td>Approved</td>
-<td>187</td>
-</tr>
-
-
-<tr>
-<td>Rejected</td>
-<td>11</td>
-</tr>
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<!-- =====================================================
-        ANALYTICS CHARTS
-===================================================== -->
-
-
-<div class="dashboard-grid">
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Budget vs Spending
-</h3>
-
-<canvas id="budgetChart"></canvas>
-
-</div>
-
-
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Cash Flow
-</h3>
-
-<canvas id="cashChart"></canvas>
-
-</div>
-
-
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Department Budget
-</h3>
-
-<canvas id="departmentChart"></canvas>
-
-</div>
-
-
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Supplier Payments
-</h3>
-
-<canvas id="supplierChart"></canvas>
-
-</div>
-
-
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Purchase Orders
-</h3>
-
-<canvas id="poChart"></canvas>
-
-</div>
-
-
-
-
-
-<div class="dashboard-card">
-
-<h3>
-Procurement Cost
-</h3>
-
-<canvas id="procurementChart"></canvas>
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-
-<!-- =====================================================
-        REPORT TABLES
-===================================================== -->
-
-
-<div class="dashboard-grid">
-
-
-
-<div class="dashboard-card">
-
-
-<h3>
-Top Departments
-</h3>
-
-
-<table class="dashboard-table">
-
-
-<thead>
-
-<tr>
-
-<th>
-Department
-</th>
-
-<th>
-Amount
-</th>
-
-</tr>
-
-</thead>
-
-
-
-<tbody>
-
-
-<tr>
-<td>ICT</td>
-<td>UGX 3.4B</td>
-</tr>
-
-
-<tr>
-<td>Procurement</td>
-<td>UGX 2.7B</td>
-</tr>
-
-
-<tr>
-<td>Finance</td>
-<td>UGX 1.9B</td>
-</tr>
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-
-
-
-
-
-<div class="dashboard-card">
-
-
-<h3>
-Top Suppliers
-</h3>
-
-
-<table class="dashboard-table">
-
-
-<thead>
-
-<tr>
-
-<th>
-Supplier
-</th>
-
-<th>
-Amount
-</th>
-
-</tr>
-
-
-</thead>
-
-
-
-<tbody>
-
-
-<tr>
-
-<td>
-ABC Technologies
-</td>
-
-<td>
-UGX 1.2B
-</td>
-
-</tr>
-
-
-
-<tr>
-
-<td>
-Nile Suppliers Ltd
-</td>
-
-<td>
-UGX 980M
-</td>
-
-</tr>
-
-
-
-
-<tr>
-
-<td>
-Prime Equipment Ltd
-</td>
-
-<td>
-UGX 530M
-</td>
-
-</tr>
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-
-</div>
-
-
-
-</div>
-
 
 <!-- ==========================================================
                     CEO BUDGET MANAGEMENT MODULE
@@ -812,7 +704,7 @@ UGX 530M
             <!-- Predict Budget -->
             <button
                 class="predict-btn"
-                onclick="togglePredictBudget()">
+                onclick="openAIBudgetPrediction()">
 
                 📈 Predict Budget
 
@@ -2621,6 +2513,9 @@ UGX 530M
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='/ceo_budget.js') }}"></script>
+<script src="{{ url_for('static', filename='/budget_prediction.js') }}"></script>
+
+
 <script src="{{ url_for('static', filename='/ceo_dashboard.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='/ceo_insight.js') }}"></script>

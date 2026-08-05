@@ -6,197 +6,113 @@ File:
     train_model.py
 
 Purpose:
-    Train the final Machine Learning model for predicting
+    Train the Machine Learning model for predicting
     departmental budgets.
 
 Dataset:
-    budget_dataset.xlsx
+    ai_budget_training_data_100_records.xlsx
 
 Algorithm:
     Random Forest Regression
 
 Output:
     budget_model.pkl
+    feature_importance.xlsx
 
 ===========================================================
 """
 
-
-# ===========================================================
+# ==========================================================
 # IMPORT REQUIRED LIBRARIES
-# ===========================================================
-
+# ==========================================================
 
 import pandas as pd
 import pickle
 
 from sklearn.model_selection import train_test_split
-
 from sklearn.ensemble import RandomForestRegressor
-
 from sklearn.preprocessing import LabelEncoder
-
 from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score
 )
 
+# ==========================================================
+# 1. LOAD DATASET
+# ==========================================================
 
+print("==========================================")
+print("LOADING DATASET...")
+print("==========================================")
 
+df = pd.read_excel("ai_budget_training_data_100_records.xlsx")
 
-# ===========================================================
-# 1. LOAD DATASET FROM EXCEL
-# ===========================================================
+print("Dataset loaded successfully.")
+print("Number of Records :", df.shape[0])
+print("Number of Columns :", df.shape[1])
 
-
-print("Loading budget dataset...")
-
-
-df = pd.read_excel(
-    "ai_budget_training_data_100_records.xlsx"
-)
-
-
-
-print("Dataset loaded successfully")
-
-print("Number of records:", df.shape[0])
-
-print("Number of features:", df.shape[1])
-
-
-
-# Display first records
-
+print("\nFirst Five Records")
 print(df.head())
 
-
-
-
-
-# ===========================================================
+# ==========================================================
 # 2. DATA CLEANING
-# ===========================================================
+# ==========================================================
 
-
-print("\nChecking missing values...")
-
+print("\nChecking Missing Values...")
 
 print(df.isnull().sum())
 
+df.fillna(0, inplace=True)
 
+print("\nMissing values handled successfully.")
 
-# Replace missing values
-
-df.fillna(
-
-    0,
-
-    inplace=True
-
-)
-
-
-
-print("Missing values handled")
-
-
-
-
-
-
-# ===========================================================
+# ==========================================================
 # 3. ENCODE CATEGORICAL DATA
-# ===========================================================
+# ==========================================================
 
-
-"""
-Machine learning models cannot understand text.
-
-Example:
-
-Operational  ---> 0
-Capital      ---> 1
-
-Laptop       ---> 0
-Printer      ---> 1
-
-"""
-
+print("\nEncoding categorical columns...")
 
 encoder = {}
 
-
-
 categorical_columns = [
-
-    "financial_year"
-
-    
-
+    "financial_year",
+    "department_id"
 ]
-
-
 
 for column in categorical_columns:
 
-
     if column in df.columns:
-
 
         label_encoder = LabelEncoder()
 
-
         df[column] = label_encoder.fit_transform(
-
             df[column].astype(str)
-
         )
-
 
         encoder[column] = label_encoder
 
+print("Categorical data encoded successfully.")
 
-
-
-print("Categorical data encoded")
-
-
-
-
-
-
-
-# ===========================================================
-# 4. DEFINE AI FEATURES
-# ===========================================================
-
-
-"""
-These are the variables used by AI
-to predict future departmental budget.
-"""
-
+# ==========================================================
+# 4. DEFINE FEATURES
+# ==========================================================
 
 features = [
 
-    "company_allocated_amount",
-
-
     "department_id",
+
+    "company_allocated_amount",
 
     "budget_quantity",
 
     "budget_unit_cost",
-
 
     "total_requisitions",
 
     "total_requested_items",
 
     "requested_quantity",
-
 
     "total_purchase_orders",
 
@@ -206,13 +122,11 @@ features = [
 
     "average_unit_price",
 
-
     "total_grn_received",
 
     "received_quantity",
 
     "rejected_quantity",
-
 
     "budget_utilization_percentage",
 
@@ -222,14 +136,7 @@ features = [
 
 ]
 
-
-
-
-
-# Check features exist
-
 missing_features = []
-
 
 for feature in features:
 
@@ -237,61 +144,39 @@ for feature in features:
 
         missing_features.append(feature)
 
+if len(missing_features) > 0:
 
+    print("\nERROR")
+    print("Missing Feature Columns:")
 
-if missing_features:
+    for column in missing_features:
 
-
-    print(
-        "Missing columns:",
-        missing_features
-    )
+        print("-", column)
 
     exit()
 
-
-
-
 X = df[features]
 
+# ==========================================================
+# 5. TARGET VARIABLE
+# ==========================================================
 
+target = "department_budget"
 
+if target not in df.columns:
 
+    print("\nERROR: department_budget column not found.")
+    exit()
 
+y = df[target]
 
-# ===========================================================
-# 5. DEFINE TARGET VARIABLE
-# ===========================================================
+print("\nFeature selection completed.")
 
+# ==========================================================
+# 6. SPLIT DATASET
+# ==========================================================
 
-"""
-This is what AI learns to predict.
-
-Target:
-
-department_budget
-
-"""
-
-
-y = df["department_budget"]
-
-
-
-
-
-# ===========================================================
-# 6. SPLIT DATA FOR TRAINING AND TESTING
-# ===========================================================
-
-
-"""
-80% data -> Training
-
-20% data -> Testing
-
-"""
-
+print("\nSplitting dataset...")
 
 X_train, X_test, y_train, y_test = train_test_split(
 
@@ -299,48 +184,40 @@ X_train, X_test, y_train, y_test = train_test_split(
 
     y,
 
-    test_size=0.2,
+    test_size=0.20,
 
     random_state=42
 
 )
 
+print("Training Records :", len(X_train))
+print("Testing Records  :", len(X_test))
 
+# ==========================================================
+# 7. CREATE MODEL
+# ==========================================================
 
-print("\nData split completed")
-
-
-
-
-
-
-
-# ===========================================================
-# 7. CREATE MACHINE LEARNING MODEL
-# ===========================================================
-
-
+print("\nCreating Random Forest Model...")
 
 model = RandomForestRegressor(
 
-    n_estimators=200,
+    n_estimators=500,
 
-    random_state=42
+    max_depth=15,
+
+    min_samples_split=5,
+
+    random_state=42,
+
+    n_jobs=-1
 
 )
 
-
-
-print("\nTraining AI model...")
-
-
-
-
-
-# ===========================================================
+# ==========================================================
 # 8. TRAIN MODEL
-# ===========================================================
+# ==========================================================
 
+print("\nTraining AI Model...")
 
 model.fit(
 
@@ -350,29 +227,15 @@ model.fit(
 
 )
 
+print("Training completed successfully.")
 
+# ==========================================================
+# 9. EVALUATE MODEL
+# ==========================================================
 
-print("Training completed")
+print("\nEvaluating model...")
 
-
-
-
-
-
-
-# ===========================================================
-# 9. MODEL EVALUATION
-# ===========================================================
-
-
-
-prediction = model.predict(
-
-    X_test
-
-)
-
-
+prediction = model.predict(X_test)
 
 mae = mean_absolute_error(
 
@@ -382,8 +245,6 @@ mae = mean_absolute_error(
 
 )
 
-
-
 mse = mean_squared_error(
 
     y_test,
@@ -392,13 +253,9 @@ mse = mean_squared_error(
 
 )
 
-
-
 rmse = mse ** 0.5
 
-
-
-accuracy = r2_score(
+r2 = r2_score(
 
     y_test,
 
@@ -406,59 +263,61 @@ accuracy = r2_score(
 
 )
 
+print("\n==========================================")
+print("MODEL PERFORMANCE")
+print("==========================================")
+print("Mean Absolute Error      :", round(mae, 2))
+print("Root Mean Square Error   :", round(rmse, 2))
+print("R2 Score                 :", round(r2, 4))
+print("==========================================")
 
+# ==========================================================
+# 10. FEATURE IMPORTANCE
+# ==========================================================
 
-print("\n========== MODEL PERFORMANCE ==========")
+importance = pd.DataFrame({
 
+    "Feature": features,
 
-print(
-    "Mean Absolute Error:",
-    mae
+    "Importance": model.feature_importances_
+
+})
+
+importance = importance.sort_values(
+
+    by="Importance",
+
+    ascending=False
+
 )
 
+print("\nFeature Importance")
 
-print(
-    "Root Mean Square Error:",
-    rmse
+print(importance)
+
+importance.to_excel(
+
+    "feature_importance.xlsx",
+
+    index=False
+
 )
 
+print("\nFeature importance saved.")
 
-print(
-    "R2 Accuracy:",
-    accuracy
-)
-
-
-print(
-    "======================================"
-)
-
-
-
-
-
-
-# ===========================================================
-# 10. SAVE TRAINED MODEL
-# ===========================================================
-
-
+# ==========================================================
+# 11. SAVE MODEL
+# ==========================================================
 
 model_package = {
 
-
     "model": model,
-
 
     "encoder": encoder,
 
-
     "features": features
 
-
 }
-
-
 
 with open(
 
@@ -468,7 +327,6 @@ with open(
 
 ) as file:
 
-
     pickle.dump(
 
         model_package,
@@ -477,14 +335,10 @@ with open(
 
     )
 
-
-
-
-
-print("\n===================================")
-
-print("AI MODEL SAVED SUCCESSFULLY")
-
-print("File: budget_model.pkl")
-
-print("===================================")
+print("\n==========================================")
+print("AI MODEL TRAINED SUCCESSFULLY")
+print("==========================================")
+print("Model File              : budget_model.pkl")
+print("Feature Importance File : feature_importance.xlsx")
+print("==========================================")
+print("Ready for budget prediction.")

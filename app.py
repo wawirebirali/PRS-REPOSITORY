@@ -5,6 +5,7 @@ from routes.auth_route import create_default_admin
 # BLUEPRINT IMPORTS
 # =========================
 from routes.auth_route import auth_bp
+from routes.budget_prediction import budget_ai_bp
 from routes.maindashboard import maindashboard_bp
 from routes.hod_route import hod_dashboard_bp
 from routes.employee_route import employee_dashboard_bp
@@ -32,6 +33,7 @@ app.secret_key = os.environ.get(
 # REGISTER BLUEPRINTS
 # =========================
 app.register_blueprint(auth_bp)
+app.register_blueprint(budget_ai_bp)
 app.register_blueprint(maindashboard_bp)
 app.register_blueprint(hod_dashboard_bp, url_prefix="/hod")
 app.register_blueprint(employee_dashboard_bp, url_prefix="/employee")

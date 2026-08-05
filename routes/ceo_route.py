@@ -1340,3 +1340,403 @@ def get_department_budgets_for_company(company_budget_id):
 
         if conn:
             conn.close()
+
+
+
+
+
+@ceo_dashboard_bp.route("/api/department/<int:department_id>/budget-items", methods=["GET"])
+def get_department_budget_items(department_id):
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        query = """
+            SELECT
+                department_budget_id,
+                budget_no,
+                budget_item,
+                quantity,
+                unit_cost,
+                total_budget,
+                budget_type,
+                start_date,
+                end_date,
+                remarks,
+                ceo_status
+            FROM department_budget
+            WHERE department_id = %s
+            ORDER BY department_budget_id DESC
+        """
+
+        cursor.execute(query, (department_id,))
+        items = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {
+            "success": True,
+            "data": items
+        }
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e)
+        }, 500
+
+
+import pickle
+import os
+
+
+MODEL_PATH = r"C:\YR3  SEM2\PRMS SYSTEM\AI\budget_model.pkl"
+
+
+with open(MODEL_PATH, "rb") as file:
+    model_data = pickle.load(file)
+
+
+budget_model = model_data["model"]
+encoder = model_data["encoder"]
+model_features = model_data["features"]
+
+
+print("AI MODEL LOADED")
+print("FEATURES:", model_features)
+
+
+@ceo_dashboard_bp.route("/api/predict-budget", methods=["POST"])
+def predict_budget():
+
+    try:
+
+        data = request.get_json()
+
+        department_id = data.get("department_id")
+
+
+        if not department_id:
+
+            return {
+                "success": False,
+                "error": "Department ID is required"
+            }, 400
+
+
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(dictionary=True)
+
+
+
+        query = """
+
+        SELECT
+
+            d.department_id,
+
+
+            COALESCE(cb.allocated_amount,0)
+            AS company_allocated_amount,
+
+
+            COALESCE(SUM(db.quantity),0)
+            AS budget_quantity,
+
+
+            COALESCE(AVG(db.unit_cost),0)
+            AS budget_unit_cost,
+
+
+
+            COUNT(DISTINCT r.requisition_id)
+            AS total_requisitions,
+
+
+
+            COUNT(DISTINCT ri.item_id)
+            AS total_requested_items,
+
+
+
+            COALESCE(SUM(ri.qty_required),0)
+            AS requested_quantity,
+
+
+
+            COUNT(DISTINCT po.purchase_order_id)
+            AS total_purchase_orders,
+
+
+
+            COALESCE(SUM(poi.quantity),0)
+            AS ordered_quantity,
+
+
+
+            COALESCE(
+                SUM(poi.quantity * poi.unit_price),
+                0
+            )
+            AS purchase_order_cost,
+
+
+
+            COALESCE(
+                AVG(poi.unit_price),
+                0
+            )
+            AS average_unit_price,
+
+
+
+            COUNT(DISTINCT g.grn_id)
+            AS total_grn_received,
+
+
+
+            COALESCE(
+                SUM(gi.quantity_received),
+                0
+            )
+            AS received_quantity,
+
+
+
+            COALESCE(
+                SUM(gi.quantity_rejected),
+                0
+            )
+            AS rejected_quantity,
+
+
+
+            CASE
+
+                WHEN COALESCE(cb.allocated_amount,0) > 0
+
+                THEN
+
+                (
+
+                    COALESCE(
+                        SUM(poi.quantity * poi.unit_price),
+                        0
+                    )
+
+                    /
+
+                    cb.allocated_amount
+
+                ) * 100
+
+
+                ELSE 0
+
+
+            END
+
+            AS budget_utilization_percentage,
+
+
+
+            (
+
+                COALESCE(cb.allocated_amount,0)
+
+                -
+
+                COALESCE(
+                    SUM(poi.quantity * poi.unit_price),
+                    0
+                )
+
+            )
+
+            AS remaining_budget,
+
+
+
+            CASE
+
+                WHEN COUNT(DISTINCT g.grn_id) > 0
+
+                THEN 100
+
+                ELSE 0
+
+            END
+
+            AS delivery_completion_percentage
+
+
+
+        FROM departments d
+
+
+
+        LEFT JOIN department_budget db
+
+        ON d.department_id = db.department_id
+
+
+
+        LEFT JOIN company_budget cb
+
+        ON db.company_budget_id = cb.company_budget_id
+
+
+
+        LEFT JOIN requisitions r
+
+        ON d.department_id = r.department_id
+
+
+
+        LEFT JOIN requisition_items ri
+
+        ON r.requisition_id = ri.requisition_id
+
+
+
+        LEFT JOIN purchase_orders po
+
+        ON r.requisition_id = po.requisition_id
+
+
+
+        LEFT JOIN purchase_order_items poi
+
+        ON po.purchase_order_id = poi.purchase_order_id
+
+
+
+        LEFT JOIN grn g
+
+        ON po.purchase_order_id = g.po_id
+
+
+
+        LEFT JOIN grn_items gi
+
+        ON g.grn_id = gi.grn_id
+
+
+
+        WHERE d.department_id = %s
+
+
+
+        GROUP BY
+
+            d.department_id,
+
+            cb.allocated_amount
+
+        """
+
+
+
+        cursor.execute(
+            query,
+            (department_id,)
+        )
+
+
+        result = cursor.fetchone()
+
+
+
+        cursor.close()
+
+        conn.close()
+
+
+
+        if not result:
+
+            return {
+
+                "success":False,
+
+                "error":"No department budget data found"
+
+            },404
+
+
+
+
+        model_input = [[
+
+            result["department_id"],
+
+            result["company_allocated_amount"],
+
+            result["budget_quantity"],
+
+            result["budget_unit_cost"],
+
+            result["total_requisitions"],
+
+            result["total_requested_items"],
+
+            result["requested_quantity"],
+
+            result["total_purchase_orders"],
+
+            result["ordered_quantity"],
+
+            result["purchase_order_cost"],
+
+            result["average_unit_price"],
+
+            result["total_grn_received"],
+
+            result["received_quantity"],
+
+            result["rejected_quantity"],
+
+            result["budget_utilization_percentage"],
+
+            result["remaining_budget"],
+
+            result["delivery_completion_percentage"]
+
+        ]]
+
+
+
+        prediction = budget_model.predict(model_input)
+
+
+
+        return {
+
+            "success": True,
+
+            "department_id": department_id,
+
+            "predicted_budget": float(prediction[0]),
+
+            "prediction_source": "Random Forest AI Model"
+
+
+        }
+
+
+
+    except Exception as e:
+
+
+        return {
+
+            "success":False,
+
+            "error":str(e)
+
+        },500

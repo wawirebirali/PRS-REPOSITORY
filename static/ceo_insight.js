@@ -424,16 +424,3 @@ if(exportButton){
 /* =====================================================
    ASK AI BUTTON
 ===================================================== */
-
-const aiButton =
-document.querySelector(".predict-btn");
-
-if(aiButton){
-
-    aiButton.onclick=function(){
-
-        askAI();
-
-    };
-
-}

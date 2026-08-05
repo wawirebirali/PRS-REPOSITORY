@@ -3691,3 +3691,553 @@ async function loadCompanyBudgets() {
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ==========================================================
+   AI BUDGET PREDICTION MODULE
+========================================================== */
+
+
+/* ==========================================================
+   OPEN AI PREDICTION PANEL
+========================================================== */
+
+function openAIBudgetPrediction() {
+
+    const panel = document.getElementById("predictBudgetTab");
+
+    if (!panel) {
+        alert("Prediction panel not found.");
+        return;
+    }
+
+    panel.style.display = "block";
+
+    loadPredictionDepartments();
+
+}
+
+
+/* ==========================================================
+   LOAD DEPARTMENTS
+========================================================== */
+
+async function loadPredictionDepartments() {
+
+
+    const departmentSelect =
+        document.getElementById("budgetDepartment");
+
+
+    if (!departmentSelect) {
+
+        console.error(
+            "budgetDepartment element not found"
+        );
+
+        return;
+
+    }
+
+
+    departmentSelect.innerHTML =
+        `<option value="">Loading departments...</option>`;
+
+
+    try {
+
+
+        const response =
+            await fetch("/ceo/api/departments");
+
+
+        const result =
+            await response.json();
+
+
+
+        departmentSelect.innerHTML =
+            `<option value="">Select Department</option>`;
+
+
+
+        if (result.success) {
+
+
+            result.data.forEach(department => {
+
+
+                departmentSelect.innerHTML += `
+
+                    <option value="${department.department_id}">
+                        ${department.department_name}
+                    </option>
+
+                `;
+
+
+            });
+
+
+        }
+
+
+    }
+
+    catch(error) {
+
+
+        console.error(
+            "Department loading error:",
+            error
+        );
+
+
+        departmentSelect.innerHTML =
+            `<option>
+                Failed to load departments
+            </option>`;
+
+
+    }
+
+
+}
+
+
+
+/* ==========================================================
+   LOAD DEPARTMENT BUDGET ITEMS
+========================================================== */
+
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function(){
+
+
+        const department =
+            document.getElementById(
+                "budgetDepartment"
+            );
+
+
+        if(department){
+
+
+            department.addEventListener(
+                "change",
+                loadBudgetItems
+            );
+
+
+        }
+
+
+    }
+);
+
+
+
+async function loadBudgetItems(){
+
+
+    const departmentId =
+        document.getElementById(
+            "budgetDepartment"
+        ).value;
+
+
+
+    const itemSelect =
+        document.getElementById(
+            "predictItems"
+        );
+
+
+
+    if(!itemSelect){
+
+        return;
+
+    }
+
+
+
+    itemSelect.innerHTML =
+        "";
+
+
+
+    if(!departmentId){
+
+        return;
+
+    }
+
+
+
+    itemSelect.innerHTML =
+        `
+        <option>
+            Loading items...
+        </option>
+        `;
+
+
+
+    try{
+
+
+        const response =
+            await fetch(
+                `/ceo/api/department/${departmentId}/budget-items`
+            );
+
+
+
+        const result =
+            await response.json();
+
+
+
+        itemSelect.innerHTML =
+            "";
+
+
+
+        if(result.success){
+
+
+            result.data.forEach(item=>{
+
+
+                itemSelect.innerHTML += `
+
+                    <option value="${item.department_budget_id}">
+                        ${item.budget_item}
+                    </option>
+
+                `;
+
+
+            });
+
+
+        }
+
+        else{
+
+
+            itemSelect.innerHTML =
+            `
+            <option>
+                No budget items found
+            </option>
+            `;
+
+
+        }
+
+
+    }
+
+
+    catch(error){
+
+
+        console.error(
+            "Budget item loading error:",
+            error
+        );
+
+
+        itemSelect.innerHTML =
+        `
+        <option>
+            Failed to load items
+        </option>
+        `;
+
+
+    }
+
+
+
+}
+
+
+
+
+/* ==========================================================
+   AI BUDGET PREDICTION
+========================================================== */
+
+
+async function predictBudget(){
+
+
+
+    const departmentId =
+        document.getElementById(
+            "budgetDepartment"
+        ).value;
+
+
+
+
+    if(!departmentId){
+
+
+        alert(
+            "Please select department"
+        );
+
+
+        return;
+
+
+    }
+
+
+
+    const payload = {
+
+
+        department_id:
+            departmentId
+
+
+    };
+
+
+
+
+    const resultBox =
+        document.getElementById(
+            "predictionResult"
+        );
+
+
+
+    const content =
+        document.getElementById(
+            "predictionContent"
+        );
+
+
+
+
+    if(resultBox){
+
+        resultBox.style.display =
+            "block";
+
+    }
+
+
+
+    if(content){
+
+
+        content.innerHTML = `
+
+            <h3>
+                AI is predicting budget...
+            </h3>
+
+        `;
+
+    }
+
+
+
+
+    try{
+
+
+
+        const response =
+            await fetch(
+                "/ceo/api/predict-budget",
+                {
+
+                    method:"POST",
+
+
+                    headers:{
+
+                        "Content-Type":
+                        "application/json"
+
+                    },
+
+
+                    body:
+                    JSON.stringify(payload)
+
+
+                }
+            );
+
+
+
+
+
+        const data =
+            await response.json();
+
+
+
+
+
+        console.log(
+            "AI Prediction Response:",
+            data
+        );
+
+
+
+
+
+        if(!data.success){
+
+
+            content.innerHTML = `
+
+                <div class="alert alert-danger">
+
+                    ${data.error}
+
+                </div>
+
+            `;
+
+
+            return;
+
+
+        }
+
+
+
+
+
+
+        content.innerHTML = `
+
+
+        <div class="prediction-card">
+
+
+            <h2>
+                AI Budget Prediction
+            </h2>
+
+
+            <hr>
+
+
+
+            <p>
+
+                <strong>
+                Department ID:
+                </strong>
+
+                ${data.department_id}
+
+            </p>
+
+
+
+
+            <p>
+
+                <strong>
+                Predicted Budget:
+                </strong>
+
+
+                UGX 
+                ${Number(
+                    data.predicted_budget
+                ).toLocaleString()}
+
+
+            </p>
+
+
+
+
+            <p>
+
+                <strong>
+                Status:
+                </strong>
+
+
+                Prediction Completed Successfully
+
+
+            </p>
+
+
+
+        </div>
+
+
+        `;
+
+
+
+    }
+
+
+
+    catch(error){
+
+
+        console.error(
+            "Prediction error:",
+            error
+        );
+
+
+
+        content.innerHTML = `
+
+
+        <div class="alert alert-danger">
+
+            Failed to generate AI prediction.
+
+        </div>
+
+
+        `;
+
+
+    }
+
+
+
+}
