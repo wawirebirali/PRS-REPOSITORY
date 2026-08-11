@@ -1,426 +1,533 @@
 /* =====================================================
    CEO EXECUTIVE DASHBOARD
+   Plotly JSON Version
 ===================================================== */
 
-document.addEventListener("DOMContentLoaded", function () {
 
-    initializeDashboard();
+document.addEventListener(
+    "DOMContentLoaded",
+    function(){
 
-});
+        initializeDashboard();
+
+    }
+);
+
 
 
 /* =====================================================
-   INITIALIZE
+   INITIALIZE DASHBOARD
 ===================================================== */
 
-function initializeDashboard() {
 
-    loadDashboard();
+function initializeDashboard(){
 
-    createBudgetChart();
 
-    createCashChart();
+    console.log(
+        "CEO Dashboard Loading..."
+    );
 
-    createDepartmentChart();
 
-    createSupplierChart();
+    loadCEODashboard();
 
-    createPOChart();
 
-    createProcurementChart();
+    loadPlotlyCharts();
+
 
 }
 
 
+
+
+
+
 /* =====================================================
-   REFRESH DASHBOARD
+   LOAD DASHBOARD DATA
 ===================================================== */
 
-function loadDashboard() {
 
-    console.log("Dashboard Loaded");
+function loadCEODashboard(){
+
+
+    console.log(
+        "Refreshing CEO Dashboard..."
+    );
+
+
+    loadKPI();
+
 
 }
 
 
+
+
+
 /* =====================================================
-   EXPORT PDF
+   LOAD KPI DATA
 ===================================================== */
 
-function exportDashboard() {
 
-    window.print();
+function loadKPI(){
+
+
+    fetch("/ceo/api/kpi")
+
+
+    .then(response=>response.json())
+
+
+    .then(data=>{
+
+
+        if(data.success){
+
+
+            document.getElementById(
+                "totalDepartments"
+            ).innerHTML =
+            data.total_departments;
+
+
+
+            document.getElementById(
+                "totalEmployees"
+            ).innerHTML =
+            data.total_employees;
+
+
+
+            document.getElementById(
+                "totalSuppliers"
+            ).innerHTML =
+            data.total_suppliers;
+
+
+
+            document.getElementById(
+                "totalPRS"
+            ).innerHTML =
+            data.total_prs;
+
+
+
+            document.getElementById(
+                "totalPO"
+            ).innerHTML =
+            data.total_po;
+
+
+
+            document.getElementById(
+                "totalGRN"
+            ).innerHTML =
+            data.total_grn;
+
+
+
+            document.getElementById(
+                "companyBudget"
+            ).innerHTML =
+            "UGX " +
+            Number(
+                data.company_budget
+            ).toLocaleString();
+
+
+
+            document.getElementById(
+                "budgetUsed"
+            ).innerHTML =
+            "UGX " +
+            Number(
+                data.budget_used
+            ).toLocaleString();
+
+
+
+            document.getElementById(
+                "budgetBalance"
+            ).innerHTML =
+            "UGX " +
+            Number(
+                data.balance
+            ).toLocaleString();
+
+
+
+        }
+
+
+    })
+
+
+    .catch(error=>{
+
+
+        console.error(
+            "KPI Loading Error:",
+            error
+        );
+
+
+    });
+
 
 }
+
+
+
+
+
+
+
+/* =====================================================
+   PLOTLY CHART LOADER
+===================================================== */
+
+
+function loadPlotlyChart(
+    elementID,
+    jsonFile
+){
+
+
+    fetch(
+        "/static/" + jsonFile
+    )
+
+
+    .then(response=>{
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Cannot load " + jsonFile
+            );
+
+        }
+
+
+        return response.json();
+
+
+    })
+
+
+    .then(chart=>{
+
+
+        Plotly.newPlot(
+
+            elementID,
+
+            chart.data,
+
+            chart.layout,
+
+            {
+
+                responsive:true,
+
+                displayModeBar:false
+
+            }
+
+        );
+
+
+    })
+
+
+    .catch(error=>{
+
+
+        console.error(
+            "Plotly Error:",
+            error
+        );
+
+
+    });
+
+
+}
+
+
+
+
+
+
+
+/* =====================================================
+   LOAD ALL PLOTLY VISUALS
+===================================================== */
+
+
+function loadPlotlyCharts(){
+
+
+
+    loadPlotlyChart(
+
+        "budgetChart",
+
+        "budget_vs_spending.json"
+
+    );
+
+
+
+
+
+    loadPlotlyChart(
+
+        "cashChart",
+
+        "cash_flow.json"
+
+    );
+
+
+
+
+
+    loadPlotlyChart(
+
+        "departmentChart",
+
+        "department_budget_allocation.json"
+
+    );
+
+
+
+
+
+    loadPlotlyChart(
+
+        "supplierChart",
+
+        "supplier_spending.json"
+
+    );
+
+
+
+
+
+    loadPlotlyChart(
+
+        "poChart",
+
+        "po_status.json"
+
+    );
+
+
+
+
+
+    loadPlotlyChart(
+
+        "procurementChart",
+
+        "procurement_cost.json"
+
+    );
+
+
+}
+
+
+
+
+
 
 
 /* =====================================================
    FILTERS
 ===================================================== */
 
-function applyFilters() {
 
-    const start =
-        document.getElementById("startDate").value;
+function applyFilters(){
 
-    const end =
-        document.getElementById("endDate").value;
 
-    const department =
-        document.getElementById("departmentFilter").value;
+    let startDate =
+    document.getElementById(
+        "startDate"
+    ).value;
 
-    const year =
-        document.getElementById("yearFilter").value;
 
-    console.log(start);
-    console.log(end);
-    console.log(department);
-    console.log(year);
+
+    let endDate =
+    document.getElementById(
+        "endDate"
+    ).value;
+
+
+
+    let department =
+    document.getElementById(
+        "departmentFilter"
+    ).value;
+
+
+
+    let year =
+    document.getElementById(
+        "yearFilter"
+    ).value;
+
+
+
+    console.log({
+
+        startDate,
+
+        endDate,
+
+        department,
+
+        year
+
+    });
+
+
+    loadCEODashboard();
+
 
 }
+
+
+
+
+
+
+
+
+/* =====================================================
+   EXPORT PDF
+===================================================== */
+
+
+function exportDashboard(){
+
+
+    window.print();
+
+
+}
+
+
+
+
+
 
 
 /* =====================================================
    AI ASSISTANT
 ===================================================== */
 
-function askAI() {
 
-    const question =
-        document.querySelector("textarea").value;
+function askAI(){
 
-    if(question=="")
-    {
-        alert("Enter a question.");
+
+    let question =
+    document.querySelector(
+        "textarea"
+    ).value;
+
+
+
+    if(question.trim()===""){
+
+
+        alert(
+            "Enter a question"
+        );
+
+
         return;
+
+
     }
 
-    alert("AI Question:\n\n"+question);
+
+
+    alert(
+
+        "AI Question:\n\n" +
+        question
+
+    );
+
 
 }
 
 
-/* =====================================================
-   MONTHLY BUDGET VS SPENDING
-===================================================== */
 
-function createBudgetChart(){
 
-    new Chart(
-        document.getElementById("budgetChart"),
-    {
-        type:"line",
 
-        data:{
-
-            labels:[
-                "Jan","Feb","Mar",
-                "Apr","May","Jun",
-                "Jul","Aug","Sep",
-                "Oct","Nov","Dec"
-            ],
-
-            datasets:[
-            {
-
-                label:"Budget",
-
-                data:[
-                    120,
-                    135,
-                    150,
-                    170,
-                    160,
-                    180,
-                    175,
-                    190,
-                    205,
-                    210,
-                    225,
-                    240
-                ]
-
-            },
-
-            {
-
-                label:"Spent",
-
-                data:[
-                    110,
-                    120,
-                    140,
-                    150,
-                    155,
-                    170,
-                    160,
-                    185,
-                    190,
-                    198,
-                    215,
-                    220
-                ]
-
-            }
-
-            ]
-
-        },
-
-        options:{
-            responsive:true
-        }
-
-    });
-
-}
-
-
-/* =====================================================
-   CASH FLOW
-===================================================== */
-
-function createCashChart(){
-
-    new Chart(
-        document.getElementById("cashChart"),
-    {
-
-        type:"line",
-
-        data:{
-
-            labels:[
-                "Jan","Feb","Mar",
-                "Apr","May","Jun",
-                "Jul","Aug","Sep",
-                "Oct","Nov","Dec"
-            ],
-
-            datasets:[{
-
-                label:"Cash Flow",
-
-                data:[
-                    200,
-                    180,
-                    220,
-                    250,
-                    260,
-                    280,
-                    300,
-                    310,
-                    295,
-                    330,
-                    350,
-                    380
-                ]
-
-            }]
-
-        }
-
-    });
-
-}
-
-
-/* =====================================================
-   BUDGET DISTRIBUTION
-===================================================== */
-
-function createDepartmentChart(){
-
-    new Chart(
-        document.getElementById("departmentChart"),
-    {
-
-        type:"pie",
-
-        data:{
-
-            labels:[
-                "ICT",
-                "Finance",
-                "Procurement",
-                "Administration",
-                "Stores",
-                "HR"
-            ],
-
-            datasets:[{
-
-                data:[
-                    30,
-                    18,
-                    20,
-                    12,
-                    10,
-                    10
-                ]
-
-            }]
-
-        }
-
-    });
-
-}
-
-
-/* =====================================================
-   SUPPLIER PAYMENTS
-===================================================== */
-
-function createSupplierChart(){
-
-    new Chart(
-        document.getElementById("supplierChart"),
-    {
-
-        type:"doughnut",
-
-        data:{
-
-            labels:[
-                "Paid",
-                "Outstanding"
-            ],
-
-            datasets:[{
-
-                data:[
-                    2900,
-                    900
-                ]
-
-            }]
-
-        }
-
-    });
-
-}
-
-
-/* =====================================================
-   PURCHASE ORDERS
-===================================================== */
-
-function createPOChart(){
-
-    new Chart(
-        document.getElementById("poChart"),
-    {
-
-        type:"bar",
-
-        data:{
-
-            labels:[
-                "Jan","Feb","Mar",
-                "Apr","May","Jun"
-            ],
-
-            datasets:[{
-
-                label:"Purchase Orders",
-
-                data:[
-                    15,
-                    18,
-                    12,
-                    25,
-                    20,
-                    28
-                ]
-
-            }]
-
-        }
-
-    });
-
-}
-
-
-/* =====================================================
-   PROCUREMENT COST
-===================================================== */
-
-function createProcurementChart(){
-
-    new Chart(
-        document.getElementById("procurementChart"),
-    {
-
-        type:"bar",
-
-        data:{
-
-            labels:[
-                "Jan","Feb","Mar",
-                "Apr","May","Jun"
-            ],
-
-            datasets:[{
-
-                label:"Procurement Cost (Million UGX)",
-
-                data:[
-                    320,
-                    280,
-                    350,
-                    420,
-                    390,
-                    470
-                ]
-
-            }]
-
-        }
-
-    });
-
-}
 
 
 /* =====================================================
    REFRESH BUTTON
 ===================================================== */
 
-const refreshButton =
-document.querySelector(".refresh-btn");
 
-if(refreshButton){
+document.addEventListener(
+"click",
+function(e){
 
-    refreshButton.onclick=function(){
 
-        location.reload();
+    if(
+        e.target.classList.contains(
+            "refresh-btn"
+        )
+    ){
 
-    };
 
-}
+        loadCEODashboard();
+
+        loadPlotlyCharts();
+
+
+    }
+
+
+
+});
+
+
+
+
+
 
 
 /* =====================================================
    EXPORT BUTTON
 ===================================================== */
 
-const exportButton =
-document.querySelector(".export-btn");
 
-if(exportButton){
+document.addEventListener(
+"click",
+function(e){
 
-    exportButton.onclick=function(){
+
+    if(
+        e.target.classList.contains(
+            "export-btn"
+        )
+    ){
+
 
         exportDashboard();
 
-    };
 
-}
+    }
 
 
-/* =====================================================
-   ASK AI BUTTON
-===================================================== */
+
+});

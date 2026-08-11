@@ -110,6 +110,8 @@ def ceo_reject(requisition_id):
 
 
 
+
+
 @ceo_dashboard_bp.route("/api/departments", methods=["GET"])
 def get_departments():
 

@@ -351,199 +351,689 @@ def requisition_api(requisition_id):
         cursor.close()
         conn.close()
 
+# =========================================================
+# UNIVERSAL APPROVAL API
+# HOD + CEO
+# =========================================================
 
-# =========================================================
-# UNIVERSAL APPROVAL API (HOD + CEO)
-# =========================================================
 @hod_dashboard_bp.route("/approve", methods=["POST"])
 def approve_document():
 
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
-    module_name = data.get("module_name")
+    module_name = str(
+        data.get("module_name", "")
+    ).strip().upper()
+
     document_id = data.get("document_id")
-    action = data.get("action", "APPROVED").upper()
+
+    action = str(
+        data.get("action", "APPROVED")
+    ).strip().upper()
 
     user_id = session.get("user_id")
-    role = session.get("user_role")
 
-    if not module_name or not document_id:
+    role = str(
+        session.get("user_role", "")
+    ).strip().lower()
+
+
+    # =====================================================
+    # VALIDATION
+    # =====================================================
+
+    if not user_id:
         return jsonify({
             "success": False,
-            "message": "Missing data"
+            "message": "User session has expired. Please log in again."
+        }), 401
+
+
+    if role not in ("hod", "ceo"):
+        return jsonify({
+            "success": False,
+            "message": "Unauthorized approval role."
+        }), 403
+
+
+    if not module_name:
+        return jsonify({
+            "success": False,
+            "message": "module_name is required."
         }), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+
+    if document_id is None:
+        return jsonify({
+            "success": False,
+            "message": "document_id is required."
+        }), 400
+
 
     try:
 
-        table_map = {
-            "PRS": ("requisitions", "requisition_id"),
-            "QRF": ("quotation_requests", "qrf_id"),
-            "QUOTATION": ("quotations", "quotation_id"),
-            "PO": ("purchase_orders", "purchase_order_id"),
-            "GRN": ("grn", "grn_id"),
-            "INVOICE": ("invoices", "invoice_id"),
-            "PAYMENT": ("payments", "payment_id")
-        }
+        document_id = int(document_id)
 
-        status_column_map = {
-            "PAYMENT": "payment_status"
-        }
+    except (TypeError, ValueError):
 
-        # -----------------------------
-        # Create approval row if missing
-        # -----------------------------
-        cursor.execute("""
+        return jsonify({
+            "success": False,
+            "message": "document_id must be a valid integer."
+        }), 400
+
+
+    if action not in ("APPROVED", "REJECTED"):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid action. Use APPROVED or REJECTED."
+        }), 400
+
+
+    # =====================================================
+    # TABLE MAPPING
+    # =====================================================
+
+    table_map = {
+
+        "PRS": (
+            "requisitions",
+            "requisition_id"
+        ),
+
+        "QRF": (
+            "quotation_requests",
+            "qrf_id"
+        ),
+
+        "QUOTATION": (
+            "quotations",
+            "quotation_id"
+        ),
+
+        "PO": (
+            "purchase_orders",
+            "purchase_order_id"
+        ),
+
+        "GRN": (
+            "grn",
+            "grn_id"
+        ),
+
+        "INVOICE": (
+            "invoices",
+            "invoice_id"
+        ),
+
+        "PAYMENT": (
+            "payments",
+            "payment_id"
+        )
+    }
+
+
+    # =====================================================
+    # STATUS COLUMN MAPPING
+    # =====================================================
+
+    status_column_map = {
+
+        "PAYMENT": "payment_status"
+    }
+
+
+    if module_name not in table_map:
+
+        return jsonify({
+            "success": False,
+            "message": f"Unsupported module: {module_name}"
+        }), 400
+
+
+    table, primary_key = table_map[module_name]
+
+    status_column = status_column_map.get(
+        module_name,
+        "status"
+    )
+
+
+    conn = None
+    cursor = None
+
+
+    try:
+
+        # =================================================
+        # DATABASE CONNECTION
+        # =================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # =================================================
+        # CHECK DOCUMENT EXISTS
+        # =================================================
+
+        cursor.execute(
+            f"""
+            SELECT *
+            FROM {table}
+            WHERE {primary_key} = %s
+            LIMIT 1
+            """,
+            (document_id,)
+        )
+
+        document = cursor.fetchone()
+
+
+        if not document:
+
+            return jsonify({
+                "success": False,
+                "message": (
+                    f"{module_name} document "
+                    f"{document_id} was not found."
+                )
+            }), 404
+
+
+        # =================================================
+        # GET APPROVAL RECORD
+        # =================================================
+
+        cursor.execute(
+            """
             SELECT *
             FROM approvals
-            WHERE module_name=%s
-            AND document_id=%s
-        """, (module_name, document_id))
+            WHERE module_name = %s
+              AND document_id = %s
+            LIMIT 1
+            """,
+            (
+                module_name,
+                document_id
+            )
+        )
 
         approval = cursor.fetchone()
 
+
+        # =================================================
+        # CREATE APPROVAL RECORD IF MISSING
+        # =================================================
+
         if not approval:
 
-            cursor.execute("""
-                INSERT INTO approvals(
+            cursor.execute(
+                """
+                INSERT INTO approvals (
+                    module_name,
+                    document_id,
+                    hod_status,
+                    ceo_status,
+                    final_status
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    'PENDING',
+                    'PENDING',
+                    'PENDING'
+                )
+                """,
+                (
                     module_name,
                     document_id
                 )
-                VALUES(%s,%s)
-            """, (module_name, document_id))
+            )
 
             conn.commit()
 
-            cursor.execute("""
+
+            # ---------------------------------------------
+            # Reload approval record
+            # ---------------------------------------------
+
+            cursor.execute(
+                """
                 SELECT *
                 FROM approvals
-                WHERE module_name=%s
-                AND document_id=%s
-            """, (module_name, document_id))
+                WHERE module_name = %s
+                  AND document_id = %s
+                LIMIT 1
+                """,
+                (
+                    module_name,
+                    document_id
+                )
+            )
 
             approval = cursor.fetchone()
 
-        # ==========================================
-        # HOD
-        # ==========================================
+
+        # =================================================
+        # HOD APPROVAL
+        # =================================================
+
         if role == "hod":
 
-            if approval["hod_status"] in ("APPROVED", "REJECTED"):
+            # ---------------------------------------------
+            # Prevent duplicate HOD processing
+            # ---------------------------------------------
+
+            if approval["hod_status"] in (
+                "APPROVED",
+                "REJECTED"
+            ):
 
                 return jsonify({
                     "success": False,
-                    "message": "This document has already been processed by HOD."
-                })
+                    "message": (
+                        "This document has already been "
+                        "processed by HOD."
+                    )
+                }), 409
 
-            cursor.execute("""
-                UPDATE approvals
-                SET
-                    hod_status=%s,
-                    hod_user_id=%s,
-                    hod_approved_at=NOW(),
-                    final_status=
-                        CASE
-                            WHEN %s='REJECTED'
-                            THEN 'REJECTED'
-                            ELSE final_status
-                        END
-                WHERE module_name=%s
-                AND document_id=%s
-            """, (
-                action,
-                user_id,
-                action,
-                module_name,
-                document_id
-            ))
 
-            if action == "REJECTED":
+            # =================================================
+            # HOD APPROVED
+            # =================================================
 
-                table, pk = table_map[module_name]
+            if action == "APPROVED":
 
-                cursor.execute(f"""
+                cursor.execute(
+                    """
+                    UPDATE approvals
+                    SET
+                        hod_status = 'APPROVED',
+                        hod_user_id = %s,
+                        hod_approved_at = NOW(),
+                        final_status = 'PENDING'
+                    WHERE module_name = %s
+                      AND document_id = %s
+                    """,
+                    (
+                        user_id,
+                        module_name,
+                        document_id
+                    )
+                )
+
+
+                # -----------------------------------------
+                # PRS moves to CEO after HOD approval
+                # -----------------------------------------
+
+                if module_name == "PRS":
+
+                    cursor.execute(
+                        """
+                        UPDATE requisitions
+                        SET status = 'PENDING_CEO'
+                        WHERE requisition_id = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+                else:
+
+                    cursor.execute(
+                        f"""
+                        UPDATE {table}
+                        SET {status_column} = %s
+                        WHERE {primary_key} = %s
+                        """,
+                        (
+                            "PENDING_CEO",
+                            document_id
+                        )
+                    )
+
+
+            # =================================================
+            # HOD REJECTED
+            # =================================================
+
+            else:
+
+                cursor.execute(
+                    """
+                    UPDATE approvals
+                    SET
+                        hod_status = 'REJECTED',
+                        hod_user_id = %s,
+                        hod_approved_at = NOW(),
+                        final_status = 'REJECTED'
+                    WHERE module_name = %s
+                      AND document_id = %s
+                    """,
+                    (
+                        user_id,
+                        module_name,
+                        document_id
+                    )
+                )
+
+
+                cursor.execute(
+                    f"""
                     UPDATE {table}
-                    SET status='REJECTED'
-                    WHERE {pk}=%s
-                """, (document_id,))
+                    SET {status_column} = 'REJECTED'
+                    WHERE {primary_key} = %s
+                    """,
+                    (document_id,)
+                )
 
-        # ==========================================
-        # CEO
-        # ==========================================
+
+        # =================================================
+        # CEO APPROVAL
+        # =================================================
+
         elif role == "ceo":
+
+            # ---------------------------------------------
+            # HOD MUST APPROVE FIRST
+            # ---------------------------------------------
 
             if approval["hod_status"] != "APPROVED":
 
                 return jsonify({
                     "success": False,
-                    "message": "HOD must approve first."
-                })
+                    "message": (
+                        "HOD must approve the document "
+                        "before CEO approval."
+                    )
+                }), 409
 
-            if approval["ceo_status"] in ("APPROVED", "REJECTED"):
+
+            # ---------------------------------------------
+            # Prevent duplicate CEO processing
+            # ---------------------------------------------
+
+            if approval["ceo_status"] in (
+                "APPROVED",
+                "REJECTED"
+            ):
 
                 return jsonify({
                     "success": False,
-                    "message": "This document has already been processed by CEO."
-                })
+                    "message": (
+                        "This document has already been "
+                        "processed by CEO."
+                    )
+                }), 409
 
-            cursor.execute("""
-                UPDATE approvals
-                SET
-                    ceo_status=%s,
-                    ceo_user_id=%s,
-                    ceo_approved_at=NOW(),
-                    final_status=%s
-                WHERE module_name=%s
-                AND document_id=%s
-            """, (
-                action,
-                user_id,
-                action,
-                module_name,
-                document_id
-            ))
 
-            table, pk = table_map[module_name]
-            status_column = status_column_map.get(module_name, "status")
+            # =================================================
+            # CEO APPROVED
+            # =================================================
 
-            cursor.execute(f"""
-                UPDATE {table}
-                SET {status_column}=%s
-                WHERE {pk}=%s
-            """, (
-                action,
-                document_id
-            ))
+            if action == "APPROVED":
 
-        else:
+                # -----------------------------------------
+                # PAYMENT
+                # -----------------------------------------
+                # CEO approval completes the payment.
+                #
+                # approvals.ceo_status  = APPROVED
+                # approvals.final_status = COMPLETED
+                # payments.payment_status = COMPLETED
+                # -----------------------------------------
 
-            return jsonify({
-                "success": False,
-                "message": "Unauthorized"
-            }), 403
+                if module_name == "PAYMENT":
+
+                    cursor.execute(
+                        """
+                        UPDATE approvals
+                        SET
+                            ceo_status = 'APPROVED',
+                            ceo_user_id = %s,
+                            ceo_approved_at = NOW(),
+                            final_status = 'COMPLETED'
+                        WHERE module_name = %s
+                          AND document_id = %s
+                        """,
+                        (
+                            user_id,
+                            module_name,
+                            document_id
+                        )
+                    )
+
+
+                    cursor.execute(
+                        """
+                        UPDATE payments
+                        SET payment_status = 'COMPLETED'
+                        WHERE payment_id = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+                # -----------------------------------------
+                # PRS
+                # -----------------------------------------
+
+                elif module_name == "PRS":
+
+                    cursor.execute(
+                        """
+                        UPDATE approvals
+                        SET
+                            ceo_status = 'APPROVED',
+                            ceo_user_id = %s,
+                            ceo_approved_at = NOW(),
+                            final_status = 'APPROVED'
+                        WHERE module_name = %s
+                          AND document_id = %s
+                        """,
+                        (
+                            user_id,
+                            module_name,
+                            document_id
+                        )
+                    )
+
+
+                    cursor.execute(
+                        """
+                        UPDATE requisitions
+                        SET status = 'APPROVED'
+                        WHERE requisition_id = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+                # -----------------------------------------
+                # ALL OTHER MODULES
+                # -----------------------------------------
+
+                else:
+
+                    cursor.execute(
+                        """
+                        UPDATE approvals
+                        SET
+                            ceo_status = 'APPROVED',
+                            ceo_user_id = %s,
+                            ceo_approved_at = NOW(),
+                            final_status = 'APPROVED'
+                        WHERE module_name = %s
+                          AND document_id = %s
+                        """,
+                        (
+                            user_id,
+                            module_name,
+                            document_id
+                        )
+                    )
+
+
+                    cursor.execute(
+                        f"""
+                        UPDATE {table}
+                        SET {status_column} = 'APPROVED'
+                        WHERE {primary_key} = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+            # =================================================
+            # CEO REJECTED
+            # =================================================
+
+            else:
+
+                cursor.execute(
+                    """
+                    UPDATE approvals
+                    SET
+                        ceo_status = 'REJECTED',
+                        ceo_user_id = %s,
+                        ceo_approved_at = NOW(),
+                        final_status = 'REJECTED'
+                    WHERE module_name = %s
+                      AND document_id = %s
+                    """,
+                    (
+                        user_id,
+                        module_name,
+                        document_id
+                    )
+                )
+
+
+                # -----------------------------------------
+                # PAYMENT REJECTED
+                # -----------------------------------------
+
+                if module_name == "PAYMENT":
+
+                    cursor.execute(
+                        """
+                        UPDATE payments
+                        SET payment_status = 'REJECTED'
+                        WHERE payment_id = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+                # -----------------------------------------
+                # ALL OTHER DOCUMENTS REJECTED
+                # -----------------------------------------
+
+                else:
+
+                    cursor.execute(
+                        f"""
+                        UPDATE {table}
+                        SET {status_column} = 'REJECTED'
+                        WHERE {primary_key} = %s
+                        """,
+                        (document_id,)
+                    )
+
+
+        # =================================================
+        # COMMIT EVERYTHING
+        # =================================================
 
         conn.commit()
 
+
+        # =================================================
+        # SUCCESS RESPONSE
+        # =================================================
+
+        final_status = None
+
+        if module_name == "PAYMENT" and action == "APPROVED":
+
+            final_status = "COMPLETED"
+
+        elif action == "REJECTED":
+
+            final_status = "REJECTED"
+
+        elif action == "APPROVED":
+
+            final_status = "APPROVED"
+
+
         return jsonify({
+
             "success": True,
-            "message": f"{role.upper()} {action} successfully."
-        })
+
+            "message": (
+                f"{role.upper()} "
+                f"{action.lower()} successfully."
+            ),
+
+            "module_name": module_name,
+
+            "document_id": document_id,
+
+            "action": action,
+
+            "role": role.upper(),
+
+            "final_status": final_status
+
+        }), 200
+
+
+    # =====================================================
+    # DATABASE / SERVER ERROR
+    # =====================================================
 
     except Exception as e:
 
-        conn.rollback()
+        if conn:
+
+            conn.rollback()
+
+
+        print(
+            "APPROVAL ERROR:",
+            str(e)
+        )
+
 
         return jsonify({
+
             "success": False,
+
             "message": str(e)
+
         }), 500
+
+
+    # =====================================================
+    # CLEANUP
+    # =====================================================
 
     finally:
 
-        cursor.close()
-        conn.close()
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
 # =========================================================
 # SIGNATURE API
 # =========================================================

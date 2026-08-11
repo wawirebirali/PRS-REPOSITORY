@@ -364,8 +364,8 @@ def po_data():
 
 
 
-@ceo_dashboard_view_bp.route("/requisition_data")
-def requisition_data():
+@ceo_dashboard_view_bp.route("/api/requisitions")
+def ceo_requisitions_api():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -376,47 +376,127 @@ def requisition_data():
             SELECT
                 r.requisition_id,
                 r.prs_no,
+
                 d.department_name,
 
-                COALESCE(a.final_status, 'PENDING') AS ceo_status,
+                r.item_budget,
 
                 r.submission_date,
 
-                a.ceo_approved_at
+                DATEDIFF(
+                    CURDATE(),
+                    DATE(r.submission_date)
+                ) AS due,
+
+                a.ceo_status,
+                a.final_status
 
             FROM requisitions r
 
             JOIN departments d
-                ON r.department_id = d.department_id
+                ON d.department_id = r.department_id
 
-            LEFT JOIN approvals a
+            JOIN approvals a
                 ON a.document_id = r.requisition_id
-               AND a.module_name = 'PRS'
+                AND a.module_name = 'PRS'
 
-            WHERE COALESCE(a.hod_status, 'PENDING') = 'APPROVED'
+            WHERE 
+                a.hod_status = 'APPROVED'
+                AND a.ceo_status = 'PENDING'
 
-            ORDER BY r.requisition_id DESC
+            ORDER BY 
+                r.requisition_id DESC
+
         """)
 
         requisitions = cursor.fetchall()
 
-        for item in requisitions:
-            if item.get("submission_date"):
-                item["submission_date"] = item["submission_date"].isoformat()
 
-            if item.get("ceo_approved_at"):
-                item["ceo_approved_at"] = item["ceo_approved_at"].isoformat()
+        return jsonify({
+            "success": True,
+            "requisitions": requisitions
+        })
 
-        return jsonify(requisitions)
 
     except Exception as e:
+
+        print("CEO Requisition API Error:", e)
 
         return jsonify({
             "success": False,
             "error": str(e)
         }), 500
 
+
     finally:
+        cursor.close()
+        conn.close()
+def ceo_pending_requisitions():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT
+                r.requisition_id,
+                r.prs_no,
+
+                d.department_name,
+
+                r.item_budget,
+
+                r.submission_date,
+
+                DATEDIFF(
+                    CURDATE(),
+                    DATE(r.submission_date)
+                ) AS due,
+
+                a.ceo_status,
+                a.final_status
+
+            FROM requisitions r
+
+            JOIN departments d
+                ON d.department_id = r.department_id
+
+            JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+
+            WHERE 
+                a.ceo_status = 'PENDING'
+                AND a.hod_status = 'APPROVED'
+
+            ORDER BY 
+                r.requisition_id DESC
+
+        """)
+
+        requisitions = cursor.fetchall()
+
+
+        return jsonify({
+            "success": True,
+            "count": len(requisitions),
+            "requisitions": requisitions
+        })
+
+
+    except Exception as e:
+
+        print("CEO Pending Requisition Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+    finally:
+
         cursor.close()
         conn.close()
 
@@ -465,7 +545,7 @@ def requisition_details(requisition_id):
 
             LEFT JOIN approvals a
                 ON a.document_id = r.requisition_id
-               AND a.module_name='PRS'
+                AND a.module_name='PRS'
 
             LEFT JOIN users hod
                 ON a.hod_user_id = hod.user_id
@@ -474,12 +554,20 @@ def requisition_details(requisition_id):
                 ON a.ceo_user_id = ceo.user_id
 
             WHERE r.requisition_id=%s
+
         """, (requisition_id,))
+
 
         requisition = cursor.fetchone()
 
+
         if not requisition:
-            return jsonify({"success": False}), 404
+            return jsonify({
+                "success": False,
+                "message": "Requisition not found"
+            }),404
+
+
 
         # =========================
         # ITEMS
@@ -489,26 +577,47 @@ def requisition_details(requisition_id):
                 material_name,
                 uom,
                 qty_required
+
             FROM requisition_items
+
             WHERE requisition_id=%s
+
             ORDER BY item_id
-        """, (requisition_id,))
+
+        """,(requisition_id,))
+
 
         items = cursor.fetchall()
 
+
+
         return jsonify({
-            "success": True,
-            "requisition": requisition,
-            "items": items
+
+            "success":True,
+
+            "requisition":requisition,
+
+            "items":items
+
         })
+
+
 
     except Exception as e:
 
+        print("CEO requisition details error:",e)
+
         return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+
+            "success":False,
+
+            "error":str(e)
+
+        }),500
+
+
 
     finally:
+
         cursor.close()
         conn.close()
