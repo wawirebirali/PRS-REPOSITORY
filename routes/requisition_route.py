@@ -17,7 +17,7 @@ requisition_bp = Blueprint(
 # SUBMIT REQUISITION
 # =====================================================
 
-from db_connect import get_db_connection
+
 from datetime import datetime
 
 
