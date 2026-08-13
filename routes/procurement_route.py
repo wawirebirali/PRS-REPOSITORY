@@ -299,6 +299,8 @@ def procurement_requisition():
 # =========================
 # PRS DETAILS API (AJAX)
 # =========================
+
+
 @procurement_dashboard_bp.route("/api/procurement_requisition/<int:req_id>")
 def procurement_requisition_details(req_id):
 
@@ -1593,6 +1595,12 @@ def get_po_prs_quotations(prs_id):
 # ============================================================
 # 3. SAVE SELECTED / APPROVED QUOTATION
 # ============================================================
+# ============================================================
+# SAVE SELECTED / APPROVED QUOTATION
+# ============================================================
+# ============================================================
+# SAVE SELECTED / APPROVED QUOTATION
+# ============================================================
 
 @procurement_dashboard_bp.route(
     "/save_best_supplier",
@@ -1600,12 +1608,11 @@ def get_po_prs_quotations(prs_id):
 )
 def save_best_supplier():
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     quotation_id = data.get("quotation_id")
 
     if not quotation_id:
-
         return jsonify({
             "success": False,
             "message": "Quotation ID is required."
@@ -1617,14 +1624,21 @@ def save_best_supplier():
     try:
 
         # =====================================================
-        # GET QUOTATION DETAILS
+        # GET QUOTATION
         # =====================================================
 
         cursor.execute("""
             SELECT
                 q.quotation_id,
+                q.quotation_no,
                 q.qrf_id,
                 q.supplier_id,
+                q.total_amount,
+                q.status,
+
+                s.supplier_name,
+
+                qr.qrf_no,
                 qr.requisition_id
 
             FROM quotations q
@@ -1632,7 +1646,12 @@ def save_best_supplier():
             INNER JOIN quotation_requests qr
                 ON q.qrf_id = qr.qrf_id
 
+            INNER JOIN suppliers s
+                ON q.supplier_id = s.supplier_id
+
             WHERE q.quotation_id = %s
+
+            LIMIT 1
 
         """, (quotation_id,))
 
@@ -1647,40 +1666,11 @@ def save_best_supplier():
 
 
         qrf_id = quotation["qrf_id"]
+        supplier_id = quotation["supplier_id"]
 
 
         # =====================================================
-        # RESET ALL SUPPLIERS FOR THIS QRF
-        # =====================================================
-
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-
-            SET selected_supplier = 'NO'
-
-            WHERE qrf_id = %s
-        """, (qrf_id,))
-
-
-        # =====================================================
-        # SELECT SUPPLIER FOR THIS QUOTATION
-        # =====================================================
-
-        cursor.execute("""
-            UPDATE quotation_request_suppliers
-
-            SET selected_supplier = 'YES'
-
-            WHERE qrf_id = %s
-            AND quotation_id = %s
-        """, (
-            qrf_id,
-            quotation_id
-        ))
-
-
-        # =====================================================
-        # RESET QUOTATION STATUS
+        # RESET QUOTATIONS FOR THIS QRF
         # =====================================================
 
         cursor.execute("""
@@ -1689,11 +1679,12 @@ def save_best_supplier():
             SET status = 'REJECTED'
 
             WHERE qrf_id = %s
+
         """, (qrf_id,))
 
 
         # =====================================================
-        # MARK SELECTED QUOTATION
+        # SELECT THIS QUOTATION
         # =====================================================
 
         cursor.execute("""
@@ -1702,7 +1693,39 @@ def save_best_supplier():
             SET status = 'SELECTED'
 
             WHERE quotation_id = %s
+
         """, (quotation_id,))
+
+
+        # =====================================================
+        # UPDATE SELECTED SUPPLIER
+        #
+        # IMPORTANT:
+        # We use supplier_id, NOT quotation_id.
+        # =====================================================
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'NO'
+
+            WHERE qrf_id = %s
+
+        """, (qrf_id,))
+
+
+        cursor.execute("""
+            UPDATE quotation_request_suppliers
+
+            SET selected_supplier = 'YES'
+
+            WHERE qrf_id = %s
+              AND supplier_id = %s
+
+        """, (
+            qrf_id,
+            supplier_id
+        ))
 
 
         conn.commit()
@@ -1722,7 +1745,19 @@ def save_best_supplier():
                 qrf_id,
 
             "requisition_id":
-                quotation["requisition_id"]
+                quotation["requisition_id"],
+
+            "supplier_id":
+                quotation["supplier_id"],
+
+            "supplier_name":
+                quotation["supplier_name"],
+
+            "quotation_no":
+                quotation["quotation_no"],
+
+            "total_amount":
+                quotation["total_amount"]
 
         })
 
@@ -1732,9 +1767,12 @@ def save_best_supplier():
         conn.rollback()
 
         print(
-            "Error selecting quotation:",
+            "ERROR selecting quotation:",
             e
         )
+
+        import traceback
+        traceback.print_exc()
 
         return jsonify({
 
@@ -1750,8 +1788,7 @@ def save_best_supplier():
 
         cursor.close()
         conn.close()
-
-
+        
 # ============================================================
 # 4. GET SELECTED QUOTATION FOR PRS
 # ============================================================

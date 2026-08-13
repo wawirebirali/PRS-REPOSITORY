@@ -2,695 +2,1396 @@
         FINANCE DASHBOARD JAVASCRIPT
 ===================================================== */
 
+document.addEventListener("DOMContentLoaded", function () {
 
-document.addEventListener("DOMContentLoaded", function(){
+    /* =====================================================
+            LOAD DATE DEFAULTS
+    ===================================================== */
 
+    const today = new Date();
 
-/* =====================================================
-        LOAD DATE DEFAULTS
-===================================================== */
+    const firstDay = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1
+    );
 
+    const dateInputs = document.querySelectorAll(
+        "#financeDashboard input[type='date']"
+    );
 
-let today = new Date();
+    if (dateInputs.length >= 2) {
 
-let firstDay = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    1
-);
+        dateInputs[0].value =
+            firstDay.toISOString().split("T")[0];
 
+        dateInputs[1].value =
+            today.toISOString().split("T")[0];
+    }
 
-document.querySelectorAll(
-    "#financeDashboard input[type='date']"
-)[0].value = firstDay.toISOString().split("T")[0];
 
+    /* =====================================================
+            CHART DEFAULT OPTIONS
+    ===================================================== */
 
-document.querySelectorAll(
-    "#financeDashboard input[type='date']"
-)[1].value = today.toISOString().split("T")[0];
+    if (typeof Chart !== "undefined") {
 
+        Chart.defaults.font.family =
+            "Segoe UI, Arial";
 
+        Chart.defaults.plugins.legend.position =
+            "bottom";
+    }
 
 
+    /* =====================================================
+            INITIALIZE EMPTY CHARTS
+    ===================================================== */
 
+    initializeFinanceCharts();
 
-/* =====================================================
-        CHART DEFAULT OPTIONS
-===================================================== */
 
+    /* =====================================================
+            LOAD FINANCE DATA
+    ===================================================== */
 
-Chart.defaults.font.family =
-"Segoe UI, Arial";
+    loadFinanceData();
 
-Chart.defaults.plugins.legend.position =
-"bottom";
 
+    /* =====================================================
+            REFRESH BUTTON
+    ===================================================== */
 
+    const refreshBtn = document.querySelector(
+        "#financeDashboard .quick-btn.green"
+    );
 
+    if (refreshBtn) {
 
+        refreshBtn.addEventListener(
+            "click",
+            function (event) {
 
+                event.preventDefault();
 
-/* =====================================================
-        MONTHLY CASH FLOW CHART
-===================================================== */
+                loadFinanceData();
 
+            }
+        );
+    }
 
-new Chart(
-document.getElementById("financeCashFlow"),
-{
 
-type:"line",
+    /* =====================================================
+            EXPORT BUTTON
+    ===================================================== */
 
-data:{
+    const exportBtn = document.querySelector(
+        "#financeDashboard .quick-btn.blue"
+    );
 
+    if (exportBtn) {
 
-labels:[
+        exportBtn.addEventListener(
+            "click",
+            function (event) {
 
-"Jan",
-"Feb",
-"Mar",
-"Apr",
-"May",
-"Jun",
-"Jul",
-"Aug",
-"Sep",
-"Oct",
-"Nov",
-"Dec"
+                event.preventDefault();
 
-],
+                exportFinanceReport();
 
-
-datasets:[
-
-{
-
-label:"Income",
-
-data:[
-
-900,
-1200,
-1500,
-1300,
-1800,
-2000,
-2300,
-2100,
-2600,
-2800,
-3000,
-3500
-
-],
-
-
-borderWidth:3,
-
-fill:false
-
-
-},
-
-
-{
-
-label:"Expenses",
-
-data:[
-
-700,
-900,
-1100,
-1000,
-1400,
-1600,
-1700,
-1800,
-2100,
-2200,
-2500,
-2700
-
-],
-
-
-borderWidth:3,
-
-fill:false
-
-}
-
-
-]
-
-
-},
-
-
-options:{
-
-
-responsive:true,
-
-
-plugins:{
-
-
-legend:{
-
-display:true
-
-}
-
-
-}
-
-
-
-}
-
+            }
+        );
+    }
 
 });
 
 
+/* =====================================================
+        CHART VARIABLES
+===================================================== */
 
-
-
-
-
+let financeCashFlowChart = null;
+let financeBudgetChart = null;
+let supplierPaymentChart = null;
+let departmentExpenseChart = null;
 
 
 /* =====================================================
-        BUDGET VS ACTUAL
+        INITIALIZE EMPTY FINANCE CHARTS
 ===================================================== */
 
+function initializeFinanceCharts() {
 
-new Chart(
+    if (typeof Chart === "undefined") {
 
-document.getElementById(
-"financeBudgetChart"
-),
+        console.error(
+            "Chart.js is not loaded."
+        );
 
-{
-
-
-type:"bar",
-
-
-data:{
+        return;
+    }
 
 
-labels:[
+    /* =================================================
+            MONTHLY CASH FLOW
+    ================================================= */
 
-"ICT",
-"Finance",
-"Procurement",
-"Stores",
-"Admin"
-
-],
-
-
-datasets:[
+    const cashFlowCanvas =
+        document.getElementById(
+            "financeCashFlow"
+        );
 
 
-{
+    if (cashFlowCanvas) {
+
+        financeCashFlowChart =
+            new Chart(
+                cashFlowCanvas,
+                {
+
+                    type: "line",
+
+                    data: {
+
+                        labels: [],
+
+                        datasets: [
+
+                            {
+                                label: "Income",
+                                data: [],
+                                borderWidth: 3,
+                                fill: false
+                            },
+
+                            {
+                                label: "Expenses",
+                                data: [],
+                                borderWidth: 3,
+                                fill: false
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        plugins: {
+
+                            legend: {
+                                display: true
+                            }
+
+                        }
+
+                    }
+
+                }
+            );
+    }
 
 
-label:"Budget",
+    /* =================================================
+            BUDGET VS ACTUAL
+    ================================================= */
 
-data:[
-
-3000,
-2500,
-4000,
-1800,
-2000
-
-],
+    const budgetCanvas =
+        document.getElementById(
+            "financeBudgetChart"
+        );
 
 
-borderWidth:1
+    if (budgetCanvas) {
+
+        financeBudgetChart =
+            new Chart(
+                budgetCanvas,
+                {
+
+                    type: "bar",
+
+                    data: {
+
+                        labels: [],
+
+                        datasets: [
+
+                            {
+                                label: "Budget",
+                                data: [],
+                                borderWidth: 1
+                            },
+
+                            {
+                                label: "Spent",
+                                data: [],
+                                borderWidth: 1
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true
+
+                    }
+
+                }
+            );
+    }
 
 
-},
+    /* =================================================
+            SUPPLIER PAYMENTS
+    ================================================= */
+
+    const supplierCanvas =
+        document.getElementById(
+            "supplierPaymentChart"
+        );
 
 
+    if (supplierCanvas) {
 
-{
+        supplierPaymentChart =
+            new Chart(
+                supplierCanvas,
+                {
+
+                    type: "doughnut",
+
+                    data: {
+
+                        labels: [],
+
+                        datasets: [
+
+                            {
+                                data: [],
+                                borderWidth: 1
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true
+
+                    }
+
+                }
+            );
+    }
 
 
-label:"Spent",
+    /* =================================================
+            DEPARTMENT EXPENSES
+    ================================================= */
 
-data:[
-
-2200,
-1700,
-3300,
-1000,
-900
-
-],
+    const departmentCanvas =
+        document.getElementById(
+            "departmentExpenseChart"
+        );
 
 
-borderWidth:1
+    if (departmentCanvas) {
 
+        departmentExpenseChart =
+            new Chart(
+                departmentCanvas,
+                {
+
+                    type: "pie",
+
+                    data: {
+
+                        labels: [],
+
+                        datasets: [
+
+                            {
+                                data: [],
+                                borderWidth: 1
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true
+
+                    }
+
+                }
+            );
+    }
 
 }
 
 
-]
+/* =====================================================
+        LOAD FINANCE DATA
+===================================================== */
+
+async function loadFinanceData() {
+
+    try {
+
+        const departmentSelect =
+            document.querySelector(
+                "#financeDashboard #financeDepartment"
+            );
 
 
-},
+        const yearSelect =
+            document.querySelector(
+                "#financeDashboard #financeYear"
+            );
 
 
-options:{
+        const dates =
+            document.querySelectorAll(
+                "#financeDashboard input[type='date']"
+            );
 
 
-responsive:true
+        const department =
+            departmentSelect
+                ? departmentSelect.value
+                : "";
 
+
+        const year =
+            yearSelect
+                ? yearSelect.value
+                : "";
+
+
+        const startDate =
+            dates.length >= 1
+                ? dates[0].value
+                : "";
+
+
+        const endDate =
+            dates.length >= 2
+                ? dates[1].value
+                : "";
+
+
+        console.log(
+            "Loading finance dashboard:",
+            {
+                department,
+                year,
+                startDate,
+                endDate
+            }
+        );
+
+
+        /* =================================================
+                SHOW LOADING STATE
+        ================================================= */
+
+        setFinanceLoadingState();
+
+
+        /* =================================================
+                CALL FLASK API
+        ================================================= */
+
+        const response = await fetch(
+            "/finance/api/dashboard",
+            {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    department: department,
+
+                    year: year,
+
+                    start: startDate,
+
+                    end: endDate
+
+                })
+
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Finance API failed: " +
+                response.status
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "Finance API response:",
+            data
+        );
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message ||
+                "Finance dashboard request failed."
+            );
+        }
+
+
+        /* =================================================
+                UPDATE DASHBOARD
+        ================================================= */
+
+        updateFinanceCards(data);
+
+        updateBudgetUtilization(data);
+
+        updatePaymentWorkflow(data);
+
+        updatePendingPayments(data);
+
+        updateRecentTransactions(data);
+
+        updateFinanceCharts(data);
+
+
+    }
+    catch (error) {
+
+        console.error(
+            "FINANCE DASHBOARD ERROR:",
+            error
+        );
+
+
+        clearFinanceDashboard();
+
+
+        console.error(
+            "Unable to load finance dashboard data."
+        );
+    }
 
 }
 
 
-});
+/* =====================================================
+        LOADING STATE
+===================================================== */
+
+function setFinanceLoadingState() {
+
+    const ids = [
+
+        "availableCash",
+        "totalBudget",
+        "budgetUsed",
+        "pendingPayments",
+        "outstandingDebt",
+        "paidInvoices"
+
+    ];
 
 
+    ids.forEach(function (id) {
+
+        const element =
+            document.getElementById(id);
 
 
+        if (element) {
+
+            if (
+                id === "pendingPayments" ||
+                id === "paidInvoices"
+            ) {
+
+                element.textContent = "0";
+
+            }
+            else {
+
+                element.textContent =
+                    "UGX 0";
+            }
+
+        }
+
+    });
+
+}
 
 
+/* =====================================================
+        CLEAR DASHBOARD
+===================================================== */
 
+function clearFinanceDashboard() {
+
+    const ids = [
+
+        "availableCash",
+        "totalBudget",
+        "budgetUsed",
+        "outstandingDebt"
+
+    ];
+
+
+    ids.forEach(function (id) {
+
+        const element =
+            document.getElementById(id);
+
+
+        if (element) {
+
+            element.textContent =
+                "UGX 0";
+        }
+
+    });
+
+
+    const countIds = [
+
+        "pendingPayments",
+        "paidInvoices"
+
+    ];
+
+
+    countIds.forEach(function (id) {
+
+        const element =
+            document.getElementById(id);
+
+
+        if (element) {
+
+            element.textContent = "0";
+        }
+
+    });
+
+
+    const containers = [
+
+        "budgetUtilizationContainer",
+        "paymentWorkflowBody",
+        "pendingPaymentsBody",
+        "recentTransactionsBody"
+
+    ];
+
+
+    containers.forEach(function (id) {
+
+        const element =
+            document.getElementById(id);
+
+
+        if (element) {
+
+            element.innerHTML = "";
+        }
+
+    });
+
+
+    clearFinanceCharts();
+
+}
+
+
+/* =====================================================
+        UPDATE KPI CARDS
+===================================================== */
+
+function updateFinanceCards(data) {
+
+    const finance =
+        data.finance || data;
+
+
+    setText(
+        "availableCash",
+        formatCurrency(
+            finance.cash ??
+            finance.available_cash ??
+            0
+        )
+    );
+
+
+    setText(
+        "totalBudget",
+        formatCurrency(
+            finance.budget ??
+            finance.total_budget ??
+            0
+        )
+    );
+
+
+    setText(
+        "budgetUsed",
+        formatCurrency(
+            finance.used ??
+            finance.budget_used ??
+            finance.amount_spent ??
+            0
+        )
+    );
+
+
+    setText(
+        "pendingPayments",
+        finance.pending ??
+        finance.pending_payments ??
+        0
+    );
+
+
+    setText(
+        "outstandingDebt",
+        formatCurrency(
+            finance.debt ??
+            finance.outstanding_debt ??
+            0
+        )
+    );
+
+
+    setText(
+        "paidInvoices",
+        finance.paid ??
+        finance.paid_invoices ??
+        0
+    );
+
+}
+
+
+/* =====================================================
+        BUDGET UTILIZATION
+===================================================== */
+
+function updateBudgetUtilization(data) {
+
+    const container =
+        document.getElementById(
+            "budgetUtilizationContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    const budgets =
+        data.budget_utilization ||
+        data.budgets ||
+        [];
+
+
+    if (!Array.isArray(budgets) ||
+        budgets.length === 0) {
+
+        return;
+    }
+
+
+    budgets.forEach(function (budget) {
+
+        const budgetAmount =
+            Number(
+                budget.budget ??
+                budget.budget_amount ??
+                0
+            );
+
+
+        const spent =
+            Number(
+                budget.spent ??
+                budget.amount_spent ??
+                0
+            );
+
+
+        let percentage = 0;
+
+
+        if (budgetAmount > 0) {
+
+            percentage =
+                (spent / budgetAmount) * 100;
+        }
+
+
+        percentage =
+            Math.min(
+                Math.max(
+                    percentage,
+                    0
+                ),
+                100
+            );
+
+
+        const row =
+            document.createElement("div");
+
+
+        row.className =
+            "progress-item";
+
+
+        row.innerHTML = `
+
+            <span>
+                ${escapeHtml(
+                    budget.department_name ||
+                    budget.department ||
+                    budget.budget_item ||
+                    ""
+                )}
+            </span>
+
+            <div class="progress">
+
+                <span
+                    style="width:${percentage}%"
+                ></span>
+
+            </div>
+
+            <b>
+                ${percentage.toFixed(1)}%
+            </b>
+
+        `;
+
+
+        container.appendChild(row);
+
+    });
+
+}
+
+
+/* =====================================================
+        PAYMENT WORKFLOW
+===================================================== */
+
+function updatePaymentWorkflow(data) {
+
+    const tbody =
+        document.getElementById(
+            "paymentWorkflowBody"
+        );
+
+
+    if (!tbody) {
+        return;
+    }
+
+
+    tbody.innerHTML = "";
+
+
+    const workflow =
+        data.payment_workflow ||
+        data.workflow ||
+        [];
+
+
+    if (!Array.isArray(workflow) ||
+        workflow.length === 0) {
+
+        return;
+    }
+
+
+    workflow.forEach(function (item) {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHtml(
+                    item.status || ""
+                )}
+            </td>
+
+            <td>
+                ${item.total ?? 0}
+            </td>
+
+        `;
+
+
+        tbody.appendChild(row);
+
+    });
+
+}
+
+
+/* =====================================================
+        PENDING PAYMENTS
+===================================================== */
+
+function updatePendingPayments(data) {
+
+    const tbody =
+        document.getElementById(
+            "pendingPaymentsBody"
+        );
+
+
+    if (!tbody) {
+        return;
+    }
+
+
+    tbody.innerHTML = "";
+
+
+    const payments =
+        data.pending_payment_list ||
+        data.pending_payments_list ||
+        data.pending_payments ||
+        [];
+
+
+    if (!Array.isArray(payments) ||
+        payments.length === 0) {
+
+        return;
+    }
+
+
+    payments.forEach(function (payment) {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHtml(
+                    payment.supplier ||
+                    ""
+                )}
+            </td>
+
+            <td>
+                ${formatCurrency(
+                    payment.amount || 0
+                )}
+            </td>
+
+            <td>
+
+                <span class="badge badge-warning">
+                    ${escapeHtml(
+                        payment.status ||
+                        "Pending"
+                    )}
+                </span>
+
+            </td>
+
+        `;
+
+
+        tbody.appendChild(row);
+
+    });
+
+}
+
+
+/* =====================================================
+        RECENT TRANSACTIONS
+===================================================== */
+
+function updateRecentTransactions(data) {
+
+    const tbody =
+        document.getElementById(
+            "recentTransactionsBody"
+        );
+
+
+    if (!tbody) {
+        return;
+    }
+
+
+    tbody.innerHTML = "";
+
+
+    const transactions =
+        data.recent_transactions ||
+        [];
+
+
+    if (!Array.isArray(transactions) ||
+        transactions.length === 0) {
+
+        return;
+    }
+
+
+    transactions.forEach(function (transaction) {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHtml(
+                    transaction.reference ||
+                    transaction.payment_no ||
+                    transaction.invoice_no ||
+                    ""
+                )}
+            </td>
+
+            <td>
+                ${formatCurrency(
+                    transaction.amount || 0
+                )}
+            </td>
+
+        `;
+
+
+        tbody.appendChild(row);
+
+    });
+
+}
+
+
+/* =====================================================
+        UPDATE CHARTS
+===================================================== */
+
+function updateFinanceCharts(data) {
+
+    updateCashFlowChart(
+        data.cash_flow ||
+        data.monthly_cash_flow ||
+        []
+    );
+
+
+    updateBudgetChart(
+        data.budget_vs_actual ||
+        data.budget_utilization ||
+        []
+    );
+
+
+    updateSupplierChart(
+        data.supplier_payments ||
+        []
+    );
+
+
+    updateDepartmentChart(
+        data.department_expenses ||
+        []
+    );
+
+}
+
+
+/* =====================================================
+        CASH FLOW CHART
+===================================================== */
+
+function updateCashFlowChart(data) {
+
+    if (!financeCashFlowChart) {
+        return;
+    }
+
+
+    if (!Array.isArray(data)) {
+        return;
+    }
+
+
+    financeCashFlowChart.data.labels =
+        data.map(function (item) {
+
+            return item.month || "";
+
+        });
+
+
+    financeCashFlowChart.data.datasets[0].data =
+        data.map(function (item) {
+
+            return Number(
+                item.income || 0
+            );
+
+        });
+
+
+    financeCashFlowChart.data.datasets[1].data =
+        data.map(function (item) {
+
+            return Number(
+                item.expenses || 0
+            );
+
+        });
+
+
+    financeCashFlowChart.update();
+
+}
+
+
+/* =====================================================
+        BUDGET VS ACTUAL CHART
+===================================================== */
+
+function updateBudgetChart(data) {
+
+    if (!financeBudgetChart) {
+        return;
+    }
+
+
+    if (!Array.isArray(data)) {
+        return;
+    }
+
+
+    financeBudgetChart.data.labels =
+        data.map(function (item) {
+
+            return (
+                item.department ||
+                item.department_name ||
+                item.budget_item ||
+                ""
+            );
+
+        });
+
+
+    financeBudgetChart.data.datasets[0].data =
+        data.map(function (item) {
+
+            return Number(
+                item.budget ||
+                item.budget_amount ||
+                0
+            );
+
+        });
+
+
+    financeBudgetChart.data.datasets[1].data =
+        data.map(function (item) {
+
+            return Number(
+                item.spent ||
+                item.amount_spent ||
+                0
+            );
+
+        });
+
+
+    financeBudgetChart.update();
+
+}
 
 
 /* =====================================================
         SUPPLIER PAYMENT CHART
 ===================================================== */
 
+function updateSupplierChart(data) {
 
-new Chart(
-
-document.getElementById(
-"supplierPaymentChart"
-),
-
-{
+    if (!supplierPaymentChart) {
+        return;
+    }
 
 
-type:"doughnut",
+    if (!Array.isArray(data)) {
+        return;
+    }
 
 
-data:{
+    supplierPaymentChart.data.labels =
+        data.map(function (item) {
+
+            return item.status || "";
+
+        });
 
 
-labels:[
+    supplierPaymentChart.data.datasets[0].data =
+        data.map(function (item) {
 
-"Paid",
-"Pending",
-"Overdue"
+            return Number(
+                item.total ||
+                item.amount ||
+                0
+            );
 
-],
-
-
-datasets:[
-
-
-{
+        });
 
 
-data:[
-
-65,
-25,
-10
-
-],
-
-
-borderWidth:1
-
+    supplierPaymentChart.update();
 
 }
-
-
-]
-
-
-},
-
-
-options:{
-
-
-responsive:true
-
-
-}
-
-
-});
-
-
-
-
-
-
-
 
 
 /* =====================================================
         DEPARTMENT EXPENSE CHART
 ===================================================== */
 
+function updateDepartmentChart(data) {
 
-new Chart(
-
-document.getElementById(
-"departmentExpenseChart"
-),
-
-{
+    if (!departmentExpenseChart) {
+        return;
+    }
 
 
-type:"pie",
+    if (!Array.isArray(data)) {
+        return;
+    }
 
 
-data:{
+    departmentExpenseChart.data.labels =
+        data.map(function (item) {
+
+            return (
+                item.department ||
+                item.department_name ||
+                ""
+            );
+
+        });
 
 
-labels:[
+    departmentExpenseChart.data.datasets[0].data =
+        data.map(function (item) {
 
-"ICT",
-"Procurement",
-"Finance",
-"Administration",
-"Stores"
+            return Number(
+                item.amount ||
+                item.expense ||
+                item.amount_spent ||
+                0
+            );
 
-],
-
-
-datasets:[
-
-
-{
+        });
 
 
-data:[
-
-35,
-25,
-20,
-12,
-8
-
-],
-
-
-borderWidth:1
-
+    departmentExpenseChart.update();
 
 }
-
-
-]
-
-
-},
-
-
-options:{
-
-
-responsive:true
-
-
-}
-
-
-});
-
-
-
-
-
-
 
 
 /* =====================================================
-        REFRESH BUTTON
+        CLEAR CHARTS
 ===================================================== */
 
+function clearFinanceCharts() {
 
-let refreshBtn =
-document.querySelector(
-"#financeDashboard .quick-btn.green"
-);
+    if (financeCashFlowChart) {
+
+        financeCashFlowChart.data.labels = [];
+
+        financeCashFlowChart.data.datasets
+            .forEach(function (dataset) {
+
+                dataset.data = [];
+
+            });
+
+        financeCashFlowChart.update();
+    }
 
 
+    if (financeBudgetChart) {
 
-refreshBtn.addEventListener(
-"click",
-function(){
+        financeBudgetChart.data.labels = [];
+
+        financeBudgetChart.data.datasets
+            .forEach(function (dataset) {
+
+                dataset.data = [];
+
+            });
+
+        financeBudgetChart.update();
+    }
 
 
-loadFinanceData();
+    if (supplierPaymentChart) {
 
+        supplierPaymentChart.data.labels = [];
+
+        supplierPaymentChart.data.datasets[0].data = [];
+
+        supplierPaymentChart.update();
+    }
+
+
+    if (departmentExpenseChart) {
+
+        departmentExpenseChart.data.labels = [];
+
+        departmentExpenseChart.data.datasets[0].data = [];
+
+        departmentExpenseChart.update();
+    }
 
 }
-
-);
-
-
-
-
-
-
-
 
 
 /* =====================================================
-        EXPORT BUTTON
+        FORMAT CURRENCY
 ===================================================== */
 
+function formatCurrency(value) {
 
-let exportBtn =
-document.querySelector(
-"#financeDashboard .quick-btn.blue"
-);
-
+    const amount =
+        Number(value) || 0;
 
 
-exportBtn.addEventListener(
-"click",
-function(){
-
-
-exportFinanceReport();
-
+    return "UGX " +
+        amount.toLocaleString(
+            "en-UG",
+            {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }
+        );
 
 }
-
-);
-
-
-
-
-
-
-
-
-
-});
-
-
-
-
-
-
-
 
 
 /* =====================================================
-        LOAD FINANCE DATA
-        (API READY)
+        SET TEXT
 ===================================================== */
 
+function setText(id, value) {
 
-function loadFinanceData(){
-
-
-let department =
-document.querySelector(
-"#financeDashboard select"
-).value;
+    const element =
+        document.getElementById(id);
 
 
-let dates =
-document.querySelectorAll(
-"#financeDashboard input[type='date']"
-);
+    if (element) {
 
+        element.textContent = value;
 
-
-let startDate =
-dates[0].value;
-
-
-let endDate =
-dates[1].value;
-
-
-
-
-console.log({
-
-department,
-
-startDate,
-
-endDate
-
-});
-
-
-
-/*
-
-Later connect Flask API:
-
-fetch(
-"/finance/api/dashboard",
-{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-department:department,
-
-start:startDate,
-
-end:endDate
-
-})
-
-}
-
-)
-
-.then(res=>res.json())
-
-.then(data=>{
-
-
-updateCards(data);
-
-
-});
-
-
-*/
-
-
-alert(
-"Finance dashboard refreshed"
-);
-
-
+    }
 
 }
 
 
+/* =====================================================
+        ESCAPE HTML
+===================================================== */
 
+function escapeHtml(value) {
 
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-
+}
 
 
 /* =====================================================
         EXPORT REPORT
 ===================================================== */
 
+function exportFinanceReport() {
 
-function exportFinanceReport(){
-
-
-let dashboard =
-document.getElementById(
-"financeDashboard"
-);
+    const dashboard =
+        document.getElementById(
+            "financeDashboard"
+        );
 
 
+    if (!dashboard) {
 
-html2pdf()
+        console.error(
+            "Finance dashboard element not found."
+        );
 
-.from(dashboard)
-
-.save(
-"Finance_Dashboard_Report.pdf"
-);
-
-
-
-}
+        return;
+    }
 
 
+    if (typeof html2pdf === "undefined") {
+
+        console.error(
+            "html2pdf library is not loaded."
+        );
+
+        return;
+    }
 
 
-
-
-
-/* =====================================================
-        UPDATE KPI CARDS FROM API
-===================================================== */
-
-
-function updateFinanceCards(data){
-
-
-
-let cards =
-document.querySelectorAll(
-"#financeDashboard .kpi-card h2"
-);
-
-
-
-cards[0].innerHTML =
-data.cash;
-
-
-
-cards[1].innerHTML =
-data.budget;
-
-
-
-cards[2].innerHTML =
-data.used;
-
-
-
-cards[3].innerHTML =
-data.pending;
-
-
-
-cards[4].innerHTML =
-data.debt;
-
-
-
-cards[5].innerHTML =
-data.paid;
-
-
+    html2pdf()
+        .from(dashboard)
+        .save(
+            "Finance_Dashboard_Report.pdf"
+        );
 
 }

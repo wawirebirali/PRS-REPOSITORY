@@ -18,6 +18,7 @@ from routes.requisition_route import requisition_bp
 from routes.admin_route import admin_dashboard_bp
 from routes.finance_route import finance_dashboard_bp
 from model import get_notifications_for_user
+from routes.finance_view import finance_view_dashboard_bp
 # =========================
 # APP INITIALIZATION
 # =========================
@@ -45,6 +46,7 @@ app.register_blueprint(procurement_view_bp, url_prefix="/procurement")
 app.register_blueprint(admin_dashboard_bp, url_prefix="/admin")
 app.register_blueprint(requisition_bp)
 app.register_blueprint(finance_dashboard_bp, url_prefix="/finance")
+app.register_blueprint(finance_view_dashboard_bp, url_prefix="/finance")
 # =========================
 # CREATE DEFAULT ADMIN (SAFE)
 # =========================

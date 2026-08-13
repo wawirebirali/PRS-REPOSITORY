@@ -14,8 +14,2422 @@ def dashboard():
     return render_template("finanance_dashboard.html", requisitions=requisitions)
 
 
+# =========================================================
+# GET GRN DETAILS FOR INVOICE
+#
+# Loads:
+#   1. PO Number
+#   2. Supplier
+#   3. GRN Items
+# =========================================================
 
 
+
+
+
+# ============================================================
+# FINANCE INVOICE APIs
+# ============================================================
+
+from flask import request, jsonify, session
+from db_connect import get_db_connection
+
+
+# ============================================================
+# INVOICE API ROUTES
+# ============================================================
+
+
+# ============================================================
+# 1. LOAD ALL INVOICES
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/api/invoices",
+    methods=["GET"]
+)
+def get_finance_invoices():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_no,
+                i.invoice_date,
+                i.total_amount,
+                i.invoice_status,
+
+                g.grn_id,
+                g.grn_no,
+
+                po.po_id,
+                po.po_no,
+
+                s.supplier_id,
+                s.supplier_name,
+
+                r.requisition_id,
+                r.prs_no,
+
+                d.department_id,
+                d.department_name,
+
+                i.created_by
+
+            FROM invoices i
+
+            LEFT JOIN grn g
+                ON i.grn_id = g.grn_id
+
+            LEFT JOIN purchase_orders po
+                ON i.po_id = po.po_id
+
+            LEFT JOIN suppliers s
+                ON i.supplier_id = s.supplier_id
+
+            LEFT JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            ORDER BY i.invoice_id DESC
+        """)
+
+        invoices = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "count": len(invoices),
+            "invoices": invoices
+        })
+
+    except Exception as e:
+
+        print(
+            "FINANCE LOAD INVOICES ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "invoices": []
+        }), 500
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn:
+
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+# ============================================================
+# 2. LOAD SINGLE INVOICE DETAILS
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/api/invoices/<int:invoice_id>",
+    methods=["GET"]
+)
+def get_finance_invoice_details(invoice_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # ====================================================
+        # INVOICE BASIC INFORMATION
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_no,
+                i.invoice_date,
+                i.total_amount,
+                i.invoice_status,
+                i.created_by,
+
+                g.grn_id,
+                g.grn_no,
+
+                po.po_id,
+                po.po_no,
+
+                s.supplier_id,
+                s.supplier_name,
+
+                r.requisition_id,
+                r.prs_no,
+
+                d.department_id,
+                d.department_name
+
+            FROM invoices i
+
+            LEFT JOIN grn g
+                ON i.grn_id = g.grn_id
+
+            LEFT JOIN purchase_orders po
+                ON i.po_id = po.po_id
+
+            LEFT JOIN suppliers s
+                ON i.supplier_id = s.supplier_id
+
+            LEFT JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            WHERE i.invoice_id = %s
+
+            LIMIT 1
+        """, (invoice_id,))
+
+        invoice = cursor.fetchone()
+
+        if not invoice:
+
+            return jsonify({
+                "success": False,
+                "message": "Invoice not found"
+            }), 404
+
+
+        # ====================================================
+        # INVOICE ITEMS
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                ii.invoice_item_id,
+                ii.item_id,
+                i.item_name,
+                ii.description,
+                ii.quantity,
+                ii.unit_price,
+                ii.amount
+
+            FROM invoice_items ii
+
+            LEFT JOIN items i
+                ON ii.item_id = i.item_id
+
+            WHERE ii.invoice_id = %s
+
+            ORDER BY ii.invoice_item_id ASC
+        """, (invoice_id,))
+
+        items = cursor.fetchall()
+
+
+        # ====================================================
+        # APPROVAL INFORMATION
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                approval_id,
+                module_name,
+                document_id,
+
+                hod_status,
+                hod_user_id,
+                hod_approved_at,
+
+                ceo_status,
+                ceo_user_id,
+                ceo_approved_at,
+
+                final_status
+
+            FROM approvals
+
+            WHERE module_name = 'INVOICE'
+              AND document_id = %s
+
+            LIMIT 1
+        """, (invoice_id,))
+
+        approval = cursor.fetchone()
+
+
+        # ====================================================
+        # PROCUREMENT / CREATOR
+        # ====================================================
+
+        procurement_name = None
+
+        if invoice.get("created_by"):
+
+            cursor.execute("""
+                SELECT
+                    user_id,
+                    username
+
+                FROM users
+
+                WHERE user_id = %s
+
+                LIMIT 1
+            """, (invoice["created_by"],))
+
+            creator = cursor.fetchone()
+
+            if creator:
+
+                procurement_name = creator["username"]
+
+
+        # ====================================================
+        # HOD APPROVER
+        # ====================================================
+
+        hod_name = None
+
+        if approval and approval.get("hod_user_id"):
+
+            cursor.execute("""
+                SELECT
+                    username
+
+                FROM users
+
+                WHERE user_id = %s
+
+                LIMIT 1
+            """, (approval["hod_user_id"],))
+
+            hod_user = cursor.fetchone()
+
+            if hod_user:
+
+                hod_name = hod_user["username"]
+
+
+        # ====================================================
+        # CEO APPROVER
+        # ====================================================
+
+        ceo_name = None
+
+        if approval and approval.get("ceo_user_id"):
+
+            cursor.execute("""
+                SELECT
+                    username
+
+                FROM users
+
+                WHERE user_id = %s
+
+                LIMIT 1
+            """, (approval["ceo_user_id"],))
+
+            ceo_user = cursor.fetchone()
+
+            if ceo_user:
+
+                ceo_name = ceo_user["username"]
+
+
+        # ====================================================
+        # RESPONSE
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "invoice": invoice,
+
+            "items": items,
+
+            "approval": approval,
+
+            "signatures": {
+
+                "supplier":
+                    invoice.get(
+                        "supplier_name"
+                    ),
+
+                "procurement":
+                    procurement_name,
+
+                "hod":
+                    hod_name,
+
+                "ceo":
+                    ceo_name
+            }
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "FINANCE INVOICE DETAILS ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn:
+
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+# ============================================================
+# 3. SEARCH INVOICES
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/api/invoices/search",
+    methods=["GET"]
+)
+def search_finance_invoices():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        search = request.args.get(
+            "q",
+            ""
+        ).strip()
+
+
+        if not search:
+
+            return jsonify({
+
+                "success": True,
+
+                "count": 0,
+
+                "invoices": []
+
+            })
+
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+
+        keyword = f"%{search}%"
+
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_no,
+                i.invoice_date,
+                i.total_amount,
+                i.invoice_status,
+
+                g.grn_no,
+
+                po.po_no,
+
+                s.supplier_name,
+
+                r.prs_no,
+
+                d.department_name
+
+            FROM invoices i
+
+            LEFT JOIN grn g
+                ON i.grn_id = g.grn_id
+
+            LEFT JOIN purchase_orders po
+                ON i.po_id = po.po_id
+
+            LEFT JOIN suppliers s
+                ON i.supplier_id = s.supplier_id
+
+            LEFT JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            LEFT JOIN departments d
+                ON r.department_id = d.department_id
+
+            WHERE
+                i.invoice_no LIKE %s
+
+                OR g.grn_no LIKE %s
+
+                OR po.po_no LIKE %s
+
+                OR s.supplier_name LIKE %s
+
+                OR r.prs_no LIKE %s
+
+            ORDER BY i.invoice_id DESC
+
+        """, (
+            keyword,
+            keyword,
+            keyword,
+            keyword,
+            keyword
+        ))
+
+
+        invoices = cursor.fetchall()
+
+
+        return jsonify({
+
+            "success": True,
+
+            "count":
+                len(invoices),
+
+            "invoices":
+                invoices
+
+        })
+
+
+    except Exception as e:
+
+        print(
+            "FINANCE INVOICE SEARCH ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e),
+
+            "invoices": []
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn:
+
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+# ============================================================
+# 4. GET NEXT INVOICE NUMBER
+# ============================================================
+# =========================================================
+# GENERATE NEXT INVOICE NUMBER
+#
+# GET:
+# /finance/api/invoices/next-number
+#
+# Example response:
+# {
+#     "success": true,
+#     "invoice_no": "INV-2026-0001"
+# }
+# =========================================================
+# =========================================================
+# GENERATE NEXT INVOICE NUMBER
+#
+# GET:
+# /finance/api/invoices/next-number
+#
+# Example:
+# INV-20260811-2520
+# INV-20260811-2521
+# =========================================================
+from flask import request, jsonify, session
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+
+@finance_dashboard_bp.route(
+    "/api/invoices/next-number",
+    methods=["GET"]
+)
+def get_next_invoice_number():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # =====================================================
+        # DATABASE CONNECTION
+        # =====================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(dictionary=True)
+
+
+        # =====================================================
+        # CURRENT YEAR
+        # =====================================================
+
+        year = datetime.now().year
+
+
+        # =====================================================
+        # FIND LAST INVOICE FOR THIS YEAR
+        #
+        # Expected format:
+        #
+        # INV-2026-0001
+        # INV-2026-0002
+        #
+        # =====================================================
+
+        prefix = f"INV-{year}-"
+
+
+        cursor.execute("""
+            SELECT
+                invoice_number
+            FROM invoices
+            WHERE invoice_number LIKE %s
+            ORDER BY invoice_id DESC
+            LIMIT 1
+        """, (
+            f"{prefix}%",
+        ))
+
+
+        last_invoice = cursor.fetchone()
+
+
+        # =====================================================
+        # DEFAULT NUMBER
+        # =====================================================
+
+        last_number = 0
+
+
+        # =====================================================
+        # EXTRACT LAST NUMBER
+        # =====================================================
+
+        if last_invoice:
+
+            last_invoice_number = (
+                last_invoice.get("invoice_number")
+            )
+
+
+            if last_invoice_number:
+
+                try:
+
+                    # Example:
+                    #
+                    # INV-2026-0007
+                    #
+                    # becomes:
+                    #
+                    # ["INV", "2026", "0007"]
+
+                    parts = (
+                        str(last_invoice_number)
+                        .split("-")
+                    )
+
+
+                    if len(parts) == 3:
+
+                        last_number = int(
+                            parts[2]
+                        )
+
+                except (
+                    ValueError,
+                    TypeError,
+                    IndexError
+                ):
+
+                    last_number = 0
+
+
+        # =====================================================
+        # NEXT NUMBER
+        # =====================================================
+
+        next_number = (
+            last_number + 1
+        )
+
+
+        # =====================================================
+        # CREATE INVOICE NUMBER
+        #
+        # INV-2026-0001
+        # =====================================================
+
+        invoice_number = (
+            f"INV-{year}-{next_number:04d}"
+        )
+
+
+        print(
+            "NEXT INVOICE NUMBER:",
+            invoice_number
+        )
+
+
+        # =====================================================
+        # RETURN
+        # =====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "invoice_no":
+                invoice_number,
+
+            "invoice_number":
+                invoice_number,
+
+            "year":
+                year,
+
+            "number":
+                next_number
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "GET NEXT INVOICE NUMBER ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+
+
+
+# ============================================================
+# 5. LOAD AVAILABLE GRNs FOR INVOICE
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/api/invoices/grns",
+    methods=["GET"]
+)
+def get_invoice_grns():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        if conn is None:
+            return jsonify({
+                "success": False,
+                "message": "Database connection failed.",
+                "grns": []
+            }), 500
+
+        cursor = conn.cursor(dictionary=True)
+
+        # ====================================================
+        # LOAD GRNs
+        #
+        # Only ACCEPTED GRNs should normally be available
+        # for invoice creation.
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                g.grn_id,
+                g.grn_no,
+                g.po_id,
+                g.supplier_id,
+                g.received_date,
+                g.status,
+
+                po.po_number,
+
+                COALESCE(
+                    s.supplier_name,
+                    po.supplier_name,
+                    ''
+                ) AS supplier_name
+
+            FROM grn g
+
+            LEFT JOIN purchase_orders po
+                ON po.purchase_order_id = g.po_id
+
+            LEFT JOIN suppliers s
+                ON s.supplier_id = g.supplier_id
+
+            WHERE
+                g.inspection_status = 'ACCEPTED'
+
+            ORDER BY
+                g.grn_id DESC
+        """)
+
+        grns = cursor.fetchall()
+
+        # ====================================================
+        # RESPONSE
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "count": len(grns),
+
+            "grns": grns
+
+        })
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()
+
+        print(
+            "INVOICE GRN LIST ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e),
+
+            "grns": []
+
+        }), 500
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn:
+
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+# ============================================================
+# 6. LOAD COMPLETE GRN DETAILS FOR INVOICE
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/api/invoices/grn/<int:grn_id>",
+    methods=["GET"]
+)
+def get_grn_items(grn_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # ====================================================
+        # DATABASE CONNECTION
+        # ====================================================
+
+        conn = get_db_connection()
+
+        if conn is None:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Database connection failed."
+
+            }), 500
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # 1. GET GRN HEADER
+        #
+        # GRN
+        #   ↓
+        # PO
+        #   ↓
+        # SUPPLIER
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                g.grn_id,
+
+                g.grn_no,
+
+                g.po_id,
+
+                g.supplier_id,
+
+                g.received_by,
+
+                g.received_date,
+
+                g.status AS grn_status,
+
+                g.remarks AS grn_remarks,
+
+                po.purchase_order_id,
+
+                po.po_number,
+
+                po.order_date,
+
+                po.total_amount AS po_total_amount,
+
+                COALESCE(
+                    s.supplier_name,
+                    po.supplier_name,
+                    ''
+                ) AS supplier_name
+
+            FROM grn g
+
+            LEFT JOIN purchase_orders po
+                ON po.purchase_order_id =
+                   g.po_id
+
+            LEFT JOIN suppliers s
+                ON s.supplier_id =
+                   g.supplier_id
+
+            WHERE
+                g.grn_id = %s
+
+            LIMIT 1
+
+        """, (grn_id,))
+
+
+        grn = cursor.fetchone()
+
+
+        # ====================================================
+        # 2. GRN NOT FOUND
+        # ====================================================
+
+        if not grn:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "GRN not found."
+
+            }), 404
+
+
+        # ====================================================
+        # 3. GET GRN ITEMS
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+
+                gi.grn_item_id,
+
+                gi.grn_id,
+
+                gi.material_name,
+
+                gi.description,
+
+                gi.quantity_ordered,
+
+                gi.quantity_received,
+
+                gi.quantity_rejected,
+
+                gi.remarks
+
+            FROM grn_items gi
+
+            WHERE
+                gi.grn_id = %s
+
+            ORDER BY
+                gi.grn_item_id ASC
+
+        """, (grn_id,))
+
+
+        grn_items = cursor.fetchall()
+
+
+        # ====================================================
+        # 4. GET PO ITEM PRICES
+        #
+        # Load them once instead of querying the PO table
+        # repeatedly inside the GRN item loop.
+        # ====================================================
+
+        po_prices = []
+
+        if grn.get("po_id"):
+
+            try:
+
+                cursor.execute("""
+                    SELECT
+
+                        purchase_order_item_id,
+
+                        purchase_order_id,
+
+                        material_name,
+
+                        description,
+
+                        quantity,
+
+                        unit_price
+
+                    FROM purchase_order_items
+
+                    WHERE
+                        purchase_order_id = %s
+
+                    ORDER BY
+                        purchase_order_item_id ASC
+
+                """, (
+                    grn["po_id"],
+                ))
+
+                po_prices = cursor.fetchall()
+
+            except Exception as price_error:
+
+                print(
+                    "PO ITEM PRICE LOOKUP ERROR:",
+                    price_error
+                )
+
+                po_prices = []
+
+
+        # ====================================================
+        # 5. BUILD INVOICE ITEMS
+        # ====================================================
+
+        invoice_items = []
+
+
+        for index, item in enumerate(grn_items):
+
+            material_name = (
+                item.get("material_name")
+                or ""
+            )
+
+
+            description = (
+                item.get("description")
+                or ""
+            )
+
+
+            # =================================================
+            # RECEIVED QUANTITY
+            # =================================================
+
+            if item.get(
+                "quantity_received"
+            ) is not None:
+
+                quantity = float(
+                    item[
+                        "quantity_received"
+                    ]
+                )
+
+            elif item.get(
+                "quantity_ordered"
+            ) is not None:
+
+                quantity = float(
+                    item[
+                        "quantity_ordered"
+                    ]
+                )
+
+            else:
+
+                quantity = 0
+
+
+            # =================================================
+            # DEFAULT PRICE
+            # =================================================
+
+            unit_price = 0
+
+
+            # =================================================
+            # MATCH PO ITEM
+            #
+            # First try material name + description.
+            # If there is only one PO item, use that price.
+            # =================================================
+
+            matching_po_item = None
+
+
+            for po_item in po_prices:
+
+                po_material = (
+                    po_item.get(
+                        "material_name"
+                    ) or ""
+                )
+
+                po_description = (
+                    po_item.get(
+                        "description"
+                    ) or ""
+                )
+
+
+                if (
+                    po_material.strip().lower()
+                    == material_name.strip().lower()
+                    and
+                    po_description.strip().lower()
+                    == description.strip().lower()
+                ):
+
+                    matching_po_item = po_item
+
+                    break
+
+
+            # =================================================
+            # IF ONLY ONE PO ITEM EXISTS
+            # =================================================
+
+            if (
+                matching_po_item is None
+                and len(po_prices) == 1
+            ):
+
+                matching_po_item = (
+                    po_prices[0]
+                )
+
+
+            # =================================================
+            # GET UNIT PRICE
+            # =================================================
+
+            if matching_po_item:
+
+                unit_price = float(
+                    matching_po_item.get(
+                        "unit_price"
+                    ) or 0
+                )
+
+
+            # =================================================
+            # CALCULATE AMOUNT
+            # =================================================
+
+            amount = (
+                quantity *
+                unit_price
+            )
+
+
+            # =================================================
+            # ADD INVOICE ITEM
+            # =================================================
+
+            invoice_items.append({
+
+                "item_id":
+                    item.get(
+                        "grn_item_id"
+                    ),
+
+                "grn_item_id":
+                    item.get(
+                        "grn_item_id"
+                    ),
+
+                "item_name":
+                    material_name,
+
+                "material_name":
+                    material_name,
+
+                "description":
+                    description,
+
+                "quantity_ordered":
+                    float(
+                        item.get(
+                            "quantity_ordered"
+                        ) or 0
+                    ),
+
+                "quantity_received":
+                    float(
+                        item.get(
+                            "quantity_received"
+                        ) or 0
+                    ),
+
+                "quantity_rejected":
+                    float(
+                        item.get(
+                            "quantity_rejected"
+                        ) or 0
+                    ),
+
+                "quantity":
+                    quantity,
+
+                "unit_price":
+                    unit_price,
+
+                "amount":
+                    amount,
+
+                "remarks":
+                    item.get(
+                        "remarks"
+                    ) or ""
+
+            })
+
+
+        # ====================================================
+        # 6. RESPONSE
+        # ====================================================
+
+        response = {
+
+            "success": True,
+
+            "grn": {
+
+                "grn_id":
+                    grn.get(
+                        "grn_id"
+                    ),
+
+                "grn_no":
+                    grn.get(
+                        "grn_no"
+                    ) or "",
+
+                "po_id":
+                    grn.get(
+                        "po_id"
+                    ),
+
+                "po_number":
+                    grn.get(
+                        "po_number"
+                    ) or "",
+
+                "supplier_id":
+                    grn.get(
+                        "supplier_id"
+                    ),
+
+                "supplier_name":
+                    grn.get(
+                        "supplier_name"
+                    ) or "",
+
+                "received_by":
+                    grn.get(
+                        "received_by"
+                    ),
+
+                "received_date":
+                    grn.get(
+                        "received_date"
+                    ),
+
+                "status":
+                    grn.get(
+                        "grn_status"
+                    ) or "",
+
+                "remarks":
+                    grn.get(
+                        "grn_remarks"
+                    ) or "",
+
+                "po_total_amount":
+                    float(
+                        grn.get(
+                            "po_total_amount"
+                        ) or 0
+                    )
+
+            },
+
+            "items":
+                invoice_items
+
+        }
+
+
+        # ====================================================
+        # 7. DEBUG
+        # ====================================================
+
+        print(
+            "\n=========================================="
+        )
+
+        print(
+            "INVOICE GRN DETAILS"
+        )
+
+        print(
+            "=========================================="
+        )
+
+        print(
+            "GRN ID:",
+            grn.get("grn_id")
+        )
+
+        print(
+            "GRN NO:",
+            grn.get("grn_no")
+        )
+
+        print(
+            "PO ID:",
+            grn.get("po_id")
+        )
+
+        print(
+            "PO NUMBER:",
+            grn.get("po_number")
+        )
+
+        print(
+            "SUPPLIER ID:",
+            grn.get("supplier_id")
+        )
+
+        print(
+            "SUPPLIER:",
+            grn.get("supplier_name")
+        )
+
+        print(
+            "STATUS:",
+            grn.get("grn_status")
+        )
+
+        print(
+            "ITEM COUNT:",
+            len(invoice_items)
+        )
+
+        print(
+            "ITEMS:",
+            invoice_items
+        )
+
+        print(
+            "==========================================\n"
+        )
+
+
+        return jsonify(
+            response
+        )
+
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()
+
+        print(
+            "INVOICE GRN DETAILS ERROR:",
+            str(e)
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load GRN details.",
+
+            "error":
+                str(e),
+
+            "items": []
+
+        }), 500
+
+
+    finally:
+
+        try:
+
+            if cursor:
+                cursor.close()
+
+        except Exception:
+            pass
+
+
+        try:
+
+            if conn:
+                conn.close()
+
+        except Exception:
+            pass
+
+
+
+@finance_dashboard_bp.route(
+    "/save_invoice",
+    methods=["POST"]
+)
+def save_invoice():
+
+    conn = None
+    cursor = None
+
+    try:
+
+        # =====================================================
+        # GET FORM DATA
+        # =====================================================
+
+        grn_id = (
+            request.form.get("grn_id")
+        )
+
+
+        invoice_no = (
+            request.form.get("invoice_no")
+            or request.form.get("invoice_number")
+        )
+
+
+        invoice_date = (
+            request.form.get("invoice_date")
+        )
+
+
+        # =====================================================
+        # CREATED BY
+        #
+        # First try the hidden form field.
+        # Then try the logged-in session.
+        # =====================================================
+
+        created_by = (
+            request.form.get("invoiceCreatedBy")
+            or request.form.get("created_by")
+        )
+
+
+        if not created_by:
+
+            created_by = (
+                session.get("user_id")
+                or session.get("userId")
+                or session.get("id")
+            )
+
+
+        # =====================================================
+        # DEBUG
+        # =====================================================
+
+        print(
+            "========================================"
+        )
+
+        print(
+            "SAVE INVOICE REQUEST"
+        )
+
+        print(
+            "GRN:",
+            grn_id
+        )
+
+        print(
+            "Invoice Number:",
+            invoice_no
+        )
+
+        print(
+            "Invoice Date:",
+            invoice_date
+        )
+
+        print(
+            "Created By:",
+            created_by
+        )
+
+        print(
+            "========================================"
+        )
+
+
+        # =====================================================
+        # GET ITEMS
+        # =====================================================
+
+        item_names = request.form.getlist(
+            "item_name[]"
+        )
+
+
+        descriptions = request.form.getlist(
+            "description[]"
+        )
+
+
+        quantities = request.form.getlist(
+            "quantity[]"
+        )
+
+
+        unit_prices = request.form.getlist(
+            "unit_price[]"
+        )
+
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
+
+        if not grn_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "GRN is required."
+
+            }), 400
+
+
+        if not invoice_date:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invoice date is required."
+
+            }), 400
+
+
+        if not created_by:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Created by user is required."
+
+            }), 400
+
+
+        # =====================================================
+        # CONVERT CREATED BY TO INTEGER
+        # =====================================================
+
+        try:
+
+            created_by = int(
+                created_by
+            )
+
+        except (
+            ValueError,
+            TypeError
+        ):
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invalid created by user ID."
+
+            }), 400
+
+
+        # =====================================================
+        # DATABASE CONNECTION
+        # =====================================================
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # =====================================================
+        # VERIFY GRN
+        #
+        # We need the PO linked to the GRN.
+        # =====================================================
+
+        cursor.execute("""
+            SELECT
+                g.grn_id,
+                g.grn_no,
+                g.po_id
+            FROM grn g
+            WHERE g.grn_id = %s
+            LIMIT 1
+        """, (
+            grn_id,
+        ))
+
+
+        grn = cursor.fetchone()
+
+
+        if not grn:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Selected GRN was not found."
+
+            }), 404
+
+
+        # =====================================================
+        # PURCHASE ORDER
+        # =====================================================
+
+        purchase_order_id = (
+            grn.get("po_id")
+        )
+
+
+        if not purchase_order_id:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Selected GRN is not linked to a purchase order."
+
+            }), 400
+
+
+        # =====================================================
+        # GET SUPPLIER NAME
+        #
+        # We first try the supplier_name column in
+        # purchase_orders.
+        # =====================================================
+
+        supplier_name = ""
+
+
+        try:
+
+            cursor.execute("""
+                SELECT
+                    supplier_name
+                FROM purchase_orders
+                WHERE purchase_order_id = %s
+                LIMIT 1
+            """, (
+                purchase_order_id,
+            ))
+
+
+            po = cursor.fetchone()
+
+
+            if po:
+
+                supplier_name = (
+                    po.get("supplier_name")
+                    or ""
+                )
+
+        except Exception:
+
+            # If purchase_orders does not have
+            # supplier_name, we continue below.
+
+            supplier_name = ""
+
+
+        # =====================================================
+        # FALLBACK SUPPLIER
+        #
+        # If your purchase_orders table uses supplier_id,
+        # get supplier name from suppliers.
+        # =====================================================
+
+        if not supplier_name:
+
+            try:
+
+                cursor.execute("""
+                    SELECT
+                        po.supplier_id
+                    FROM purchase_orders po
+                    WHERE po.purchase_order_id = %s
+                    LIMIT 1
+                """, (
+                    purchase_order_id,
+                ))
+
+
+                po_supplier = (
+                    cursor.fetchone()
+                )
+
+
+                if po_supplier:
+
+                    supplier_id = (
+                        po_supplier.get(
+                            "supplier_id"
+                        )
+                    )
+
+
+                    if supplier_id:
+
+                        cursor.execute("""
+                            SELECT
+                                supplier_name
+                            FROM suppliers
+                            WHERE supplier_id = %s
+                            LIMIT 1
+                        """, (
+                            supplier_id,
+                        ))
+
+
+                        supplier = (
+                            cursor.fetchone()
+                        )
+
+
+                        if supplier:
+
+                            supplier_name = (
+                                supplier.get(
+                                    "supplier_name"
+                                )
+                                or ""
+                            )
+
+            except Exception:
+
+                pass
+
+
+        # =====================================================
+        # FINAL SUPPLIER FALLBACK
+        # =====================================================
+
+        if not supplier_name:
+
+            supplier_name = "Unknown Supplier"
+
+
+        # =====================================================
+        # GENERATE INVOICE NUMBER
+        #
+        # FORMAT:
+        #
+        # INV-2026-0001
+        #
+        # =====================================================
+
+        year = datetime.now().year
+
+
+        prefix = (
+            f"INV-{year}-"
+        )
+
+
+        cursor.execute("""
+            SELECT
+                invoice_number
+            FROM invoices
+            WHERE invoice_number LIKE %s
+            ORDER BY invoice_id DESC
+            LIMIT 1
+        """, (
+            f"{prefix}%",
+        ))
+
+
+        last_invoice = (
+            cursor.fetchone()
+        )
+
+
+        last_number = 0
+
+
+        if last_invoice:
+
+            last_invoice_number = (
+                last_invoice.get(
+                    "invoice_number"
+                )
+            )
+
+
+            if last_invoice_number:
+
+                try:
+
+                    parts = (
+                        str(
+                            last_invoice_number
+                        )
+                        .split("-")
+                    )
+
+
+                    if len(parts) == 3:
+
+                        last_number = int(
+                            parts[2]
+                        )
+
+                except (
+                    ValueError,
+                    TypeError,
+                    IndexError
+                ):
+
+                    last_number = 0
+
+
+        # =====================================================
+        # NEXT NUMBER
+        # =====================================================
+
+        next_number = (
+            last_number + 1
+        )
+
+
+        generated_invoice_no = (
+            f"INV-{year}-{next_number:04d}"
+        )
+
+
+        print(
+            "GENERATED INVOICE:",
+            generated_invoice_no
+        )
+
+
+        # =====================================================
+        # VALIDATE ITEMS
+        # =====================================================
+
+        item_count = max(
+            len(item_names),
+            len(descriptions),
+            len(quantities),
+            len(unit_prices)
+        )
+
+
+        if item_count == 0:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invoice must contain at least one item."
+
+            }), 400
+
+
+        validated_items = []
+
+        invoice_total = Decimal(
+            "0.00"
+        )
+
+
+        # =====================================================
+        # PROCESS ITEMS
+        # =====================================================
+
+        for i in range(
+            item_count
+        ):
+
+            # -------------------------------------------------
+            # DESCRIPTION
+            # -------------------------------------------------
+
+            description = ""
+
+
+            if i < len(
+                descriptions
+            ):
+
+                description = (
+                    descriptions[i]
+                    or ""
+                ).strip()
+
+
+            # Use item name if description
+            # is empty.
+
+            if (
+                not description
+                and i < len(item_names)
+            ):
+
+                description = (
+                    item_names[i]
+                    or ""
+                ).strip()
+
+
+            if not description:
+
+                description = (
+                    f"Invoice Item {i + 1}"
+                )
+
+
+            # -------------------------------------------------
+            # QUANTITY
+            # -------------------------------------------------
+
+            quantity_value = (
+                quantities[i]
+                if i < len(quantities)
+                else "0"
+            )
+
+
+            # -------------------------------------------------
+            # UNIT PRICE
+            # -------------------------------------------------
+
+            unit_price_value = (
+                unit_prices[i]
+                if i < len(unit_prices)
+                else "0"
+            )
+
+
+            # -------------------------------------------------
+            # DECIMAL CONVERSION
+            # -------------------------------------------------
+
+            try:
+
+                quantity = Decimal(
+                    str(quantity_value)
+                )
+
+
+                unit_price = Decimal(
+                    str(unit_price_value)
+                )
+
+            except (
+                InvalidOperation,
+                ValueError,
+                TypeError
+            ):
+
+                return jsonify({
+
+                    "success": False,
+
+                    "message":
+                        f"Invalid quantity or unit price for item {i + 1}."
+
+                }), 400
+
+
+            # -------------------------------------------------
+            # QUANTITY VALIDATION
+            # -------------------------------------------------
+
+            if quantity <= 0:
+
+                return jsonify({
+
+                    "success": False,
+
+                    "message":
+                        f"Quantity must be greater than zero for item {i + 1}."
+
+                }), 400
+
+
+            # -------------------------------------------------
+            # PRICE VALIDATION
+            # -------------------------------------------------
+
+            if unit_price < 0:
+
+                return jsonify({
+
+                    "success": False,
+
+                    "message":
+                        f"Unit price cannot be negative for item {i + 1}."
+
+                }), 400
+
+
+            # -------------------------------------------------
+            # CALCULATE TOTAL
+            # -------------------------------------------------
+
+            total_price = (
+                quantity * unit_price
+            )
+
+
+            invoice_total += (
+                total_price
+            )
+
+
+            # -------------------------------------------------
+            # STORE ITEM
+            # -------------------------------------------------
+
+            validated_items.append({
+
+                "description":
+                    description,
+
+                "quantity":
+                    quantity,
+
+                "unit_price":
+                    unit_price,
+
+                "total_price":
+                    total_price
+
+            })
+
+
+        # =====================================================
+        # TOTAL VALIDATION
+        # =====================================================
+
+        if invoice_total <= Decimal(
+            "0.00"
+        ):
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invoice total must be greater than zero."
+
+            }), 400
+
+
+        # =====================================================
+        # CONVERT DATE
+        # =====================================================
+
+        try:
+
+            parsed_date = datetime.strptime(
+                invoice_date,
+                "%Y-%m-%d"
+            )
+
+
+            invoice_datetime = (
+                parsed_date.strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            )
+
+        except ValueError:
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Invalid invoice date. Expected YYYY-MM-DD."
+
+            }), 400
+
+
+        # =====================================================
+        # INSERT INVOICE
+        #
+        # ACTUAL DATABASE COLUMNS:
+        #
+        # purchase_order_id
+        # invoice_number
+        # supplier_name
+        # invoice_date
+        # total_amount
+        # status
+        # created_by
+        # =====================================================
+
+        cursor.execute("""
+            INSERT INTO invoices (
+                purchase_order_id,
+                invoice_number,
+                supplier_name,
+                invoice_date,
+                total_amount,
+                status,
+                created_by,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                'Pending',
+                %s,
+                NOW(),
+                NOW()
+            )
+        """, (
+            purchase_order_id,
+            generated_invoice_no,
+            supplier_name,
+            invoice_datetime,
+            invoice_total,
+            created_by
+        ))
+
+
+        invoice_id = (
+            cursor.lastrowid
+        )
+
+
+        # =====================================================
+        # INSERT INVOICE ITEMS
+        #
+        # ACTUAL invoice_items COLUMNS:
+        #
+        # invoice_id
+        # description
+        # quantity
+        # unit_price
+        # total_price
+        # =====================================================
+
+        for item in validated_items:
+
+            cursor.execute("""
+                INSERT INTO invoice_items (
+                    invoice_id,
+                    description,
+                    quantity,
+                    unit_price,
+                    total_price,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    NOW(),
+                    NOW()
+                )
+            """, (
+                invoice_id,
+                item["description"],
+                item["quantity"],
+                item["unit_price"],
+                item["total_price"]
+            ))
+
+
+        # =====================================================
+        # COMMIT
+        # =====================================================
+
+        conn.commit()
+
+
+        # =====================================================
+        # SUCCESS
+        # =====================================================
+
+        print(
+            "========================================"
+        )
+
+        print(
+            "INVOICE CREATED SUCCESSFULLY"
+        )
+
+        print(
+            "Invoice ID:",
+            invoice_id
+        )
+
+        print(
+            "Invoice Number:",
+            generated_invoice_no
+        )
+
+        print(
+            "Created By:",
+            created_by
+        )
+
+        print(
+            "Total:",
+            invoice_total
+        )
+
+        print(
+            "========================================"
+        )
+
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Invoice created successfully.",
+
+            "invoice_id":
+                invoice_id,
+
+            "invoice_no":
+                generated_invoice_no,
+
+            "invoice_number":
+                generated_invoice_no,
+
+            "purchase_order_id":
+                purchase_order_id,
+
+            "supplier_name":
+                supplier_name,
+
+            "total_amount":
+                float(invoice_total),
+
+            "created_by":
+                created_by
+
+        }), 200
+
+
+    # =========================================================
+    # ERROR HANDLER
+    # =========================================================
+
+    except Exception as e:
+
+        if conn:
+
+            conn.rollback()
+
+
+        print(
+            "========================================"
+        )
+
+        print(
+            "SAVE INVOICE ERROR:",
+            str(e)
+        )
+
+        print(
+            "========================================"
+        )
+
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                str(e)
+
+        }), 500
+
+
+    # =========================================================
+    # CLOSE DATABASE
+    # =========================================================
+
+    finally:
+
+        if cursor:
+
+            cursor.close()
+
+
+        if conn:
+
+            conn.close()
+
+
+
+
+
+            
+            
 
 @finance_dashboard_bp.route("/api/invoice/<int:invoice_id>")
 def get_invoice(invoice_id):
@@ -181,46 +2595,92 @@ def next_payment_no():
     return jsonify({"payment_no": new_no})
 
 # FINANCE REQUISITION MODULE
+
+
+
+
 @finance_dashboard_bp.route("/api/finance_requisition")
 def finance_requisition():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
-    cursor.execute("""
-        SELECT 
-            r.requisition_id,
-            r.prs_no,
-            d.department_name,
-            r.submission_date,
-            r.status,
+    try:
 
-            COALESCE(a.hod_status, 'PENDING') AS hod_status,
-            COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
-            COALESCE(a.final_status, 'PENDING') AS final_status
+        conn = get_db_connection()
 
-        FROM requisitions r
+        cursor = conn.cursor(dictionary=True)
 
-        JOIN departments d 
-            ON r.department_id = d.department_id
+        cursor.execute("""
+            SELECT 
 
-        LEFT JOIN approvals a 
-            ON a.module_name = 'PRS'
-            AND a.document_id = r.requisition_id
+                r.requisition_id,
 
-        ORDER BY r.requisition_id DESC
-    """)
+                r.prs_no,
 
-    rows = cursor.fetchall()
+                d.department_name,
 
-    for row in rows:
-        if row.get("submission_date"):
-            row["submission_date"] = row["submission_date"].isoformat()
+                r.submission_date,
 
-    cursor.close()
-    conn.close()
+                -- FINAL STATUS FROM APPROVALS TABLE
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS final_status,
 
-    return jsonify(rows)
+                -- NUMBER OF DAYS SINCE SUBMISSION
+                DATEDIFF(
+                    CURRENT_DATE,
+                    DATE(r.submission_date)
+                ) AS due
+
+            FROM requisitions r
+
+            INNER JOIN departments d
+                ON r.department_id =
+                   d.department_id
+
+            LEFT JOIN approvals a
+                ON a.module_name = 'PRS'
+                AND a.document_id =
+                    r.requisition_id
+
+            ORDER BY
+                r.requisition_id DESC
+
+        """)
+
+        data = cursor.fetchall()
+
+        return jsonify(data)
+
+    except Exception as e:
+
+        print(
+            "Procurement Requisition API Error:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to load procurement requisitions.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
 
 
 
@@ -232,87 +2692,100 @@ def finance_requisition_details(req_id):
 
     try:
 
-        # =========================
-        # HEADER
-        # =========================
+        # =====================================
+        # REQUISITION HEADER
+        # =====================================
         cursor.execute("""
-            SELECT 
+            SELECT
+
                 r.requisition_id,
                 r.prs_no,
-                d.department_name,
                 r.submission_date,
 
-                COALESCE(a.hod_status, 'PENDING') AS hod_status,
-                COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+                d.department_name,
+
+                u.username AS requester_name,
+                u.email AS requester_email,
+                u.signature AS requester_signature,
+
+                COALESCE(a.hod_status,'PENDING') AS hod_status,
+                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+                COALESCE(a.final_status,'PENDING') AS status,
 
                 a.hod_approved_at,
-                a.ceo_approved_at
+                a.ceo_approved_at,
+
+                hod.username AS hod_name,
+                hod.signature AS hod_signature,
+
+                ceo.username AS ceo_name,
+                ceo.signature AS ceo_signature
 
             FROM requisitions r
 
-            JOIN departments d 
-                ON r.department_id = d.department_id
+            LEFT JOIN departments d
+                ON d.department_id = r.department_id
 
-            LEFT JOIN approvals a 
+            LEFT JOIN users u
+                ON u.user_id = r.user_id
+
+            LEFT JOIN approvals a
                 ON a.module_name = 'PRS'
-                AND a.document_id = r.requisition_id
+               AND a.document_id = r.requisition_id
+
+            LEFT JOIN users hod
+                ON hod.user_id = a.hod_user_id
+
+            LEFT JOIN users ceo
+                ON ceo.user_id = a.ceo_user_id
 
             WHERE r.requisition_id = %s
-            LIMIT 1
+
         """, (req_id,))
 
-        req = cursor.fetchone()
+        requisition = cursor.fetchone()
 
-        if not req:
-            return jsonify({"error": "Requisition not found"}), 404
+        if not requisition:
+            return jsonify({
+                "success": False,
+                "message": "Requisition not found"
+            }), 404
 
-        # =========================
+        # =====================================
         # ITEMS
-        # =========================
+        # =====================================
         cursor.execute("""
-            SELECT 
+            SELECT
                 material_name,
+                description,
                 uom,
-                qty_required
+                qty_stock,
+                qty_required,
+                required_date,
+                remark
             FROM requisition_items
             WHERE requisition_id = %s
         """, (req_id,))
 
         items = cursor.fetchall()
 
-        # =========================
-        # FORMAT DATES
-        # =========================
-        if req.get("submission_date"):
-            req["submission_date"] = req["submission_date"].isoformat()
-
-        if req.get("hod_approved_at"):
-            req["hod_approved_at"] = req["hod_approved_at"].isoformat()
-
-        if req.get("ceo_approved_at"):
-            req["ceo_approved_at"] = req["ceo_approved_at"].isoformat()
-
-        # =========================
-        # FINAL RESPONSE (CLEAN)
-        # =========================
         return jsonify({
-            "requisition_id": req["requisition_id"],
-            "prs_no": req["prs_no"],
-            "department": req["department_name"],
-            "submission_date": req["submission_date"],
-
-            "hod_status": req["hod_status"],
-            "ceo_status": req["ceo_status"],
-
-            "hod_approved_at": req["hod_approved_at"],
-            "ceo_approved_at": req["ceo_approved_at"],
-
+            "success": True,
+            "requisition": requisition,
             "items": items
         })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
     finally:
         cursor.close()
         conn.close()
+
+
 
 
 
@@ -578,3 +3051,18 @@ def finance_invoice_details(invoice_id):
     finally:
         cursor.close()
         conn.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

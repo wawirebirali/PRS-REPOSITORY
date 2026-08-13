@@ -3533,6 +3533,9 @@ Date
 
                     <!-- ================= PO NUMBER ================= -->
 
+
+                    
+
                     <div class="form-group">
 
                         <label for="po_id">
@@ -3542,34 +3545,23 @@ Date
                         </label>
 
 
-                        <select
-                            id="po_id"
-                            name="po_id"
-                            onchange="loadPOForGRN(this.value)"
-                            required
-                        >
+                       <select
+                        id="po_id"
+                        name="po_id"
+                        onchange="console.log('SELECTED PO ID:', this.value); loadPOForGRN(this.value)"
+                        required
+                    >
+                        <option value="">
+                            -- Select Purchase Order --
+                        </option>
 
-                            <option value="">
+                        {% for po in pos %}
+                        <option value="{{ po.purchase_order_id }}">
+                            {{ po.po_number }} — ID: {{ po.purchase_order_id }}
+                        </option>
+                        {% endfor %}
 
-                                -- Select Purchase Order --
-
-                            </option>
-
-
-                            {% for po in pos %}
-
-                            <option
-                                value="{{ po.purchase_order_id }}"
-                            >
-
-                                {{ po.po_number }}
-
-                            </option>
-
-                            {% endfor %}
-
-                        </select>
-
+                    </select>
                     </div>
 
 
