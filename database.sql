@@ -103,7 +103,7 @@ CREATE TABLE payments (
     payment_id INT AUTO_INCREMENT PRIMARY KEY,
 
     requisition_id INT NULL,
-    invoice_id INT NOT NULL,   -- ✅ RELATION TO INVOICES
+    invoice_id INT NOT NULL,
 
     payment_no VARCHAR(50) NOT NULL UNIQUE,
 
@@ -134,49 +134,28 @@ CREATE TABLE payments (
     remarks TEXT,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
 
-    -- FK: invoice
     CONSTRAINT fk_payment_invoice
         FOREIGN KEY (invoice_id)
         REFERENCES invoices(invoice_id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
 
-    -- FK: requisition (optional traceability)
     CONSTRAINT fk_payment_requisition
         FOREIGN KEY (requisition_id)
         REFERENCES requisitions(requisition_id)
         ON DELETE SET NULL
         ON UPDATE CASCADE,
 
-    -- FK: user who paid
     CONSTRAINT fk_payment_user
         FOREIGN KEY (paid_by)
         REFERENCES users(user_id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE
+
 ) ENGINE=InnoDB;
-
-    CONSTRAINT fk_payments_requisition
-        FOREIGN KEY (requisition_id)
-        REFERENCES requisitions(requisition_id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_payments_invoice
-        FOREIGN KEY (invoice_id)
-        REFERENCES invoices(invoice_id)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
-
-    CONSTRAINT fk_payments_user
-        FOREIGN KEY (paid_by)
-        REFERENCES users(user_id)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE
-) ENGINE=InnoDB;Sign in to enable AI completions, or disable inline completions in Settings (DBCode > AI).
-
 -- =========================
 -- 7. PURCHASE ORDERS
 -- =========================

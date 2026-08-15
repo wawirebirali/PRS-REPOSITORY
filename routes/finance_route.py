@@ -2428,49 +2428,173 @@ def save_invoice():
 
 
 
-            
-            
-
-@finance_dashboard_bp.route("/api/invoice/<int:invoice_id>")
-def get_invoice(invoice_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    cursor.execute("""
-        SELECT 
-            i.invoice_id,
-            i.invoice_number,
-            i.supplier_name,
-            i.total_amount,
-
-            po.purchase_order_id,
-            po.po_number,
-
-            r.requisition_id,
-            r.prs_no
-
-        FROM invoices i
-
-        LEFT JOIN purchase_orders po 
-            ON i.purchase_order_id = po.purchase_order_id
-
-        LEFT JOIN requisitions r 
-            ON po.requisition_id = r.requisition_id
-
-        WHERE i.invoice_id = %s
-    """, (invoice_id,))
-
-    invoice = cursor.fetchone()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(invoice)
-
+from flask import request, jsonify, session
 from datetime import datetime
+from db_connect import get_db_connection
+
+
+# ============================================================
+# GET INVOICE FOR PAYMENT
+# ============================================================
+
+@finance_dashboard_bp.route("/api/invoice/<int:invoice_id>", methods=["GET"])
+def get_invoice(invoice_id):
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_number,
+                i.supplier_name,
+                i.total_amount,
+
+                po.purchase_order_id,
+                po.po_number,
+
+                r.requisition_id,
+                r.prs_no,
+
+                COALESCE(
+                    SUM(p.amount_paid),
+                    0
+                ) AS previous_paid
+
+            FROM invoices i
+
+            LEFT JOIN purchase_orders po
+                ON i.purchase_order_id = po.purchase_order_id
+
+            LEFT JOIN requisitions r
+                ON po.requisition_id = r.requisition_id
+
+            LEFT JOIN payments p
+                ON i.invoice_id = p.invoice_id
+
+            WHERE i.invoice_id = %s
+
+            GROUP BY
+                i.invoice_id,
+                i.invoice_number,
+                i.supplier_name,
+                i.total_amount,
+                po.purchase_order_id,
+                po.po_number,
+                r.requisition_id,
+                r.prs_no
+
+        """, (invoice_id,))
+
+        invoice = cursor.fetchone()
+
+
+        # ====================================================
+        # INVOICE NOT FOUND
+        # ====================================================
+
+        if not invoice:
+
+            return jsonify({
+                "success": False,
+                "message": "Invoice not found."
+            }), 404
+
+
+        # ====================================================
+        # CALCULATE REAL BALANCE
+        # ====================================================
+
+        invoice_total = float(
+            invoice["total_amount"] or 0
+        )
+
+        previous_paid = float(
+            invoice["previous_paid"] or 0
+        )
+
+        balance = invoice_total - previous_paid
+
+
+        # NEVER ALLOW NEGATIVE BALANCE
+        if balance < 0:
+            balance = 0
+
+
+        # ====================================================
+        # RETURN INVOICE
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "invoice_id":
+                invoice["invoice_id"],
+
+            "invoice_number":
+                invoice["invoice_number"],
+
+            "supplier_name":
+                invoice["supplier_name"] or "",
+
+            "total_amount":
+                f"{invoice_total:.2f}",
+
+            "previous_paid":
+                f"{previous_paid:.2f}",
+
+            "balance":
+                f"{balance:.2f}",
+
+            "purchase_order_id":
+                invoice["purchase_order_id"],
+
+            "po_number":
+                invoice["po_number"] or "",
+
+            "requisition_id":
+                invoice["requisition_id"],
+
+            "prs_no":
+                invoice["prs_no"] or ""
+
+        }), 200
+
+
+    except Exception as e:
+
+        print(
+            "GET INVOICE ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load invoice.",
+            "error": str(e)
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# ============================================================
+# GENERATE PAYMENT NUMBER
+# ============================================================
 
 def generate_payment_no(cursor):
-    from datetime import datetime
 
     year = datetime.now().year
 
@@ -2484,119 +2608,517 @@ def generate_payment_no(cursor):
 
     last = cursor.fetchone()
 
+
+    # FIRST PAYMENT OF THE YEAR
     if not last:
+
         return f"PAY/{year}/0001"
 
+
+    # GET LAST NUMBER
     last_no = last["payment_no"]
-    last_num = int(last_no.split("/")[-1])
 
-    return f"PAY/{year}/{str(last_num + 1).zfill(4)}"
+    try:
 
-@finance_dashboard_bp.route("/create_payment", methods=["POST"])
+        last_num = int(
+            last_no.split("/")[-1]
+        )
+
+    except (ValueError, IndexError):
+
+        last_num = 0
 
 
+    return (
+        f"PAY/{year}/"
+        f"{str(last_num + 1).zfill(4)}"
+    )
+
+
+# ============================================================
+# CREATE PAYMENT
+# ============================================================
+
+@finance_dashboard_bp.route(
+    "/create_payment",
+    methods=["POST"]
+)
 def create_payment():
-    data = request.json
+
+    data = request.get_json(silent=True) or {}
+
     user_id = session.get("user_id")
 
+
+    # ========================================================
+    # AUTHENTICATION
+    # ========================================================
+
     if not user_id:
-        return jsonify({"success": False, "message": "Unauthorized"}), 401
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+        return jsonify({
+            "success": False,
+            "message": "Unauthorized"
+        }), 401
 
-    # =========================
-    # GET requisition_id from invoice
-    # =========================
-    cursor.execute("""
-        SELECT po.requisition_id
-        FROM invoices i
-        JOIN purchase_orders po 
-            ON i.purchase_order_id = po.purchase_order_id
-        WHERE i.invoice_id = %s
-    """, (data["invoice_id"],))
 
-    row = cursor.fetchone()
-    requisition_id = row["requisition_id"] if row else None
+    # ========================================================
+    # REQUIRED DATA
+    # ========================================================
 
-    # =========================
-    # generate payment number
-    # =========================
-    payment_no = generate_payment_no(cursor)
+    invoice_id = data.get("invoice_id")
+    payment_method = data.get("payment_method")
+    amount_paid_raw = data.get("amount_paid")
+    payment_date = data.get("payment_date")
+    remarks = data.get("remarks", "")
 
-    # =========================
-    # INSERT PAYMENT
-    # =========================
-    cursor.execute("""
-        INSERT INTO payments (
+
+    if not invoice_id:
+
+        return jsonify({
+            "success": False,
+            "message": "Invoice is required."
+        }), 400
+
+
+    if not payment_method:
+
+        return jsonify({
+            "success": False,
+            "message": "Payment method is required."
+        }), 400
+
+
+    if amount_paid_raw in (
+        None,
+        "",
+        "null"
+    ):
+
+        return jsonify({
+            "success": False,
+            "message": "Amount paid is required."
+        }), 400
+
+
+    # ========================================================
+    # CONVERT AMOUNT
+    # ========================================================
+
+    try:
+
+        amount_paid = float(
+            amount_paid_raw
+        )
+
+    except (ValueError, TypeError):
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid payment amount."
+        }), 400
+
+
+    # ========================================================
+    # PAYMENT MUST BE GREATER THAN ZERO
+    # ========================================================
+
+    if amount_paid <= 0:
+
+        return jsonify({
+            "success": False,
+            "message":
+                "Amount paid must be greater than zero."
+        }), 400
+
+
+    conn = None
+    cursor = None
+
+    try:
+
+        conn = get_db_connection()
+
+        cursor = conn.cursor(
+            dictionary=True
+        )
+
+
+        # ====================================================
+        # GET INVOICE AND CURRENT PAYMENTS
+        # ====================================================
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.total_amount,
+
+                po.requisition_id,
+
+                COALESCE(
+                    SUM(p.amount_paid),
+                    0
+                ) AS previous_paid
+
+            FROM invoices i
+
+            LEFT JOIN purchase_orders po
+                ON i.purchase_order_id =
+                   po.purchase_order_id
+
+            LEFT JOIN payments p
+                ON i.invoice_id =
+                   p.invoice_id
+
+            WHERE i.invoice_id = %s
+
+            GROUP BY
+                i.invoice_id,
+                i.total_amount,
+                po.requisition_id
+
+        """, (invoice_id,))
+
+
+        invoice = cursor.fetchone()
+
+
+        # ====================================================
+        # INVOICE DOES NOT EXIST
+        # ====================================================
+
+        if not invoice:
+
+            return jsonify({
+                "success": False,
+                "message": "Invoice not found."
+            }), 404
+
+
+        # ====================================================
+        # CALCULATE REAL BALANCE FROM DATABASE
+        # ====================================================
+
+        invoice_total = float(
+            invoice["total_amount"] or 0
+        )
+
+        previous_paid = float(
+            invoice["previous_paid"] or 0
+        )
+
+        current_balance = (
+            invoice_total -
+            previous_paid
+        )
+
+
+        # NEVER ALLOW NEGATIVE BALANCE
+        if current_balance < 0:
+            current_balance = 0
+
+
+        # ====================================================
+        # CHECK IF ALREADY FULLY PAID
+        # ====================================================
+
+        if current_balance <= 0:
+
+            conn.rollback()
+
+            return jsonify({
+                "success": False,
+                "message":
+                    "Invoice already paid. "
+                    "No outstanding balance remains."
+            }), 400
+
+
+        # ====================================================
+        # PREVENT OVERPAYMENT
+        # ====================================================
+
+        if amount_paid > current_balance:
+
+            conn.rollback()
+
+            return jsonify({
+
+                "success": False,
+
+                "message":
+                    "Payment amount cannot exceed "
+                    "the invoice balance.",
+
+                "invoice_total":
+                    f"{invoice_total:.2f}",
+
+                "previous_paid":
+                    f"{previous_paid:.2f}",
+
+                "current_balance":
+                    f"{current_balance:.2f}",
+
+                "amount_entered":
+                    f"{amount_paid:.2f}"
+
+            }), 400
+
+
+        # ====================================================
+        # CALCULATE NEW BALANCE
+        # ====================================================
+
+        new_balance = (
+            current_balance -
+            amount_paid
+        )
+
+
+        # NEVER ALLOW NEGATIVE BALANCE
+        if new_balance < 0:
+            new_balance = 0
+
+
+        # ====================================================
+        # GET REQUISITION ID
+        # ====================================================
+
+        requisition_id = (
+            invoice["requisition_id"]
+        )
+
+
+        # ====================================================
+        # GENERATE PAYMENT NUMBER
+        # ====================================================
+
+        payment_no = generate_payment_no(
+            cursor
+        )
+
+
+        # ====================================================
+        # INSERT PAYMENT
+        # ====================================================
+
+        cursor.execute("""
+            INSERT INTO payments (
+                requisition_id,
+                invoice_id,
+                payment_no,
+                paid_by,
+                payment_method,
+                amount,
+                amount_paid,
+                balance,
+                payment_date,
+                remarks
+            )
+
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+
+        """, (
+
             requisition_id,
+
             invoice_id,
+
             payment_no,
-            paid_by,
+
+            user_id,
+
             payment_method,
-            amount,
+
+            invoice_total,
+
             amount_paid,
-            balance,
-            payment_date,
+
+            new_balance,
+
+            payment_date or datetime.now(),
+
             remarks
-        ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-    """, (
-        requisition_id,
-        data["invoice_id"],
-        payment_no,
-        user_id,
-        data["payment_method"],
-        data["amount"],
-        data["amount_paid"],
-        data["balance"],
-        datetime.now(),
-        data["remarks"]
-    ))
+        ))
 
-    conn.commit()
-    cursor.close()
-    conn.close()
 
-    return jsonify({
-        "success": True,
-        "payment_no": payment_no
-    })
+        # ====================================================
+        # COMMIT
+        # ====================================================
 
-@finance_dashboard_bp.route("/next_payment_no")
+        conn.commit()
+
+
+        # ====================================================
+        # RESPONSE
+        # ====================================================
+
+        return jsonify({
+
+            "success": True,
+
+            "message":
+                "Payment created successfully.",
+
+            "payment_no":
+                payment_no,
+
+            "invoice_total":
+                f"{invoice_total:.2f}",
+
+            "amount_paid":
+                f"{amount_paid:.2f}",
+
+            "previous_paid":
+                f"{previous_paid:.2f}",
+
+            "balance":
+                f"{new_balance:.2f}"
+
+        }), 201
+
+
+    except Exception as e:
+
+        if conn:
+            conn.rollback()
+
+        print(
+            "CREATE PAYMENT ERROR:",
+            str(e)
+        )
+
+        return jsonify({
+
+            "success": False,
+
+            "message":
+                "Failed to create payment.",
+
+            "error":
+                str(e)
+
+        }), 500
+
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+# ============================================================
+# GET NEXT PAYMENT NUMBER
+# Format: PAY-YYYY-NNNN
+# Example: PAY-2026-0001
+# ============================================================
+@finance_dashboard_bp.route("/next_payment_no", methods=["GET"])
 def next_payment_no():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT payment_no 
-        FROM payments
-        ORDER BY payment_id DESC
-        LIMIT 1
-    """)
-    last = cursor.fetchone()
+    conn = None
+    cursor = None
 
-    from datetime import datetime
-    year = datetime.now().year
+    try:
+        from datetime import datetime
 
-    if not last or last["payment_no"] is None:
-        new_no = f"PAY/{year}/0001"
-    else:
-        last_no = last["payment_no"]
-        try:
-            last_num = int(last_no.split("/")[-1])
-        except:
-            last_num = 0
+        conn = get_db_connection()
 
-        new_no = f"PAY/{year}/{str(last_num + 1).zfill(4)}"
+        if conn is None:
+            return jsonify({
+                "success": False,
+                "message": "Unable to connect to the database."
+            }), 500
 
-    cursor.close()
-    conn.close()
+        cursor = conn.cursor(dictionary=True)
 
-    return jsonify({"payment_no": new_no})
+        current_year = datetime.now().year
 
-# FINANCE REQUISITION MODULE
+        # ----------------------------------------------------
+        # Get the latest payment number for the CURRENT YEAR
+        # ----------------------------------------------------
+        cursor.execute("""
+            SELECT payment_no
+            FROM payments
+            WHERE payment_no LIKE %s
+            ORDER BY payment_id DESC
+            LIMIT 1
+        """, (f"PAY-{current_year}-%",))
 
+        last = cursor.fetchone()
 
+        # ----------------------------------------------------
+        # First payment of the year
+        # ----------------------------------------------------
+        if not last or not last.get("payment_no"):
+
+            next_number = 1
+
+        else:
+
+            last_no = last["payment_no"]
+
+            try:
+                # PAY-2026-0001
+                last_num = int(last_no.split("-")[-1])
+
+                next_number = last_num + 1
+
+            except (ValueError, TypeError, IndexError):
+
+                next_number = 1
+
+        # ----------------------------------------------------
+        # Generate payment number
+        # ----------------------------------------------------
+        new_no = f"PAY-{current_year}-{next_number:04d}"
+
+        return jsonify({
+            "success": True,
+            "payment_no": new_no
+        }), 200
+
+    except Exception as e:
+
+        # Print the REAL error in Flask terminal
+        print("=" * 70)
+        print("NEXT PAYMENT NUMBER ERROR")
+        print("=" * 70)
+        print(str(e))
+        import traceback
+        traceback.print_exc()
+        print("=" * 70)
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to generate next payment number.",
+            "error": str(e)
+        }), 500
+
+    finally:
+
+        if cursor:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 @finance_dashboard_bp.route("/api/finance_requisition")

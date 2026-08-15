@@ -675,7 +675,7 @@ def approve_document():
 
                     cursor.execute(
                         """
-                        UPDATE requisitions
+                        UPDATE approvals
                         SET status = 'PENDING_CEO'
                         WHERE requisition_id = %s
                         """,
@@ -743,7 +743,7 @@ def approve_document():
             # HOD MUST APPROVE FIRST
             # ---------------------------------------------
 
-            if approval["hod_status"] != "APPROVED":
+            if approval["ceo_status"] != "APPROVED":
 
                 return jsonify({
                     "success": False,
@@ -846,11 +846,39 @@ def approve_document():
 
                     cursor.execute(
                         """
-                        UPDATE requisitions
-                        SET status = 'APPROVED'
-                        WHERE requisition_id = %s
+                        UPDATE approvals
+                        SET
+                            ceo_status = 'APPROVED',
+                            ceo_user_id = %s,
+                            ceo_approved_at = NOW(),
+                            final_status = 'APPROVED'
+                        WHERE module_name = %s
+                          AND document_id = %s
                         """,
-                        (document_id,)
+                        (
+                            user_id,
+                            module_name,
+                            document_id
+                        )
+                    )
+
+
+                    cursor.execute(
+                        """
+                        UPDATE approvals
+                        SET
+                            ceo_status = 'APPROVED',
+                            ceo_user_id = %s,
+                            ceo_approved_at = NOW(),
+                            final_status = 'APPROVED'
+                        WHERE module_name = %s
+                          AND document_id = %s
+                        """,
+                        (
+                            user_id,
+                            module_name,
+                            document_id
+                        )
                     )
 
 
