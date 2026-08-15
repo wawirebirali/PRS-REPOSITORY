@@ -700,20 +700,38 @@ function rejectPayment() {
 }
 
 function executeApproval() {
+
     if (paymentPendingAction) {
+
         sendPaymentApproval();
+
     } else if (invoicePendingAction) {
+
         sendInvoiceApproval();
+
     } else if (quotationPendingAction) {
+
         sendQuotationApproval();
+
     } else if (pOpendingAction) {
+
         approvePO();
+
     } else if (grnPendingAction) {
+
         approveGRN();
+
     } else if (pendingAction) {
+
         setAction(pendingAction);
         submitApproval();
+
+    } else {
+
+        alert("No approval action selected.");
+        return;
     }
+
     closeModal();
 }
 

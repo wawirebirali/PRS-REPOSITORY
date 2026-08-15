@@ -480,63 +480,93 @@ async function loadRequisitionDetails(id){
 // CEO APPROVAL SEND
 // =======================================================
 
+// =======================================================
+// SUBMIT REQUISITION APPROVAL
+// =======================================================
 
-async function submitApproval(){
+async function submitApproval() {
 
+    // -----------------------------------------------
+    // Validate selection
+    // -----------------------------------------------
 
-    if(
-        !selectedRequisitionId ||
-        !requisitionPendingAction
-    ){
+    if (!selectedRequisitionId || !requisitionPendingAction) {
 
-        alert(
-            "Select requisition and action first"
-        );
-
+        alert("Select requisition and action first");
         return;
     }
 
 
+    // -----------------------------------------------
+    // Store values before request
+    // -----------------------------------------------
 
-    try{
+    const documentId = selectedRequisitionId;
+    const action = requisitionPendingAction;
 
 
-        const response =
-        await fetch(
+    console.log("Submitting requisition approval:", {
+        document_id: documentId,
+        module_name: "PRS",
+        action: action
+    });
+
+
+    try {
+
+        // -------------------------------------------
+        // Send approval request
+        // -------------------------------------------
+
+        const response = await fetch(
             "/hod/approve",
             {
+                method: "POST",
 
-                method:"POST",
-
-                headers:{
-                    "Content-Type":
-                    "application/json"
+                headers: {
+                    "Content-Type": "application/json"
                 },
 
+                body: JSON.stringify({
 
-                body:JSON.stringify({
+                    document_id: documentId,
 
-                    document_id:
-                    selectedRequisitionId,
+                    module_name: "PRS",
 
-
-                    module_name:
-                    "PRS",
-
-
-                    action:
-                    requisitionPendingAction
+                    action: action
 
                 })
-
             }
         );
 
 
+        // -------------------------------------------
+        // Check HTTP response
+        // -------------------------------------------
 
-        const data =
-        await response.json();
+        if (!response.ok) {
 
+            const errorText = await response.text();
+
+            console.error(
+                "APPROVAL HTTP ERROR:",
+                response.status,
+                errorText
+            );
+
+            alert(
+                `Approval failed. Server returned HTTP ${response.status}`
+            );
+
+            return;
+        }
+
+
+        // -------------------------------------------
+        // Read JSON response
+        // -------------------------------------------
+
+        const data = await response.json();
 
 
         console.log(
@@ -545,8 +575,11 @@ async function submitApproval(){
         );
 
 
+        // -------------------------------------------
+        // Check backend result
+        // -------------------------------------------
 
-        if(!data.success){
+        if (!data.success) {
 
             alert(
                 data.message ||
@@ -554,178 +587,187 @@ async function submitApproval(){
             );
 
             return;
-
         }
 
 
+        // -------------------------------------------
+        // Success
+        // -------------------------------------------
 
         alert(
-            "Requisition updated successfully"
+            action === "APPROVED"
+                ? "Requisition approved successfully."
+                : "Requisition rejected successfully."
         );
 
 
+        // -------------------------------------------
+        // Reset selected values
+        // -------------------------------------------
 
-        selectedRequisitionId=null;
-        requisitionPendingAction=null;
+        selectedRequisitionId = null;
+
+        requisitionPendingAction = null;
 
 
+        // -------------------------------------------
+        // Close modal
+        // -------------------------------------------
 
-        loadRequisitionData();
+        closeModal();
+
+
+        // -------------------------------------------
+        // Reload requisition data
+        // -------------------------------------------
+
+        await loadRequisitionData();
 
 
     }
-
-
-    catch(error){
+    catch (error) {
 
         console.error(
             "APPROVAL ERROR:",
             error
         );
 
-
         alert(
-            "Server error"
+            "Server error while processing requisition approval."
         );
-
     }
-
-
 }
 
 
 
+function confirmRequisitionApproval(action) {
 
+    if (!selectedRequisitionId) {
 
-
-// =======================================================
-// OPEN CONFIRMATION
-// =======================================================
-
-
-function confirmRequisitionApproval(action){
-
-
-    if(!selectedRequisitionId){
-
-        alert(
-            "Select requisition first"
-        );
-
+        alert("Select requisition first");
         return;
-
     }
 
-
-
-    requisitionPendingAction =
-    action;
-
-
+    requisitionPendingAction = action;
 
     const prs =
-    document.getElementById("prs_no")
-    ?.innerText || "-";
+        document.getElementById("prs_no")?.innerText || "-";
 
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve <b>${prs}</b>?`
+            : `Are you sure you want to reject <b>${prs}</b>?`;
 
-
-    document.getElementById(
-        "confirmMessage"
-    ).innerHTML =
-
-
-    action === "APPROVED"
-
-    ?
-
-    `Are you sure you want to approve <b>${prs}</b>?`
-
-    :
-
-    `Are you sure you want to reject <b>${prs}</b>?`;
-
-
-
-    document.getElementById(
-        "confirmModal"
-    ).style.display="block";
-
-
+    document.getElementById("confirmModal").style.display = "block";
 }
 
+// =======================================================
+// APPROVE BUTTON
+// =======================================================
 
-
-
-
-function approveRequisition(){
+function approveRequisition() {
 
     confirmRequisitionApproval(
         "APPROVED"
     );
-
 }
 
 
+// =======================================================
+// REJECT BUTTON
+// =======================================================
 
-function rejectRequisition(){
+function rejectRequisition() {
 
     confirmRequisitionApproval(
         "REJECTED"
     );
+}
+
+
+// =======================================================
+// CONFIRM BUTTON INSIDE MODAL
+// =======================================================
+
+async function confirmAction() {
+
+    // Do NOT close the modal before approval finishes.
+    await submitApproval();
 
 }
 
 
+// =======================================================
+// CLOSE CONFIRMATION MODAL
+// =======================================================
 
-function confirmAction(){
+function closeModal() {
 
-    submitApproval();
+    const modal =
+        document.getElementById("confirmModal");
 
-    closeModal();
 
+    if (modal) {
+
+        modal.style.display = "none";
+    }
 }
 
 
+// =======================================================
+// SET TEXT
+// =======================================================
+
+function setText(id, value) {
+
+    const el =
+        document.getElementById(id);
 
 
+    if (el) {
 
-function setText(id,value){
-
-    const el=document.getElementById(id);
-
-    if(el)
-        el.innerText=value || "-";
-
+        el.innerText =
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+                ? value
+                : "-";
+    }
 }
 
 
+// =======================================================
+// SET IMAGE
+// =======================================================
 
-function setImage(id,path){
+function setImage(id, path) {
 
-    const img=document.getElementById(id);
+    const img =
+        document.getElementById(id);
 
-    if(!img) return;
+
+    if (!img) {
+        return;
+    }
 
 
-    if(path){
+    if (path) {
 
         img.src =
-        path.startsWith("/")
-        ? path
-        : "/static/" + path;
+            path.startsWith("/")
+                ? path
+                : "/static/" + path;
 
-
-        img.style.display="block";
-
-    }
-    else{
-
-        img.style.display="none";
+        img.style.display = "block";
 
     }
+    else {
 
+        img.removeAttribute("src");
+
+        img.style.display = "none";
+    }
 }
-
 
 
 
@@ -2510,21 +2552,40 @@ function rejectPayment() {
     confirmPayment("REJECTED");
 }
 
-function executeApproval() {
+
+async function executeApproval() {
+
     if (paymentPendingAction) {
-        sendPaymentApproval();
-    } else if (invoicePendingAction) {
-        sendInvoiceApproval();
-    } else if (quotationPendingAction) {
-        sendQuotationApproval();
-    } else if (pOpendingAction) {
-        approvePO();
-    } else if (grnPendingAction) {
-        approveGRN();
-    } else if (pendingAction) {
-        setAction(pendingAction);
-        submitApproval();
+
+        await sendPaymentApproval();
+
     }
+    else if (invoicePendingAction) {
+
+        await sendInvoiceApproval();
+
+    }
+    else if (quotationPendingAction) {
+
+        await sendQuotationApproval();
+
+    }
+    else if (pOpendingAction) {
+
+        await approvePO();
+
+    }
+    else if (grnPendingAction) {
+
+        await approveGRN();
+
+    }
+    else if (requisitionPendingAction) {
+
+        await submitApproval();
+
+    }
+
     closeModal();
 }
 

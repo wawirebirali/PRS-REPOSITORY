@@ -373,40 +373,39 @@ def ceo_requisitions_api():
     try:
 
         cursor.execute("""
-            SELECT
-                r.requisition_id,
-                r.prs_no,
+           SELECT 
+    r.requisition_id,
+    r.prs_no,
 
-                d.department_name,
+    d.department_name,
 
-                r.item_budget,
+    r.item_budget,
 
-                r.submission_date,
+    r.submission_date,
 
-                DATEDIFF(
-                    CURDATE(),
-                    DATE(r.submission_date)
-                ) AS due,
+    DATEDIFF(
+        CURDATE(),
+        DATE(r.submission_date)
+    ) AS due,
 
-                a.ceo_status,
-                a.final_status
+    a.hod_status,
+    a.ceo_status,
+    a.final_status
 
-            FROM requisitions r
+FROM requisitions r
 
-            JOIN departments d
-                ON d.department_id = r.department_id
+JOIN departments d
+    ON d.department_id = r.department_id
 
-            JOIN approvals a
-                ON a.document_id = r.requisition_id
-                AND a.module_name = 'PRS'
+JOIN approvals a
+    ON a.document_id = r.requisition_id
+    AND a.module_name = 'PRS'
 
-            WHERE 
-                a.hod_status = 'APPROVED'
-                AND a.ceo_status = 'PENDING'
+WHERE
+    a.hod_status = 'APPROVED'
 
-            ORDER BY 
-                r.requisition_id DESC
-
+ORDER BY
+    r.requisition_id DESC;
         """)
 
         requisitions = cursor.fetchall()
@@ -466,9 +465,7 @@ def ceo_pending_requisitions():
                 ON a.document_id = r.requisition_id
                 AND a.module_name = 'PRS'
 
-            WHERE 
-                a.ceo_status = 'PENDING'
-                AND a.hod_status = 'APPROVED'
+            WHERE  a.hod_status = 'APPROVED'
 
             ORDER BY 
                 r.requisition_id DESC
