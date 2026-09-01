@@ -1,5 +1,38 @@
 let quotationViewMode = "request";
 
+// =========================================
+// GLOBAL SELECTED INVOICE
+// =========================================
+let selectedInvoiceId = null;
+let invoicePendingAction = null;
+
+
+let approvalUrl = "/ceo/approve";
+
+let selectedDocumentId = null;
+let selectedQuotationId = null;
+let quotationPendingAction = null;
+let selectedQuotationMode = null;
+
+
+
+
+// =======================================================
+// CEO REQUISITION MODULE
+// =======================================================
+
+let selectedRequisitionId = null;
+let requisitionPendingAction = null;
+
+
+
+// GLOBAL VARIABLES
+let selectedGRNId = null;
+let grnPendingAction = null;
+
+
+
+
 function openModule(id,btn){
 
     if (id === "quotationRequest") {
@@ -46,22 +79,6 @@ function openModule(id,btn){
 
 // ================= REQUISITION MODULE =================
 
-let approvalUrl = "/ceo/approve";
-
-let selectedDocumentId = null;
-let selectedQuotationId = null;
-let quotationPendingAction = null;
-let selectedQuotationMode = null;
-
-
-
-
-// =======================================================
-// CEO REQUISITION MODULE
-// =======================================================
-
-let selectedRequisitionId = null;
-let requisitionPendingAction = null;
 
 
 // =======================================================
@@ -797,67 +814,10 @@ function rejectQuotation() {
     confirmQuotationApproval("REJECTED");
 }
 
-function printQuotation() {
-    window.print();
-}
-
-function autoLoadFirstRequisition() {
-
-    const firstRow = document.querySelector("#prsTable tbody tr");
-
-    if (firstRow) {
-        loadSlipFromRow(firstRow);
-    }
-}
 
 
 
 
-function searchQuotation(){
-    let input = document.getElementById("quotationSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#quotationTable tbody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-function searchSupplier(){
-    let input = document.getElementById("supplierSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#supplierBody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-
-
-
-
-function searchPO(){
-    let input = document.getElementById("poSearch");
-    let filter = input.value.toLowerCase();
-    let rows = document.querySelectorAll("#poBody tr");
-
-    rows.forEach(row => {
-        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
-    });
-}
-
-function printPO(){
-    window.print();
-}
-
-// =======================================================
-// PURCHASE ORDER APPROVAL SYSTEM
-// =======================================================
-
-// GLOBAL VARIABLES
-let selectedPOId = null;
-let pOpendingAction = null;
 
 
 // =======================================================
@@ -980,6 +940,419 @@ function approvePO() {
         alert("Server error while processing approval.");
     });
 }
+
+
+
+
+
+
+
+
+
+
+// =======================================================
+// APPROVE / REJECT BUTTON CLICK
+// =======================================================
+function confirmGRNApproval(action) {
+
+    // Ensure a GRN is selected
+    if (!selectedGRNId) {
+        alert("Please select a goods receipt note first");
+        return;
+    }
+
+    grnPendingAction = action;
+
+    const grnNumber =
+        document.getElementById("grnNumber").innerText || "-";
+
+    if (action === "APPROVED") {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to approve <b>${grnNumber}</b>?`;
+
+    } else {
+
+        document.getElementById("confirmMessage").innerHTML =
+            `Are you sure you want to reject <b>${grnNumber}</b>?`;
+
+    }
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+
+// =======================================================
+// CLOSE MODAL
+// =======================================================
+function closeModal() {
+    document.getElementById("confirmModal").style.display = "none";
+
+    pendingAction = null;
+    quotationPendingAction = null;
+    invoicePendingAction = null;
+    pOpendingAction = null;
+    grnPendingAction = null;
+    paymentPendingAction = null;
+}
+
+
+// =======================================================
+// CONFIRM BUTTON IN MODAL
+// =======================================================
+
+
+
+// =======================================================
+// SEND APPROVAL TO SERVER
+// =======================================================
+function approveGRN() {
+
+    // Ensure GRN selected
+    if (!selectedGRNId) {
+        alert("Please select a goods receipt note first");
+        return;
+    }
+
+    // Ensure action selected
+    if (!grnPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const hodStatus =
+        document.getElementById("grn_hod_Status")
+            .innerText
+            .trim()
+            .toUpperCase();
+
+    // Prevent double approval
+    if (hodStatus === "APPROVED") {
+        alert("This goods receipt note has already been approved.");
+        return;
+    }
+
+    // Prevent double rejection
+    if (hodStatus === "REJECTED") {
+        alert("This goods receipt note has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            document_id: selectedGRNId,
+            module_name: "GRN",
+            action: grnPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) {
+            alert(data.message || "Approval failed");
+            return;
+        }
+
+        alert("Goods Receipt Note updated successfully.");
+
+        // Refresh GRN details
+        loadGRNData();
+
+        if (selectedGRNId) {
+            const radio = document.querySelector(
+                `input[data-grn-id="${selectedGRNId}"]`
+            );
+
+            if (radio) {
+                selectGRN(radio);
+            }
+        }
+    })
+    .catch(error => {
+        console.error(error);
+        alert("Server error while processing approval.");
+    });
+}
+
+
+
+
+
+
+
+
+function confirmInvoice(action) {
+    if (!selectedInvoiceId) {
+        alert("Please select an invoice first");
+        return;
+    }
+
+    invoicePendingAction = action;
+
+    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
+            : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+function approveInvoice() {
+    confirmInvoice("APPROVED");
+}
+
+function rejectInvoice() {
+    confirmInvoice("REJECTED");
+}
+
+
+
+
+
+
+
+function confirmPayment(action) {
+    if (!selectedPaymentId) {
+        alert("Please select a payment first");
+        return;
+    }
+
+    paymentPendingAction = action;
+    const paymentNo = document.getElementById("payNumber").innerText || "-";
+
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve payment <b>${paymentNo}</b>?`
+            : `Are you sure you want to reject payment <b>${paymentNo}</b>?`;
+
+    document.getElementById("confirmModal").style.display = "block";
+}
+
+function approvePayment() {
+    confirmPayment("APPROVED");
+}
+
+function rejectPayment() {
+    confirmPayment("REJECTED");
+}
+
+
+async function executeApproval() {
+
+    if (paymentPendingAction) {
+
+        await sendPaymentApproval();
+
+    }
+    else if (invoicePendingAction) {
+
+        await sendInvoiceApproval();
+
+    }
+    else if (quotationPendingAction) {
+
+        await sendQuotationApproval();
+
+    }
+    else if (pOpendingAction) {
+
+        await approvePO();
+
+    }
+    else if (grnPendingAction) {
+
+        await approveGRN();
+
+    }
+    else if (requisitionPendingAction) {
+
+        await submitApproval();
+
+    }
+
+    closeModal();
+}
+
+function sendPaymentApproval() {
+    if (!selectedPaymentId) {
+        alert("Please select a payment first");
+        return;
+    }
+
+    if (!paymentPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
+
+    if (status === "APPROVED") {
+        alert("This payment has already been approved.");
+        return;
+    }
+
+    if (status === "REJECTED") {
+        alert("This payment has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedPaymentId,
+            module_name: "PAYMENT",
+            action: paymentPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Payment approval failed");
+            return;
+        }
+
+        alert("Payment updated successfully.");
+        loadPaymentData();
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing payment approval.");
+    });
+}
+
+function sendInvoiceApproval() {
+    if (!selectedInvoiceId) {
+        alert("Please select an invoice first");
+        return;
+    }
+
+    if (!invoicePendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
+
+    if (status === "APPROVED") {
+        alert("This invoice has already been approved.");
+        return;
+    }
+
+    if (status === "REJECTED") {
+        alert("This invoice has already been rejected.");
+        return;
+    }
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedInvoiceId,
+            module_name: "INVOICE",
+            action: invoicePendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Invoice approval failed");
+            return;
+        }
+
+        alert("Invoice updated successfully.");
+        invoicePendingAction = null;
+        loadInvoices();
+        if (selectedInvoiceId) {
+            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
+            if (radio) selectInvoice(radio);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing invoice approval.");
+    });
+}
+
+function sendQuotationApproval() {
+    if (!selectedQuotationId) {
+        alert("Please select a quotation first");
+        return;
+    }
+
+    if (!quotationPendingAction) {
+        alert("Please choose approve or reject");
+        return;
+    }
+
+    const moduleName = quotationViewMode === "quotation" ? "QUOTATION" : "QRF";
+
+    fetch("/hod/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            document_id: selectedQuotationId,
+            module_name: moduleName,
+            action: quotationPendingAction
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.message || "Quotation approval failed");
+            return;
+        }
+
+        alert("Quotation updated successfully.");
+        if (quotationViewMode === "quotation") {
+            loadQuotations();
+        } else {
+            loadQuotationRequests();
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Server error while processing quotation approval.");
+    });
+}
+
+
+
+
+
+
+
+
+
+function printQuotation() {
+    window.print();
+}
+
+function autoLoadFirstRequisition() {
+
+    const firstRow = document.querySelector("#prsTable tbody tr");
+
+    if (firstRow) {
+        loadSlipFromRow(firstRow);
+    }
+}
+
+
+
+// =======================================================
+// PURCHASE ORDER APPROVAL SYSTEM
+// =======================================================
+
+// GLOBAL VARIABLES
+let selectedPOId = null;
+let pOpendingAction = null;
+
+
 
 // =======================================================
 // LOAD PO DETAILS
@@ -1507,162 +1880,6 @@ function selectGRN(radio) {
 
 
 
-// GLOBAL VARIABLES
-let selectedGRNId = null;
-let grnPendingAction = null;
-
-
-// =======================================================
-// APPROVE / REJECT BUTTON CLICK
-// =======================================================
-function confirmGRNApproval(action) {
-
-    // Ensure a GRN is selected
-    if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
-        return;
-    }
-
-    grnPendingAction = action;
-
-    const grnNumber =
-        document.getElementById("grnNumber").innerText || "-";
-
-    if (action === "APPROVED") {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${grnNumber}</b>?`;
-
-    } else {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${grnNumber}</b>?`;
-
-    }
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-
-// =======================================================
-// CLOSE MODAL
-// =======================================================
-function closeModal() {
-    document.getElementById("confirmModal").style.display = "none";
-
-    pendingAction = null;
-    quotationPendingAction = null;
-    invoicePendingAction = null;
-    pOpendingAction = null;
-    grnPendingAction = null;
-    paymentPendingAction = null;
-}
-
-
-// =======================================================
-// CONFIRM BUTTON IN MODAL
-// =======================================================
-
-
-
-// =======================================================
-// SEND APPROVAL TO SERVER
-// =======================================================
-function approveGRN() {
-
-    // Ensure GRN selected
-    if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
-        return;
-    }
-
-    // Ensure action selected
-    if (!grnPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const hodStatus =
-        document.getElementById("grn_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
-
-    // Prevent double approval
-    if (hodStatus === "APPROVED") {
-        alert("This goods receipt note has already been approved.");
-        return;
-    }
-
-    // Prevent double rejection
-    if (hodStatus === "REJECTED") {
-        alert("This goods receipt note has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedGRNId,
-            module_name: "GRN",
-            action: grnPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message || "Approval failed");
-            return;
-        }
-
-        alert("Goods Receipt Note updated successfully.");
-
-        // Refresh GRN details
-        loadGRNData();
-
-        if (selectedGRNId) {
-            const radio = document.querySelector(
-                `input[data-grn-id="${selectedGRNId}"]`
-            );
-
-            if (radio) {
-                selectGRN(radio);
-            }
-        }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
-}
-
-
-// =======================================================
-// SEARCH GRN
-// =======================================================
-function searchGRN() {
-
-    const input = document
-        .getElementById("grnSearch")
-        .value
-        .toLowerCase();
-
-    const rows = document.querySelectorAll("#grnTable tbody tr");
-
-    rows.forEach(row => {
-
-        const text = row.innerText.toLowerCase();
-
-        row.style.display =
-            text.includes(input)
-            ? ""
-            : "none";
-    });
-}
 
 
 // =======================================================
@@ -1684,67 +1901,6 @@ function getSelectedGRN() {
     return selected.value;
 }
 
-
-
-
-// =======================================================
-// PRINT GRN
-// =======================================================
-function printGRN() {
-
-    const content = document.getElementById(
-        "grnPrintArea"
-    ).innerHTML;
-
-    const win = window.open("", "", "width=1000,height=700");
-
-    win.document.write(`
-
-        <html>
-
-        <head>
-
-            <title>Print GRN</title>
-
-            <style>
-
-                body{
-                    font-family:Arial;
-                    padding:20px;
-                }
-
-                table{
-                    width:100%;
-                    border-collapse:collapse;
-                }
-
-                table,th,td{
-                    border:1px solid #000;
-                }
-
-                th,td{
-                    padding:8px;
-                    text-align:left;
-                }
-
-            </style>
-
-        </head>
-
-        <body>
-
-            ${content}
-
-        </body>
-
-        </html>
-
-    `);
-
-    win.document.close();
-
-    win.print();
-}
 
 
 
@@ -2009,11 +2165,6 @@ function loadSupplierModule(){
 /* inoice*/
 
 
-// =========================================
-// GLOBAL SELECTED INVOICE
-// =========================================
-let selectedInvoiceId = null;
-let invoicePendingAction = null;
 
 // =========================================
 // LOAD INVOICE TABLE
@@ -2084,30 +2235,6 @@ function selectInvoice(radio) {
     loadInvoiceDetails(invoiceId);
 }
 
-function confirmInvoice(action) {
-    if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
-        return;
-    }
-
-    invoicePendingAction = action;
-
-    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
-            : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function approveInvoice() {
-    confirmInvoice("APPROVED");
-}
-
-function rejectInvoice() {
-    confirmInvoice("REJECTED");
-}
 
 // =========================================
 // LOAD SINGLE INVOICE
@@ -2236,31 +2363,6 @@ async function loadInvoiceDetails(invoiceId) {
 
 
 // =========================================
-// SEARCH TABLE
-// =========================================
-function searchInvoice() {
-
-    const input =
-        document.getElementById("invoiceSearch")
-            .value
-            .toLowerCase();
-
-    const rows =
-        document.querySelectorAll("#invoiceBody tr");
-
-    rows.forEach(row => {
-
-        const text =
-            row.textContent.toLowerCase();
-
-        row.style.display =
-            text.includes(input)
-                ? ""
-                : "none";
-    });
-}
-
-// =========================================
 // DATE FORMAT
 // =========================================
 function formatDate(dateString){
@@ -2280,40 +2382,6 @@ function formatDate(dateString){
     );
 }
 
-// =========================================
-// PRINT
-// =========================================
-function printInvoice(){
-
-    if(!selectedInvoiceId){
-        alert("Select an invoice first.");
-        return;
-    }
-
-    const content =
-        document.getElementById(
-            "invoicePrintArea"
-        ).innerHTML;
-
-    const printWindow =
-        window.open("", "", "width=1000,height=700");
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Invoice Print</title>
-            </head>
-            <body>
-                ${content}
-            </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
 
 // =========================================
 // AUTO LOAD
@@ -2526,230 +2594,6 @@ function loadPaymentDetails(payment_id) {
 
 let selectedPaymentId = null;
 let paymentPendingAction = null;
-
-function confirmPayment(action) {
-    if (!selectedPaymentId) {
-        alert("Please select a payment first");
-        return;
-    }
-
-    paymentPendingAction = action;
-    const paymentNo = document.getElementById("payNumber").innerText || "-";
-
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve payment <b>${paymentNo}</b>?`
-            : `Are you sure you want to reject payment <b>${paymentNo}</b>?`;
-
-    document.getElementById("confirmModal").style.display = "block";
-}
-
-function approvePayment() {
-    confirmPayment("APPROVED");
-}
-
-function rejectPayment() {
-    confirmPayment("REJECTED");
-}
-
-
-async function executeApproval() {
-
-    if (paymentPendingAction) {
-
-        await sendPaymentApproval();
-
-    }
-    else if (invoicePendingAction) {
-
-        await sendInvoiceApproval();
-
-    }
-    else if (quotationPendingAction) {
-
-        await sendQuotationApproval();
-
-    }
-    else if (pOpendingAction) {
-
-        await approvePO();
-
-    }
-    else if (grnPendingAction) {
-
-        await approveGRN();
-
-    }
-    else if (requisitionPendingAction) {
-
-        await submitApproval();
-
-    }
-
-    closeModal();
-}
-
-function sendPaymentApproval() {
-    if (!selectedPaymentId) {
-        alert("Please select a payment first");
-        return;
-    }
-
-    if (!paymentPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
-
-    if (status === "APPROVED") {
-        alert("This payment has already been approved.");
-        return;
-    }
-
-    if (status === "REJECTED") {
-        alert("This payment has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedPaymentId,
-            module_name: "PAYMENT",
-            action: paymentPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Payment approval failed");
-            return;
-        }
-
-        alert("Payment updated successfully.");
-        loadPaymentData();
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing payment approval.");
-    });
-}
-
-function sendInvoiceApproval() {
-    if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
-        return;
-    }
-
-    if (!invoicePendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
-
-    if (status === "APPROVED") {
-        alert("This invoice has already been approved.");
-        return;
-    }
-
-    if (status === "REJECTED") {
-        alert("This invoice has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedInvoiceId,
-            module_name: "INVOICE",
-            action: invoicePendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Invoice approval failed");
-            return;
-        }
-
-        alert("Invoice updated successfully.");
-        invoicePendingAction = null;
-        loadInvoices();
-        if (selectedInvoiceId) {
-            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
-            if (radio) selectInvoice(radio);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing invoice approval.");
-    });
-}
-
-function sendQuotationApproval() {
-    if (!selectedQuotationId) {
-        alert("Please select a quotation first");
-        return;
-    }
-
-    if (!quotationPendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const moduleName = quotationViewMode === "quotation" ? "QUOTATION" : "QRF";
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedQuotationId,
-            module_name: moduleName,
-            action: quotationPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Quotation approval failed");
-            return;
-        }
-
-        alert("Quotation updated successfully.");
-        if (quotationViewMode === "quotation") {
-            loadQuotations();
-        } else {
-            loadQuotationRequests();
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing quotation approval.");
-    });
-}
-
-function searchPayment() {
-
-    const input =
-        document.getElementById("paymentSearch")
-        .value
-        .toLowerCase();
-
-    const rows =
-        document.querySelectorAll("#paymentBody tr");
-
-    rows.forEach(row => {
-
-        const match =
-            row.innerText.toLowerCase().includes(input);
-
-        row.style.display = match ? "" : "none";
-    });
-}
 
 
 
@@ -3143,4 +2987,537 @@ function loadSignature(imageId, signature) {
 document.addEventListener("DOMContentLoaded", function () {
     loadPRSTable();
 });
+
+
+
+
+
+
+// =========================================
+// SEARCH TABLE
+// =========================================
+function searchInvoice() {
+
+    const input =
+        document.getElementById("invoiceSearch")
+            .value
+            .toLowerCase();
+
+    const rows =
+        document.querySelectorAll("#invoiceBody tr");
+
+    rows.forEach(row => {
+
+        const text =
+            row.textContent.toLowerCase();
+
+        row.style.display =
+            text.includes(input)
+                ? ""
+                : "none";
+    });
+}
+
+
+
+
+function searchPayment() {
+
+    const input =
+        document.getElementById("paymentSearch")
+        .value
+        .toLowerCase();
+
+    const rows =
+        document.querySelectorAll("#paymentBody tr");
+
+    rows.forEach(row => {
+
+        const match =
+            row.innerText.toLowerCase().includes(input);
+
+        row.style.display = match ? "" : "none";
+    });
+}
+
+
+
+// =======================================================
+// SEARCH GRN
+// =======================================================
+function searchGRN() {
+
+    const input = document
+        .getElementById("grnSearch")
+        .value
+        .toLowerCase();
+
+    const rows = document.querySelectorAll("#grnTable tbody tr");
+
+    rows.forEach(row => {
+
+        const text = row.innerText.toLowerCase();
+
+        row.style.display =
+            text.includes(input)
+            ? ""
+            : "none";
+    });
+}
+
+
+
+
+
+
+function searchQuotation(){
+    let input = document.getElementById("quotationSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#quotationTable tbody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function searchSupplier(){
+    let input = document.getElementById("supplierSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#supplierBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+
+
+
+
+function searchPO(){
+    let input = document.getElementById("poSearch");
+    let filter = input.value.toLowerCase();
+    let rows = document.querySelectorAll("#poBody tr");
+
+    rows.forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+
+function printPO(){
+    window.print();
+}
+
+
+
+
+// =========================================
+// PRINT
+// =========================================
+function printInvoice(){
+
+    if(!selectedInvoiceId){
+        alert("Select an invoice first.");
+        return;
+    }
+
+    const content =
+        document.getElementById(
+            "invoicePrintArea"
+        ).innerHTML;
+
+    const printWindow =
+        window.open("", "", "width=1000,height=700");
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Invoice Print</title>
+            </head>
+            <body>
+                ${content}
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printGRN() {
+
+    const content = document.getElementById(
+        "grnPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print GRN</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printRequisition() {
+
+    const content = document.getElementById(
+        "requisitionPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Requisition</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printQuotation() {
+
+    const content = document.getElementById(
+        "quotationPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Quotation</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printInvoince() {
+
+    const content = document.getElementById(
+        "invoicePrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Requisition</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printPayment() {
+
+    const content = document.getElementById(
+        "paymentPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Payment</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printPurshaseorder() {
+
+    const content = document.getElementById(
+        "poPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Purshase order</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
 

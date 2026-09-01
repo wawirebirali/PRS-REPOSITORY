@@ -1681,7 +1681,8 @@
      
     <div class="right">
 
-        <div class="slip">
+        <div class="slip" id="quotationPrintArea">
+        
 
             <div class="header">
                 <h2>QUOTATION REQUEST SLIP (QRF)</h2>
@@ -1733,28 +1734,7 @@
 
                 <h4>Approval & Signatures</h4>
 
-                <div style="display:flex; justify-content:space-between; margin-top:15px;">
-
-                    <div style="text-align:center; width:30%;">
-                        <p>Prepared By</p>
-                        <br><br>
-                        
-                        <p>Name & Signature</p>
-                    </div
-
-                    <div style="text-align:center; width:30%;">
-                        <p>HOD Approval</p>
-                        <br><br>
-                        <p>_____________________</p>
-                        <p>Signature & Date</p>
-                    </div>
-
-                    <div style="text-align:center; width:30%;">
-                        <p>CEO Approval</p>
-                        <br><br>
-                        <p>_____________________</p>
-                        <p>Signature & Date</p>
-                    </div>
+                                
 
                 </div>
 
@@ -1847,9 +1827,9 @@
                 </button>
 
                 
-                <button class="btn print"
-                onclick="window.print()">
-                 Print / Save PDF
+                <button class="btn success"
+                onclick="printPurshaseorder()()">
+                 Print 
                  </button>
 
                  <button class="btn whatsapp"

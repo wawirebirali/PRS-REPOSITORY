@@ -420,6 +420,7 @@ function hideCreatePaymentForm() {
 document.addEventListener("DOMContentLoaded", () => {
     loadPaymentNo();
     loadInvoices();
+    
 });
 
 

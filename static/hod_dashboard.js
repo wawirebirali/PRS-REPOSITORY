@@ -1418,64 +1418,6 @@ function getSelectedGRN() {
 
 
 
-// =======================================================
-// PRINT GRN
-// =======================================================
-function printGRN() {
-
-    const content = document.getElementById(
-        "grnPrintArea"
-    ).innerHTML;
-
-    const win = window.open("", "", "width=1000,height=700");
-
-    win.document.write(`
-
-        <html>
-
-        <head>
-
-            <title>Print GRN</title>
-
-            <style>
-
-                body{
-                    font-family:Arial;
-                    padding:20px;
-                }
-
-                table{
-                    width:100%;
-                    border-collapse:collapse;
-                }
-
-                table,th,td{
-                    border:1px solid #000;
-                }
-
-                th,td{
-                    padding:8px;
-                    text-align:left;
-                }
-
-            </style>
-
-        </head>
-
-        <body>
-
-            ${content}
-
-        </body>
-
-        </html>
-
-    `);
-
-    win.document.close();
-
-    win.print();
-}
 
 
 
@@ -1649,7 +1591,7 @@ function loadQuotationRequests() {
     // FETCH QRF DATA
     // ========================================================
 
-    fetch("/hod/qrf/data")
+    fetch("/hod/quotationRequestdata/data")
 
         .then(res => {
 
@@ -2199,40 +2141,7 @@ function formatDate(dateString){
     );
 }
 
-// =========================================
-// PRINT
-// =========================================
-function printInvoice(){
 
-    if(!selectedInvoiceId){
-        alert("Select an invoice first.");
-        return;
-    }
-
-    const content =
-        document.getElementById(
-            "invoicePrintArea"
-        ).innerHTML;
-
-    const printWindow =
-        window.open("", "", "width=1000,height=700");
-
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>Invoice Print</title>
-            </head>
-            <body>
-                ${content}
-            </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-}
 
 // =========================================
 // AUTO LOAD
@@ -2671,3 +2580,423 @@ function loadSignature(imgId, signature) {
 // INIT
 // ================================
 document.addEventListener("DOMContentLoaded", loadQuotations);
+
+
+
+
+
+
+
+
+
+
+// =========================================
+// PRINT
+// =========================================
+function printInvoice(){
+
+    if(!selectedInvoiceId){
+        alert("Select an invoice first.");
+        return;
+    }
+
+    const content =
+        document.getElementById(
+            "invoicePrintArea"
+        ).innerHTML;
+
+    const printWindow =
+        window.open("", "", "width=1000,height=700");
+
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Invoice Print</title>
+            </head>
+            <body>
+                ${content}
+            </body>
+        </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printGRN() {
+
+    const content = document.getElementById(
+        "grnPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print GRN</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printRequisition() {
+
+    const content = document.getElementById(
+        "requisitionPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Requisition</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printQuotation() {
+
+    const content = document.getElementById(
+        "quotationPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Quotation</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printInvoince() {
+
+    const content = document.getElementById(
+        "invoicePrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Requisition</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printPayment() {
+
+    const content = document.getElementById(
+        "paymentPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Payment</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+
+
+// =======================================================
+// PRINT GRN
+// =======================================================
+function printPurshaseorder() {
+
+    const content = document.getElementById(
+        "poPrintArea"
+    ).innerHTML;
+
+    const win = window.open("", "", "width=1000,height=700");
+
+    win.document.write(`
+
+        <html>
+
+        <head>
+
+            <title>Print Purshase order</title>
+
+            <style>
+
+                body{
+                    font-family:Arial;
+                    padding:20px;
+                }
+
+                table{
+                    width:100%;
+                    border-collapse:collapse;
+                }
+
+                table,th,td{
+                    border:1px solid #000;
+                }
+
+                th,td{
+                    padding:8px;
+                    text-align:left;
+                }
+
+            </style>
+
+        </head>
+
+        <body>
+
+            ${content}
+
+        </body>
+
+        </html>
+
+    `);
+
+    win.document.close();
+
+    win.print();
+}
+
+
+

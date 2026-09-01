@@ -548,77 +548,285 @@
 <!-- ================= RIGHT SLIP ================= -->
 <div class="right">
 
-<div id="printArea" class="slip">
 
-<h2>PURCHASE REQUISITION SLIP</h2>
+        <!-- ======================================================
+                        RIGHT PANEL
+        ======================================================= -->
 
-<div class="info">
+        <div class="right">
 
-<p><b>PRS No:</b> <span id="prs_no">-</span></p>
-<p><b>Department:</b> <span id="dept">-</span></p>
-<p><b>Submission Date:</b> <span id="submission">-</span></p>
 
-<p><b>HOD Status:</b> <span id="hod_status">-</span></p>
-<p><b>CEO Status:</b> <span id="ceo_status">-</span></p>
 
-<p><b>HOD Approval Date:</b> <span id="hod_approval_date">-</span></p>
-<p><b>CEO Approval Date:</b> <span id="ceo_approval_date">-</span></p>
+            <div id="printArea" class="slip">
 
-</div>
 
-<h3>Items</h3>
 
-<table>
+                <h2>
+                    PURCHASE REQUISITION SLIP
+                </h2>
 
-<thead>
-<tr>
-    <th>No</th>
-    <th>Material</th>
-    <th>UOM</th>
-    <th>Qty</th>
-</tr>
-</thead>
 
-<tbody id="items_body">
-    <!-- AJAX LOAD -->
-</tbody>
 
-</table>
 
-<h3>Signatures</h3>
 
-<div class="signature-section">
+                <div class="info">
 
-    <div class="sig-box">
-        <p>Prepared By</p>
-        <div class="sig">
-            <span id="sig_prepared">-</span>
+
+                    <p>
+                        <strong>PRS No:</strong>
+                        <span id="prs_no">-</span>
+                    </p>
+
+
+
+                    <p>
+                        <strong>Department:</strong>
+                        <span id="department_name">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>Submission:</strong>
+                        <span id="submission">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>HOD Status:</strong>
+                        <span id="hod_status">-</span>
+                    </p>
+
+
+
+
+                    <p>
+                        <strong>CEO Status:</strong>
+                        <span id="ceo_status">-</span>
+                    </p>
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <h3>
+                    Items
+                </h3>
+
+
+
+
+
+
+                <table>
+
+
+                    <thead>
+
+
+                        <tr>
+
+                            <th>No</th>
+                            <th>Material</th>
+                            <th>UOM</th>
+                            <th>Qty</th>
+
+                        </tr>
+
+
+
+                    </thead>
+
+
+
+
+
+                    <tbody id="items_body">
+
+
+                    </tbody>
+
+
+
+
+                </table>
+
+
+
+
+
+
+
+
+                <h3>
+                    Signatures
+                </h3>
+
+
+
+
+
+
+
+                <div class="signature-section">
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            Prepared By
+                        </h4>
+
+
+
+                        <img
+                            id="sig_created_by"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="created_by_name">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="created_date">-</span>
+                        </p>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            HOD Approval
+                        </h4>
+
+
+
+
+                        <img
+                            id="sig_hod"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="hod_username">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="hod_approval_date">-</span>
+                        </p>
+
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+
+                    <div class="sig-box">
+
+
+                        <h4>
+                            CEO Approval
+                        </h4>
+
+
+
+
+                        <img
+                            id="sig_ceo"
+                            class="signature-img"
+                            src=""
+                            style="display:none;">
+
+
+
+                        <p>
+                            <strong>Name:</strong>
+                            <span id="ceo_username">-</span>
+                        </p>
+
+
+
+                        <p>
+                            <strong>Date:</strong>
+                            <span id="ceo_approval_date">-</span>
+                        </p>
+
+
+
+                    </div>
+
+
+
+
+
+                </div>
+
+
+
+
+
+
+            </div>
+
+
+
         </div>
+
+
+
+
     </div>
 
-    <div class="sig-box">
-        <p>HOD Approval</p>
-        <div class="sig">
-            <img id="sig_hod" src="" alt="HOD Signature" style="display:none;">
-        </div>
-    </div>
-
-    <div class="sig-box">
-        <p>CEO Approval</p>
-        <div class="sig">
-            <span id="sig_ceo">-</span>
-        </div>
-    </div>
 
 </div>
 
-</div>
 
-</div>
 
-</div>
-
-</div>
 
 <!-- =========================================================
      INVOICE MODULE
@@ -1361,7 +1569,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='/financehomepage.js.js') }}"></script>
 <script src="{{ url_for('static', filename='/financedashboard.js') }}"></script>
-<script src="{{ url_for('static', filename='create_invoice.js') }}"></script>
+<script src="{{ url_for('static', filename='create_invoince.js') }}"></script>
 <script src="{{ url_for('static', filename='create_payment.js') }}"></script>
 </body>
 </html>
