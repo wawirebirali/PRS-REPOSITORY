@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # ==================================================
 # CREATE USER (SIGNUP)
 # ==================================================
-def create_user(username, email, password, user_role, department, signature_path):
+def create_user(username, email, phone, password, user_role, department, signature_path):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -24,9 +24,9 @@ def create_user(username, email, password, user_role, department, signature_path
 
         # Insert user
         cursor.execute("""
-            INSERT INTO users (username, email, password, user_role, department, signature)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (username, email, hashed_password, user_role.lower(), department, signature_path))
+            INSERT INTO users (username, email, phone, password, user_role, department, signature)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (username, email, phone, hashed_password, user_role.lower(), department, signature_path))
 
         conn.commit()
 
@@ -51,7 +51,7 @@ def get_user_by_username(username):
 
     try:
         cursor.execute("""
-            SELECT user_id, username, email, password, user_role, department, signature
+            SELECT user_id, username, email, phone, password, user_role, department, signature
             FROM users
             WHERE username = %s OR email = %s
         """, (username, username))
@@ -59,8 +59,24 @@ def get_user_by_username(username):
         return cursor.fetchone()
 
     except Exception as e:
-        print("Login fetch error:", e)
-        return None
+        if "unknown column" not in str(e).lower():
+            print("Login fetch error:", e)
+            return None
+
+        try:
+            cursor.execute("""
+                SELECT user_id, username, email, password, user_role, department, signature
+                FROM users
+                WHERE username = %s OR email = %s
+            """, (username, username))
+
+            user = cursor.fetchone()
+            if user:
+                user["phone"] = None
+            return user
+        except Exception as fallback_error:
+            print("Login fallback error:", fallback_error)
+            return None
 
     finally:
         cursor.close()
@@ -89,7 +105,7 @@ def get_all_users():
 
     try:
         cursor.execute("""
-            SELECT user_id, username, email, department, user_role, created_at
+            SELECT user_id, username, email, phone, department, user_role, created_at
             FROM users
             ORDER BY created_at DESC
         """)

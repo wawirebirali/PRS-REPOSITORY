@@ -1207,9 +1207,18 @@ Date
                 <button
                     type="button"
                     class="btn primary"
-                    onclick="shareQuotationRequest()">
+                    onclick="sendQuotationRequestWhatsApp()">
 
-                    Share RFQ
+                    Send WhatsApp
+
+                </button>
+
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="sendQuotationRequestEmail()">
+
+                    Send Email
 
                 </button>
 
@@ -1432,6 +1441,7 @@ Date
                             <th>Description</th>
                             <th>Quantity</th>
                             <th>UOM</th>
+                            <th>UOM</th>
                             <th>Action</th>
 
                         </tr>
@@ -1577,6 +1587,30 @@ Date
                         <b>Location :</b>
 
                         <span id="quotationRequestSupplierLocation">
+
+                            -
+
+                        </span>
+
+                    </p>
+
+                    <p>
+
+                        <b>Phone :</b>
+
+                        <span id="quotationRequestSupplierPhone">
+
+                            -
+
+                        </span>
+
+                    </p>
+
+                    <p>
+
+                        <b>Email :</b>
+
+                        <span id="quotationRequestSupplierEmail">
 
                             -
 
@@ -2462,6 +2496,24 @@ Date
 
                 </button>
 
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="sendPurchaseOrderWhatsApp()">
+
+                    Send WhatsApp
+
+                </button>
+
+                <button
+                    type="button"
+                    class="btn primary"
+                    onclick="sendPurchaseOrderEmail()">
+
+                    Send Email
+
+                </button>
+
 
                 <!-- SEARCH -->
 
@@ -3107,6 +3159,18 @@ Date
                             </b>
 
                             <span id="poPhone">
+                                -
+                            </span>
+
+                        </p>
+
+                        <p>
+
+                            <b>
+                                Email :
+                            </b>
+
+                            <span id="poEmail">
                                 -
                             </span>
 

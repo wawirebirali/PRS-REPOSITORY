@@ -112,6 +112,116 @@ def ceo_reject(requisition_id):
 
 
 
+@ceo_dashboard_bp.route("/api/kpi", methods=["GET"])
+def get_ceo_kpi():
+    conn = None
+    cursor = None
+
+    try:
+        start_date = request.args.get("startDate") or None
+        end_date = request.args.get("endDate") or None
+        department_id = request.args.get("departmentId", type=int)
+        year = request.args.get("year", type=int)
+
+        if year and not start_date and not end_date:
+            start_date = f"{year}-01-01"
+            end_date = f"{year}-12-31"
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        requisition_filters = []
+        requisition_params = []
+        if start_date:
+            requisition_filters.append("r.submission_date >= %s")
+            requisition_params.append(start_date)
+        if end_date:
+            requisition_filters.append("r.submission_date < DATE_ADD(%s, INTERVAL 1 DAY)")
+            requisition_params.append(end_date)
+        if department_id:
+            requisition_filters.append("r.department_id = %s")
+            requisition_params.append(department_id)
+
+        requisition_where = " AND ".join(requisition_filters) or "1=1"
+
+        queries = {
+            "total_departments": ("SELECT COUNT(*) AS value FROM departments", []),
+            "total_employees": (
+                "SELECT COUNT(*) AS value FROM users u "
+                "LEFT JOIN departments d ON u.department = d.department_name "
+                "WHERE %s" % ("d.department_id = %s" if department_id else "1=1"),
+                [department_id] if department_id else [],
+            ),
+            "total_suppliers": ("SELECT COUNT(*) AS value FROM suppliers", []),
+            "total_prs": (
+                "SELECT COUNT(*) AS value FROM requisitions r WHERE " + requisition_where,
+                requisition_params,
+            ),
+            "total_po": (
+                "SELECT COUNT(*) AS value FROM purchase_orders p "
+                "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+                "WHERE " + requisition_where,
+                requisition_params,
+            ),
+            "pending_prs": (
+                "SELECT COUNT(*) AS value FROM requisitions r "
+                "LEFT JOIN approvals a ON a.module_name = 'PRS' "
+                "AND a.document_id = r.requisition_id "
+                "WHERE COALESCE(a.final_status, 'PENDING') = 'PENDING' AND "
+                + requisition_where,
+                requisition_params,
+            ),
+            "total_grn": (
+                "SELECT COUNT(*) AS value FROM grn g "
+                "JOIN purchase_orders p ON g.po_id = p.purchase_order_id "
+                "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+                "WHERE " + requisition_where,
+                requisition_params,
+            ),
+            "company_budget": (
+                "SELECT COALESCE(SUM(allocated_amount), 0) AS value "
+                "FROM company_budget b WHERE "
+                + ("b.department_id = %s" if department_id else "1=1")
+                + (" AND b.end_date >= %s" if start_date else "")
+                + (" AND b.start_date <= %s" if end_date else ""),
+                ([department_id] if department_id else [])
+                + ([start_date] if start_date else [])
+                + ([end_date] if end_date else []),
+            ),
+            "budget_used": (
+                "SELECT COALESCE(SUM(pay.amount_paid), 0) AS value "
+                "FROM payments pay "
+                "JOIN invoices i ON pay.invoice_id = i.invoice_id "
+                "JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id "
+                "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+                "WHERE pay.payment_status <> 'Cancelled' "
+                + ("AND pay.payment_date >= %s " if start_date else "")
+                + ("AND pay.payment_date <= %s " if end_date else "")
+                + ("AND r.department_id = %s" if department_id else ""),
+                ([start_date] if start_date else [])
+                + ([end_date] if end_date else [])
+                + ([department_id] if department_id else []),
+            ),
+        }
+
+        result = {}
+        for key, (query, params) in queries.items():
+            cursor.execute(query, params)
+            result[key] = cursor.fetchone()["value"] or 0
+
+        result["balance"] = result["company_budget"] - result["budget_used"]
+        return jsonify({"success": True, **result})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @ceo_dashboard_bp.route("/api/departments", methods=["GET"])
 def get_departments():
 
@@ -244,6 +354,155 @@ def generate_budget_number():
         if cursor:
             cursor.close()
 
+        if conn:
+            conn.close()
+
+
+@ceo_dashboard_bp.route("/api/charts", methods=["GET"])
+def get_ceo_charts():
+    conn = None
+    cursor = None
+
+    try:
+        start_date = request.args.get("startDate") or None
+        end_date = request.args.get("endDate") or None
+        department_id = request.args.get("departmentId", type=int)
+        year = request.args.get("year", type=int)
+
+        if year and not start_date and not end_date:
+            start_date = f"{year}-01-01"
+            end_date = f"{year}-12-31"
+
+        requisition_filters = []
+        requisition_params = []
+        if start_date:
+            requisition_filters.append("r.submission_date >= %s")
+            requisition_params.append(start_date)
+        if end_date:
+            requisition_filters.append("r.submission_date < DATE_ADD(%s, INTERVAL 1 DAY)")
+            requisition_params.append(end_date)
+        if department_id:
+            requisition_filters.append("r.department_id = %s")
+            requisition_params.append(department_id)
+
+        requisition_where = " AND ".join(requisition_filters) or "1=1"
+
+        payment_filters = []
+        payment_params = []
+        if start_date:
+            payment_filters.append("pay.payment_date >= %s")
+            payment_params.append(start_date)
+        if end_date:
+            payment_filters.append("pay.payment_date <= %s")
+            payment_params.append(end_date)
+        if department_id:
+            payment_filters.append("r.department_id = %s")
+            payment_params.append(department_id)
+
+        payment_where = " AND ".join(payment_filters) or "1=1"
+
+        budget_filters = []
+        budget_params = []
+        if start_date:
+            budget_filters.append("b.end_date >= %s")
+            budget_params.append(start_date)
+        if end_date:
+            budget_filters.append("b.start_date <= %s")
+            budget_params.append(end_date)
+        if department_id:
+            budget_filters.append("b.department_id = %s")
+            budget_params.append(department_id)
+
+        budget_where = " AND ".join(budget_filters) or "1=1"
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        def fetch_rows(query, params):
+            cursor.execute(query, params)
+            return cursor.fetchall()
+
+        budget_rows = fetch_rows(
+            "SELECT COALESCE(SUM(b.allocated_amount), 0) AS allocated "
+            "FROM company_budget b WHERE " + budget_where,
+            budget_params,
+        )
+        spent_rows = fetch_rows(
+            "SELECT COALESCE(SUM(pay.amount_paid), 0) AS spent "
+            "FROM payments pay "
+            "JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id "
+            "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+            "WHERE pay.payment_status <> 'Cancelled' AND " + payment_where,
+            payment_params,
+        )
+        cash_rows = fetch_rows(
+            "SELECT DATE_FORMAT(pay.payment_date, '%Y-%m') AS label, "
+            "SUM(pay.amount_paid) AS value "
+            "FROM payments pay "
+            "JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id "
+            "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+            "WHERE pay.payment_status <> 'Cancelled' AND " + payment_where +
+            " GROUP BY label ORDER BY label",
+            payment_params,
+        )
+        department_rows = fetch_rows(
+            "SELECT d.department_name AS label, SUM(b.allocated_amount) AS value "
+            "FROM company_budget b JOIN departments d ON b.department_id = d.department_id "
+            "WHERE " + budget_where + " GROUP BY d.department_id, d.department_name "
+            "ORDER BY value DESC",
+            budget_params,
+        )
+        supplier_rows = fetch_rows(
+            "SELECT i.supplier_name AS label, SUM(pay.amount_paid) AS value "
+            "FROM payments pay "
+            "JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id "
+            "JOIN requisitions r ON p.requisition_id = r.requisition_id "
+            "WHERE pay.payment_status <> 'Cancelled' AND " + payment_where +
+            " GROUP BY i.supplier_name ORDER BY value DESC",
+            payment_params,
+        )
+        po_rows = fetch_rows(
+            "SELECT p.status AS label, COUNT(*) AS value "
+            "FROM purchase_orders p JOIN requisitions r ON p.requisition_id = r.requisition_id "
+            "WHERE " + requisition_where + " GROUP BY p.status ORDER BY p.status",
+            requisition_params,
+        )
+        cost_rows = fetch_rows(
+            "SELECT DATE_FORMAT(p.order_date, '%Y-%m') AS label, "
+            "SUM(p.total_amount) AS value "
+            "FROM purchase_orders p JOIN requisitions r ON p.requisition_id = r.requisition_id "
+            "WHERE " + requisition_where + " GROUP BY label ORDER BY label",
+            requisition_params,
+        )
+
+        allocated = float(budget_rows[0]["allocated"] or 0)
+        spent = float(spent_rows[0]["spent"] or 0)
+
+        return jsonify({
+            "success": True,
+            "budget": {
+                "data": [
+                    {"name": "Allocated Budget", "x": ["Company Budget"], "y": [allocated], "type": "bar", "marker": {"color": "#2c7a7b"}},
+                    {"name": "Budget Used", "x": ["Company Budget"], "y": [spent], "type": "bar", "marker": {"color": "#f59e0b"}},
+                ],
+                "layout": {"barmode": "group", "title": "Budget vs Spending", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}},
+            },
+            "cash": {"data": [{"x": [row["label"] for row in cash_rows], "y": [float(row["value"] or 0) for row in cash_rows], "type": "scatter", "mode": "lines+markers", "line": {"color": "#1769aa", "width": 3}, "marker": {"color": "#1769aa"}}], "layout": {"title": "Cash Flow", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}}},
+            "department": {"data": [{"x": [row["label"] for row in department_rows], "y": [float(row["value"] or 0) for row in department_rows], "type": "bar", "marker": {"color": "#166534"}}], "layout": {"title": "Department Budget", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}}},
+            "supplier": {"data": [{"x": [row["label"] for row in supplier_rows], "y": [float(row["value"] or 0) for row in supplier_rows], "type": "bar", "marker": {"color": "#7c3aed"}}], "layout": {"title": "Supplier Payments", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}}},
+            "po": {"data": [{"labels": [row["label"] or "Unknown" for row in po_rows], "values": [int(row["value"] or 0) for row in po_rows], "type": "pie", "marker": {"colors": ["#2c7a7b", "#f59e0b", "#1769aa", "#dc2626", "#7c3aed"]}, "textfont": {"color": "#ffffff"}}], "layout": {"title": "Purchase Orders", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}, "legend": {"font": {"color": "#334155"}}}},
+            "procurement": {"data": [{"x": [row["label"] for row in cost_rows], "y": [float(row["value"] or 0) for row in cost_rows], "type": "bar", "marker": {"color": "#0891b2"}}], "layout": {"title": "Procurement Cost Analysis", "paper_bgcolor": "#ffffff", "plot_bgcolor": "#ffffff", "font": {"color": "#334155"}}},
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
         if conn:
             conn.close()
 
@@ -1274,6 +1533,14 @@ def get_department_budgets_for_company(company_budget_id):
             dictionary=True
         )
 
+        department_id = request.args.get("department_id", type=int)
+        department_filter = ""
+        params = [company_budget_id]
+
+        if department_id:
+            department_filter = " AND db.department_id = %s"
+            params.append(department_id)
+
         cursor.execute("""
             SELECT
                 db.department_budget_id,
@@ -1297,12 +1564,11 @@ def get_department_budgets_for_company(company_budget_id):
                 ON db.department_id = d.department_id
 
             WHERE db.company_budget_id = %s
+        """ + department_filter + """
 
             ORDER BY db.department_budget_id DESC
 
-        """, (
-            company_budget_id,
-        ))
+        """, tuple(params))
 
         department_budgets = cursor.fetchall()
 

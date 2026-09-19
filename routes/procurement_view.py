@@ -17,6 +17,7 @@ def supplier_data():
             s.supplier_name,
             s.address AS supplier_address,
             s.phone AS supplier_phone,
+            s.email AS supplier_email,
             q.status,
             d.department_name AS department,
             q.request_date
@@ -204,6 +205,7 @@ def procurementPOdetails(po_id):
             s.supplier_name,
             s.address AS supplier_address,
             s.phone AS supplier_phone,
+            s.email AS supplier_email,
 
             p.total_amount,
 
@@ -283,6 +285,7 @@ def procurementPOdetails(po_id):
         "supplier_name": order["supplier_name"],
         "supplier_address": order["supplier_address"],
         "supplier_phone": order["supplier_phone"],
+        "supplier_email": order["supplier_email"],
 
         "total_amount": str(order["total_amount"] or 0),
 
@@ -398,6 +401,7 @@ def quotation_details(quotation_id):
                 d.department_name,
 
                 u.username AS requester_name,
+                u.phone AS requester_phone,
                 u.email AS requester_email,
                 u.signature AS requester_signature,
 
@@ -799,7 +803,7 @@ def procurementquotationrequestdetails(qrf_id):
         # ===============================
         # HEADER + APPROVAL DATA
         # ===============================
-        cursor.execute("""
+        details_query = """
             SELECT
                 qr.qrf_id,
                 qr.qrf_no,
@@ -810,6 +814,14 @@ def procurementquotationrequestdetails(qrf_id):
                 d.department_name AS department,
 
                 u.username AS requester_name,
+                u.phone AS requester_phone,
+                u.email AS requester_email,
+
+                s.supplier_name,
+                s.contact_person AS supplier_contact,
+                s.phone AS supplier_phone,
+                s.email AS supplier_email,
+                s.address AS supplier_address,
 
                 COALESCE(a.hod_status, 'PENDING') AS hod_status,
                 COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
@@ -834,6 +846,12 @@ def procurementquotationrequestdetails(qrf_id):
             LEFT JOIN users u
                 ON qr.requested_by = u.user_id
 
+            LEFT JOIN quotation_request_suppliers qrs
+                ON qr.qrf_id = qrs.qrf_id
+
+            LEFT JOIN suppliers s
+                ON qrs.supplier_id = s.supplier_id
+
             LEFT JOIN approvals a
                 ON a.approval_id = (
                     SELECT approval_id
@@ -852,7 +870,21 @@ def procurementquotationrequestdetails(qrf_id):
 
             WHERE qr.qrf_id = %s
             LIMIT 1
-        """, (qrf_id,))
+        """
+
+        try:
+            cursor.execute(details_query, (qrf_id,))
+        except Exception as error:
+            if "unknown column" not in str(error).lower():
+                raise
+
+            cursor.execute(
+                details_query.replace(
+                    "                u.phone AS requester_phone,\n",
+                    ""
+                ),
+                (qrf_id,)
+            )
 
         qrf = cursor.fetchone()
 
@@ -862,6 +894,8 @@ def procurementquotationrequestdetails(qrf_id):
                 "message": "Quotation Request not found"
             }), 404
 
+        qrf.setdefault("requester_phone", None)
+
         # ===============================
         # ITEMS
         # ===============================
@@ -869,7 +903,8 @@ def procurementquotationrequestdetails(qrf_id):
             SELECT
                 material_name,
                 description,
-                quantity
+                quantity,
+                uom
             FROM quotation_request_items
             WHERE qrf_id = %s
         """, (qrf_id,))
@@ -894,7 +929,15 @@ def procurementquotationrequestdetails(qrf_id):
             "request_date": safe_date(qrf["request_date"]),
             "department": qrf["department"],
             "requester_name": qrf["requester_name"],
+            "requester_phone": qrf["requester_phone"],
+            "requester_email": qrf["requester_email"],
             "remarks": qrf["remarks"],
+
+            "supplier_name": qrf["supplier_name"],
+            "supplier_contact": qrf["supplier_contact"],
+            "supplier_phone": qrf["supplier_phone"],
+            "supplier_email": qrf["supplier_email"],
+            "supplier_address": qrf["supplier_address"],
 
             # UNIFIED STATUS
             "status": qrf["final_status"],
@@ -914,7 +957,8 @@ def procurementquotationrequestdetails(qrf_id):
                 {
                     "material_name": i["material_name"],
                     "description": i["description"],
-                    "quantity": i["quantity"]
+                    "quantity": i["quantity"],
+                    "uom": i["uom"]
                 }
                 for i in items
             ]

@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
             LOAD FINANCE DATA
     ===================================================== */
 
+    loadFinanceFilters();
     loadFinanceData();
 
 
@@ -104,6 +105,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+
+
+async function loadFinanceFilters() {
+    const departmentSelect = document.getElementById("financeDepartment");
+    const yearSelect = document.getElementById("financeYear");
+
+    try {
+        const response = await fetch("/finance/api/dashboard/departments");
+        const data = await response.json();
+
+        if (data.success && departmentSelect) {
+            data.departments.forEach(department => {
+                const option = document.createElement("option");
+                option.value = department.department_id;
+                option.textContent = department.department_name;
+                departmentSelect.appendChild(option);
+            });
+        }
+
+        if (yearSelect) {
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= currentYear - 4; year -= 1) {
+                const option = document.createElement("option");
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+        }
+
+        [departmentSelect, yearSelect].forEach(select => {
+            select?.addEventListener("change", loadFinanceData);
+        });
+        document.querySelectorAll("#financeDashboard input[type='date']")
+            .forEach(input => input.addEventListener("change", loadFinanceData));
+    } catch (error) {
+        console.error("Finance filter loading error:", error);
+    }
+}
 
 
 /* =====================================================
@@ -179,6 +218,12 @@ function initializeFinanceCharts() {
 
                         responsive: true,
 
+                        maintainAspectRatio: false,
+
+                        layout: {
+                            padding: 8
+                        },
+
                         plugins: {
 
                             legend: {
@@ -237,7 +282,13 @@ function initializeFinanceCharts() {
 
                     options: {
 
-                        responsive: true
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        layout: {
+                            padding: 8
+                        }
 
                     }
 
@@ -282,7 +333,13 @@ function initializeFinanceCharts() {
 
                     options: {
 
-                        responsive: true
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        layout: {
+                            padding: 8
+                        }
 
                     }
 
@@ -327,7 +384,13 @@ function initializeFinanceCharts() {
 
                     options: {
 
-                        responsive: true
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        layout: {
+                            padding: 8
+                        }
 
                     }
 
@@ -376,16 +439,21 @@ async function loadFinanceData() {
                 : "";
 
 
-        const startDate =
+        let startDate =
             dates.length >= 1
                 ? dates[0].value
                 : "";
 
 
-        const endDate =
+        let endDate =
             dates.length >= 2
                 ? dates[1].value
                 : "";
+
+        if (year) {
+            startDate = `${year}-01-01`;
+            endDate = `${year}-12-31`;
+        }
 
 
         console.log(

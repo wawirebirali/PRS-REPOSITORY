@@ -940,6 +940,40 @@ function loadQuotationRequestDetails(qrfId){
         ).textContent =
         data.department || "-";
 
+        document.getElementById(
+            "quotationRequestSlipContact"
+        ).textContent =
+        `${data.requester_name || "-"} | ` +
+        `${data.requester_phone || "-"} | ` +
+        `${data.requester_email || "-"}`;
+
+        document.getElementById(
+            "quotationRequestSupplierTo"
+        ).textContent =
+        data.supplier_contact || "Supplier";
+
+        document.getElementById(
+            "quotationRequestSupplierCompany"
+        ).textContent =
+        data.supplier_name || "-";
+
+        document.getElementById(
+            "quotationRequestSupplierLocation"
+        ).textContent =
+        data.supplier_address || "-";
+
+        document.getElementById(
+            "quotationRequestSupplierPhone"
+        ).textContent =
+        data.supplier_phone || "-";
+
+        document.getElementById(
+            "quotationRequestSupplierEmail"
+        ).textContent =
+        data.supplier_email || "-";
+
+        window.selectedQuotationRequest = data;
+
 
 
 
@@ -994,6 +1028,10 @@ function loadQuotationRequestDetails(qrfId){
                     ${item.quantity || 0}
                     </td>
 
+                    <td>
+                    ${item.uom || "-"}
+                    </td>
+
 
                 </tr>
 
@@ -1015,7 +1053,7 @@ function loadQuotationRequestDetails(qrfId){
 
             <tr>
 
-                <td colspan="3"
+                <td colspan="4"
                 style="text-align:center">
 
                     No Items Found
@@ -1181,6 +1219,149 @@ function loadQuotationRequestDetails(qrfId){
 
 
 
+}
+
+
+// =====================================================
+// SEND SELECTED QUOTATION REQUEST
+// =====================================================
+
+function getSelectedQuotationRequest() {
+
+    if (!window.selectedQuotationRequest) {
+        alert("Select a quotation request first.");
+        return null;
+    }
+
+    return window.selectedQuotationRequest;
+}
+
+
+function quotationRequestMessage(request) {
+
+    const formatDate = value => {
+        if (!value) {
+            return "-";
+        }
+
+        const date = new Date(`${value}T00:00:00`);
+
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return date.toLocaleDateString("en-GB");
+    };
+
+    const deadlineDate = request.request_date
+        ? new Date(`${request.request_date}T00:00:00`)
+        : null;
+
+    if (deadlineDate && !Number.isNaN(deadlineDate.getTime())) {
+        deadlineDate.setDate(deadlineDate.getDate() + 3);
+    }
+
+    const deadline = deadlineDate && !Number.isNaN(deadlineDate.getTime())
+        ? formatDate(deadlineDate.toISOString().slice(0, 10))
+        : "-";
+
+    const itemRows = (request.items || []).map(item =>
+        [
+            item.material_name || "-",
+            String(item.quantity || 0),
+            item.description || "-",
+            item.uom || "-"
+        ]
+    );
+
+    const headers = ["Item", "Qty", "Description", "UOM"];
+    const widths = headers.map((header, index) =>
+        Math.max(
+            header.length,
+            ...itemRows.map(row => row[index].length)
+        )
+    );
+
+    const tableLine = values =>
+        values
+            .map((value, index) => String(value).padEnd(widths[index]))
+            .join(" | ");
+
+    const itemTable = [
+        tableLine(headers),
+        widths.map(width => "-".repeat(width)).join("-+-"),
+        ...(itemRows.length
+            ? itemRows.map(tableLine)
+            : [tableLine(["-", "-", "No items listed", "-"])])
+    ].join("\n");
+
+    return [
+        `Quotation Request ${request.qrf_no || ""}`,
+        `Department: ${request.department || "-"}`,
+        `Request Date: ${formatDate(request.request_date)}`,
+        `Company Contact Person: ${request.requester_name || "-"}`,
+        `Phone: ${request.requester_phone || "-"}`,
+        `Email: ${request.requester_email || "-"}`,
+        `Delivery Location: ${request.supplier_address || "-"}`,
+        `Deadline: ${deadline}`,
+        "",
+        "Requested Items:",
+        itemTable,
+        "",
+        "Please submit your quotation within 3-5 working days."
+    ].join("\n");
+}
+
+
+function sendQuotationRequestWhatsApp() {
+
+    const request = getSelectedQuotationRequest();
+
+    if (!request) {
+        return;
+    }
+
+    const phone = String(request.supplier_phone || "")
+        .replace(/[^0-9]/g, "");
+
+    if (!phone) {
+        alert("The selected supplier has no phone number saved.");
+        return;
+    }
+
+    const whatsappUrl =
+        `https://wa.me/${phone}?text=${encodeURIComponent(
+            quotationRequestMessage(request)
+        )}`;
+
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+}
+
+
+function sendQuotationRequestEmail() {
+
+    const request = getSelectedQuotationRequest();
+
+    if (!request) {
+        return;
+    }
+
+    const email = String(request.supplier_email || "").trim();
+
+    if (!email) {
+        alert("The selected supplier has no email address saved.");
+        return;
+    }
+
+    const subject =
+        `Quotation Request ${request.qrf_no || ""}`.trim();
+
+    const mailtoUrl =
+        `mailto:${encodeURIComponent(email)}` +
+        `?subject=${encodeURIComponent(subject)}` +
+        `&body=${encodeURIComponent(quotationRequestMessage(request))}`;
+
+    window.location.href = mailtoUrl;
 }
 
 
@@ -2033,6 +2214,11 @@ function loadPODetails(poId) {
 
         document.getElementById("poPhone").textContent =
             data.supplier_phone || "-";
+
+        document.getElementById("poEmail").textContent =
+            data.supplier_email || "-";
+
+        window.selectedPurchaseOrder = data;
 
 
 
@@ -3010,4 +3196,99 @@ function printGRN(){
 window.print();
 
 
+}
+
+
+// =====================================================
+// SEND PURCHASE ORDER
+// =====================================================
+
+function purchaseOrderMessage(order) {
+
+    const items = (order.items || []).map(item => [
+        item.item_name || "-",
+        String(item.quantity || 0),
+        item.description || "-",
+        String(item.unit_price || 0),
+        String(item.total_price || 0)
+    ]);
+
+    const headers = ["Item", "Qty", "Description", "Unit Price", "Total"];
+    const widths = headers.map((header, index) =>
+        Math.max(header.length, ...items.map(row => row[index].length))
+    );
+    const line = values => values
+        .map((value, index) => String(value).padEnd(widths[index]))
+        .join(" | ");
+    const itemTable = [
+        line(headers),
+        widths.map(width => "-".repeat(width)).join("-+-"),
+        ...(items.length ? items.map(line) : [line(["-", "-", "No items", "-", "-"])])
+    ].join("\n");
+
+    return [
+        `Purchase Order ${order.po_number || ""}`,
+        `PRS No: ${order.prs_no || "-"}`,
+        `Order Date: ${order.order_date || "-"}`,
+        `Supplier: ${order.supplier_name || "-"}`,
+        `Delivery Location: ${order.supplier_address || "-"}`,
+        "",
+        "Order Items:",
+        itemTable,
+        "",
+        `Total Amount: UGX ${order.total_amount || "0.00"}`,
+        "Kindly supply the listed items within the agreed delivery period."
+    ].join("\n");
+}
+
+
+function getSelectedPurchaseOrder() {
+    if (!window.selectedPurchaseOrder) {
+        alert("Select a purchase order first.");
+        return null;
+    }
+
+    return window.selectedPurchaseOrder;
+}
+
+
+function sendPurchaseOrderWhatsApp() {
+    const order = getSelectedPurchaseOrder();
+    if (!order) {
+        return;
+    }
+
+    const phone = String(order.supplier_phone || "")
+        .replace(/[^0-9]/g, "");
+
+    if (!phone) {
+        alert("The selected supplier has no phone number saved.");
+        return;
+    }
+
+    window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(purchaseOrderMessage(order))}`,
+        "_blank",
+        "noopener,noreferrer"
+    );
+}
+
+
+function sendPurchaseOrderEmail() {
+    const order = getSelectedPurchaseOrder();
+    if (!order) {
+        return;
+    }
+
+    const email = String(order.supplier_email || "").trim();
+
+    if (!email) {
+        alert("The selected supplier has no email address saved.");
+        return;
+    }
+
+    window.location.href =
+        `mailto:${encodeURIComponent(email)}` +
+        `?subject=${encodeURIComponent(`Purchase Order ${order.po_number || ""}`)}` +
+        `&body=${encodeURIComponent(purchaseOrderMessage(order))}`;
 }

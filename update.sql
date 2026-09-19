@@ -2,6 +2,10 @@ ALTER TABLE requisitions
 ADD COLUMN item_budget DECIMAL(12,2) DEFAULT 0 AFTER submission_date;
 
 
+ALTER TABLE users
+ADD COLUMN phone VARCHAR(50) NULL AFTER email;
+
+
 ALTER TABLE purchase_orders
 ADD COLUMN quotation_id INT NULL AFTER requisition_id;
 

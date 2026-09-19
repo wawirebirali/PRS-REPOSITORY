@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from db_connect import get_db_connection
 
 
@@ -14,7 +14,7 @@ finance_view_dashboard_bp = Blueprint(
 
 
 # ============================================================
-# DATABASE CURSOR HELPER
+# DATABASE HELPER
 # ============================================================
 
 def get_cursor():
@@ -22,21 +22,251 @@ def get_cursor():
     conn = get_db_connection()
 
     if conn is None:
+        raise Exception("Database connection failed.")
 
-        raise Exception(
-            "Database connection failed."
-        )
-
-    cursor = conn.cursor(
-        dictionary=True
-    )
+    cursor = conn.cursor(dictionary=True)
 
     return conn, cursor
 
 
 # ============================================================
-# 1. TOTAL BUDGET API
-# GET: /finance/api/dashboard/total-budget
+# HELPER: CLOSE DATABASE
+# ============================================================
+
+def close_db(conn, cursor):
+
+    try:
+        if cursor:
+            cursor.close()
+    except Exception:
+        pass
+
+
+@finance_view_dashboard_bp.route("/api/dashboard", methods=["POST"])
+def api_finance_dashboard():
+    conn = None
+    cursor = None
+
+    try:
+        filters = request.get_json(silent=True) or {}
+        start_date = filters.get("start") or None
+        end_date = filters.get("end") or None
+        department_value = filters.get("department")
+        department_id = int(department_value) if department_value else None
+
+        payment_conditions = ["pay.payment_status <> 'Cancelled'"]
+        payment_params = []
+        if start_date:
+            payment_conditions.append("pay.payment_date >= %s")
+            payment_params.append(start_date)
+        if end_date:
+            payment_conditions.append("pay.payment_date < DATE_ADD(%s, INTERVAL 1 DAY)")
+            payment_params.append(end_date)
+        if department_id:
+            payment_conditions.append("r.department_id = %s")
+            payment_params.append(department_id)
+        payment_where = " AND ".join(payment_conditions)
+
+        budget_conditions = []
+        budget_params = []
+        if start_date:
+            budget_conditions.append("b.end_date >= %s")
+            budget_params.append(start_date)
+        if end_date:
+            budget_conditions.append("b.start_date <= %s")
+            budget_params.append(end_date)
+        if department_id:
+            budget_conditions.append("b.department_id = %s")
+            budget_params.append(department_id)
+        budget_where = " AND ".join(budget_conditions) or "1=1"
+
+        requisition_conditions = []
+        requisition_params = []
+        if start_date:
+            requisition_conditions.append("r.submission_date >= %s")
+            requisition_params.append(start_date)
+        if end_date:
+            requisition_conditions.append("r.submission_date < DATE_ADD(%s, INTERVAL 1 DAY)")
+            requisition_params.append(end_date)
+        if department_id:
+            requisition_conditions.append("r.department_id = %s")
+            requisition_params.append(department_id)
+        requisition_where = " AND ".join(requisition_conditions) or "1=1"
+
+        conn, cursor = get_cursor()
+
+        def one(query, params):
+            cursor.execute(query, params)
+            return cursor.fetchone() or {}
+
+        def many(query, params):
+            cursor.execute(query, params)
+            return cursor.fetchall()
+
+        total_budget = one(
+            "SELECT COALESCE(SUM(b.allocated_amount), 0) AS value "
+            "FROM company_budget b WHERE " + budget_where,
+            budget_params,
+        ).get("value") or 0
+        spent = one(
+            "SELECT COALESCE(SUM(pay.amount_paid), 0) AS value "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where,
+            payment_params,
+        ).get("value") or 0
+
+        workflow = many(
+            "SELECT COALESCE(pay.payment_status, 'PENDING') AS status, COUNT(*) AS total "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where + " GROUP BY pay.payment_status ORDER BY total DESC",
+            payment_params,
+        )
+        pending = many(
+            "SELECT i.supplier_name AS supplier, pay.amount_paid AS amount, "
+            "COALESCE(pay.payment_status, 'PENDING') AS status "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where + " AND pay.payment_status <> 'Completed' "
+            "ORDER BY pay.payment_date DESC",
+            payment_params,
+        )
+        transactions = many(
+            "SELECT pay.payment_no AS reference, pay.amount_paid AS amount, "
+            "pay.payment_status AS status, pay.payment_date AS date "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where + " ORDER BY pay.payment_date DESC LIMIT 20",
+            payment_params,
+        )
+        cash_flow = many(
+            "SELECT DATE_FORMAT(pay.payment_date, '%Y-%m') AS month, "
+            "SUM(pay.amount_paid) AS expenses "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where + " GROUP BY month ORDER BY month",
+            payment_params,
+        )
+        budget_rows = many(
+            "SELECT d.department_name AS department, SUM(b.allocated_amount) AS budget "
+            "FROM company_budget b JOIN departments d ON b.department_id = d.department_id "
+            "WHERE " + budget_where + " GROUP BY d.department_id, d.department_name ORDER BY department",
+            budget_params,
+        )
+        department_expenses = many(
+            "SELECT d.department_name AS department, SUM(pay.amount_paid) AS amount "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "JOIN departments d ON r.department_id = d.department_id "
+            "WHERE " + payment_where + " GROUP BY d.department_id, d.department_name ORDER BY amount DESC",
+            payment_params,
+        )
+        supplier_payments = many(
+            "SELECT i.supplier_name AS supplier, SUM(pay.amount_paid) AS amount "
+            "FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE " + payment_where + " GROUP BY i.supplier_name ORDER BY amount DESC LIMIT 10",
+            payment_params,
+        )
+
+        paid_invoices = one(
+            "SELECT COUNT(DISTINCT i.invoice_id) AS value FROM invoices i "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE i.status = 'Verified' AND " + requisition_where,
+            requisition_params,
+        ).get("value") or 0
+        outstanding_debt = one(
+            "SELECT COALESCE(SUM(pay.balance), 0) AS value FROM payments pay "
+            "JOIN invoices i ON pay.invoice_id = i.invoice_id "
+            "JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id "
+            "JOIN requisitions r ON po.requisition_id = r.requisition_id "
+            "WHERE pay.payment_status <> 'Completed' AND " + payment_where,
+            payment_params,
+        ).get("value") or 0
+
+        def number(value):
+            return float(value or 0)
+
+        return jsonify({
+            "success": True,
+            "finance": {
+                "cash": number(total_budget) - number(spent),
+                "budget": number(total_budget),
+                "used": number(spent),
+                "pending": len(pending),
+                "debt": number(outstanding_debt),
+                "paid": int(paid_invoices),
+            },
+            "budget_utilization": [
+                {"department_name": row["department"], "budget": number(row["budget"]), "spent": 0}
+                for row in budget_rows
+            ],
+            "payment_workflow": [
+                {"status": row["status"], "total": int(row["total"])} for row in workflow
+            ],
+            "pending_payment_list": pending,
+            "recent_transactions": transactions,
+            "cash_flow": [
+                {"month": row["month"], "income": 0, "expenses": number(row["expenses"])}
+                for row in cash_flow
+            ],
+            "budget_vs_actual": [
+                {"department": row["department"], "budget": number(row["budget"]), "spent": 0}
+                for row in budget_rows
+            ],
+            "supplier_payments": [
+                {"supplier": row["supplier"], "status": row["supplier"], "total": number(row["amount"])}
+                for row in supplier_payments
+            ],
+            "department_expenses": [
+                {"department": row["department"], "amount": number(row["amount"])}
+                for row in department_expenses
+            ],
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        close_db(conn, cursor)
+
+    try:
+        if conn:
+            conn.close()
+    except Exception:
+        pass
+
+
+# ============================================================
+# FINANCE DASHBOARD DEPARTMENTS
+# ============================================================
+
+@finance_view_dashboard_bp.route("/api/dashboard/departments", methods=["GET"])
+def api_finance_departments():
+    conn = None
+    cursor = None
+
+    try:
+        conn, cursor = get_cursor()
+        cursor.execute("SELECT department_id, department_name FROM departments ORDER BY department_name")
+        return jsonify({"success": True, "departments": cursor.fetchall()})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+    finally:
+        close_db(conn, cursor)
+
+
+# ============================================================
+# 1. TOTAL BUDGET
+# GET /finance/api/dashboard/total-budget
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -55,11 +285,8 @@ def api_total_budget():
         total_budget = get_total_budget(cursor)
 
         return jsonify({
-
             "success": True,
-
             "total_budget": total_budget
-
         })
 
     except Exception as e:
@@ -67,19 +294,13 @@ def api_total_budget():
         print("TOTAL BUDGET ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load total budget.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_total_budget(cursor):
@@ -92,17 +313,13 @@ def get_total_budget(cursor):
                     SUM(budget_amount),
                     0
                 ) AS total_budget
-
             FROM department_budget
         """)
 
         row = cursor.fetchone()
 
         return float(
-            row.get(
-                "total_budget",
-                0
-            ) or 0
+            row.get("total_budget", 0) or 0
         )
 
     except Exception as e:
@@ -120,17 +337,13 @@ def get_total_budget(cursor):
                         SUM(budget_amount),
                         0
                     ) AS total_budget
-
                 FROM company_budget
             """)
 
             row = cursor.fetchone()
 
             return float(
-                row.get(
-                    "total_budget",
-                    0
-                ) or 0
+                row.get("total_budget", 0) or 0
             )
 
         except Exception as e2:
@@ -144,8 +357,8 @@ def get_total_budget(cursor):
 
 
 # ============================================================
-# 2. AMOUNT SPENT API
-# GET: /finance/api/dashboard/amount-spent
+# 2. AMOUNT SPENT
+# GET /finance/api/dashboard/amount-spent
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -164,11 +377,8 @@ def api_amount_spent():
         amount_spent = get_amount_spent(cursor)
 
         return jsonify({
-
             "success": True,
-
             "amount_spent": amount_spent
-
         })
 
     except Exception as e:
@@ -176,19 +386,13 @@ def api_amount_spent():
         print("AMOUNT SPENT ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load amount spent.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_amount_spent(cursor):
@@ -201,20 +405,14 @@ def get_amount_spent(cursor):
                     SUM(amount),
                     0
                 ) AS amount_spent
-
             FROM payments
-
-            WHERE
-                payment_status = 'COMPLETED'
+            WHERE payment_status = 'COMPLETED'
         """)
 
         row = cursor.fetchone()
 
         return float(
-            row.get(
-                "amount_spent",
-                0
-            ) or 0
+            row.get("amount_spent", 0) or 0
         )
 
     except Exception as e:
@@ -228,8 +426,8 @@ def get_amount_spent(cursor):
 
 
 # ============================================================
-# 3. PENDING PAYMENTS API
-# GET: /finance/api/dashboard/pending-payments
+# 3. PENDING PAYMENTS
+# GET /finance/api/dashboard/pending-payments
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -248,11 +446,8 @@ def api_pending_payments():
         pending = get_pending_payments(cursor)
 
         return jsonify({
-
             "success": True,
-
             "pending_payments": pending
-
         })
 
     except Exception as e:
@@ -260,19 +455,13 @@ def api_pending_payments():
         print("PENDING PAYMENTS ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load pending payments.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_pending_payments(cursor):
@@ -282,13 +471,9 @@ def get_pending_payments(cursor):
         cursor.execute("""
             SELECT
                 COUNT(*) AS pending
-
             FROM payments
-
             WHERE
-
                 payment_status IS NULL
-
                 OR payment_status NOT IN (
                     'COMPLETED',
                     'REJECTED'
@@ -298,10 +483,7 @@ def get_pending_payments(cursor):
         row = cursor.fetchone()
 
         return int(
-            row.get(
-                "pending",
-                0
-            ) or 0
+            row.get("pending", 0) or 0
         )
 
     except Exception as e:
@@ -315,8 +497,8 @@ def get_pending_payments(cursor):
 
 
 # ============================================================
-# 4. OUTSTANDING DEBT API
-# GET: /finance/api/dashboard/outstanding-debt
+# 4. OUTSTANDING DEBT
+# GET /finance/api/dashboard/outstanding-debt
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -335,11 +517,8 @@ def api_outstanding_debt():
         debt = get_outstanding_debt(cursor)
 
         return jsonify({
-
             "success": True,
-
             "outstanding_debt": debt
-
         })
 
     except Exception as e:
@@ -347,19 +526,13 @@ def api_outstanding_debt():
         print("OUTSTANDING DEBT ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load outstanding debt.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_outstanding_debt(cursor):
@@ -372,13 +545,9 @@ def get_outstanding_debt(cursor):
                     SUM(amount),
                     0
                 ) AS outstanding_debt
-
             FROM payments
-
             WHERE
-
                 payment_status IS NULL
-
                 OR payment_status NOT IN (
                     'COMPLETED',
                     'REJECTED'
@@ -388,10 +557,7 @@ def get_outstanding_debt(cursor):
         row = cursor.fetchone()
 
         return float(
-            row.get(
-                "outstanding_debt",
-                0
-            ) or 0
+            row.get("outstanding_debt", 0) or 0
         )
 
     except Exception as e:
@@ -405,8 +571,8 @@ def get_outstanding_debt(cursor):
 
 
 # ============================================================
-# 5. PAID INVOICES API
-# GET: /finance/api/dashboard/paid-invoices
+# 5. PAID INVOICES
+# GET /finance/api/dashboard/paid-invoices
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -425,11 +591,8 @@ def api_paid_invoices():
         paid = get_paid_invoices(cursor)
 
         return jsonify({
-
             "success": True,
-
             "paid_invoices": paid
-
         })
 
     except Exception as e:
@@ -437,19 +600,13 @@ def api_paid_invoices():
         print("PAID INVOICES ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load paid invoices.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_paid_invoices(cursor):
@@ -459,20 +616,14 @@ def get_paid_invoices(cursor):
         cursor.execute("""
             SELECT
                 COUNT(*) AS paid
-
             FROM invoices
-
-            WHERE
-                status = 'PAID'
+            WHERE status = 'PAID'
         """)
 
         row = cursor.fetchone()
 
         return int(
-            row.get(
-                "paid",
-                0
-            ) or 0
+            row.get("paid", 0) or 0
         )
 
     except Exception as e:
@@ -486,8 +637,8 @@ def get_paid_invoices(cursor):
 
 
 # ============================================================
-# 6. FINANCE SUMMARY API
-# GET: /finance/api/dashboard/summary
+# 6. FINANCE SUMMARY
+# GET /finance/api/dashboard/summary
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -504,13 +655,9 @@ def api_finance_summary():
         conn, cursor = get_cursor()
 
         total_budget = get_total_budget(cursor)
-
         amount_spent = get_amount_spent(cursor)
-
         pending_payments = get_pending_payments(cursor)
-
         outstanding_debt = get_outstanding_debt(cursor)
-
         paid_invoices = get_paid_invoices(cursor)
 
         available_cash = (
@@ -555,27 +702,24 @@ def api_finance_summary():
 
     except Exception as e:
 
-        print("FINANCE SUMMARY ERROR:", str(e))
+        print(
+            "FINANCE SUMMARY ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load finance summary.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 # ============================================================
-# 7. BUDGET UTILIZATION API
-# GET: /finance/api/dashboard/budget-utilization
+# 7. BUDGET UTILIZATION
+# GET /finance/api/dashboard/budget-utilization
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -603,22 +747,19 @@ def api_budget_utilization():
 
     except Exception as e:
 
-        print("BUDGET UTILIZATION ERROR:", str(e))
+        print(
+            "BUDGET UTILIZATION ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load budget utilization.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_budget_utilization(cursor):
@@ -687,8 +828,8 @@ def get_budget_utilization(cursor):
 
 
 # ============================================================
-# 8. PAYMENT WORKFLOW API
-# GET: /finance/api/dashboard/payment-workflow
+# 8. PAYMENT WORKFLOW
+# GET /finance/api/dashboard/payment-workflow
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -716,22 +857,19 @@ def api_payment_workflow():
 
     except Exception as e:
 
-        print("PAYMENT WORKFLOW ERROR:", str(e))
+        print(
+            "PAYMENT WORKFLOW ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load payment workflow.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_payment_workflow(cursor):
@@ -789,8 +927,8 @@ def get_payment_workflow(cursor):
 
 
 # ============================================================
-# 9. PENDING PAYMENT LIST API
-# GET: /finance/api/dashboard/pending-payment-list
+# 9. PENDING PAYMENT LIST
+# GET /finance/api/dashboard/pending-payment-list
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -818,22 +956,19 @@ def api_pending_payment_list():
 
     except Exception as e:
 
-        print("PENDING PAYMENT LIST ERROR:", str(e))
+        print(
+            "PENDING PAYMENT LIST ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load pending payment list.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_pending_payment_list(cursor):
@@ -846,9 +981,13 @@ def get_pending_payment_list(cursor):
             SELECT
 
                 payment_id,
+
                 payment_no,
+
                 amount,
+
                 payment_status,
+
                 payment_date
 
             FROM payments
@@ -920,8 +1059,8 @@ def get_pending_payment_list(cursor):
 
 
 # ============================================================
-# 10. RECENT TRANSACTIONS API
-# GET: /finance/api/dashboard/recent-transactions
+# 10. RECENT TRANSACTIONS
+# GET /finance/api/dashboard/recent-transactions
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -949,22 +1088,19 @@ def api_recent_transactions():
 
     except Exception as e:
 
-        print("RECENT TRANSACTIONS ERROR:", str(e))
+        print(
+            "RECENT TRANSACTIONS ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load recent transactions.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_recent_transactions(cursor):
@@ -977,8 +1113,11 @@ def get_recent_transactions(cursor):
             SELECT
 
                 payment_no,
+
                 amount,
+
                 payment_status,
+
                 payment_date
 
             FROM payments
@@ -1042,8 +1181,8 @@ def get_recent_transactions(cursor):
 
 
 # ============================================================
-# 11. CASH FLOW API
-# GET: /finance/api/dashboard/cash-flow
+# 11. CASH FLOW
+# GET /finance/api/dashboard/cash-flow
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -1071,22 +1210,19 @@ def api_cash_flow():
 
     except Exception as e:
 
-        print("CASH FLOW ERROR:", str(e))
+        print(
+            "CASH FLOW ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load cash flow.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_cash_flow(cursor):
@@ -1111,8 +1247,7 @@ def get_cash_flow(cursor):
             FROM payments
 
             WHERE
-                payment_status =
-                'COMPLETED'
+                payment_status = 'COMPLETED'
 
             GROUP BY
                 DATE_FORMAT(
@@ -1133,7 +1268,8 @@ def get_cash_flow(cursor):
                 "month":
                     row.get("month"),
 
-                "income": 0,
+                "income":
+                    0,
 
                 "expenses":
                     float(
@@ -1156,8 +1292,8 @@ def get_cash_flow(cursor):
 
 
 # ============================================================
-# 12. BUDGET VS ACTUAL API
-# GET: /finance/api/dashboard/budget-vs-actual
+# 12. BUDGET VS ACTUAL
+# GET /finance/api/dashboard/budget-vs-actual
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -1185,22 +1321,19 @@ def api_budget_vs_actual():
 
     except Exception as e:
 
-        print("BUDGET VS ACTUAL ERROR:", str(e))
+        print(
+            "BUDGET VS ACTUAL ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load budget vs actual.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_budget_vs_actual(cursor):
@@ -1258,7 +1391,8 @@ def get_budget_vs_actual(cursor):
                         ) or 0
                     ),
 
-                "spent": 0
+                "spent":
+                    0
 
             })
 
@@ -1273,8 +1407,8 @@ def get_budget_vs_actual(cursor):
 
 
 # ============================================================
-# 13. SUPPLIER PAYMENTS API
-# GET: /finance/api/dashboard/supplier-payments
+# 13. SUPPLIER PAYMENTS
+# GET /finance/api/dashboard/supplier-payments
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -1302,22 +1436,19 @@ def api_supplier_payments():
 
     except Exception as e:
 
-        print("SUPPLIER PAYMENTS ERROR:", str(e))
+        print(
+            "SUPPLIER PAYMENTS ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load supplier payments.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_supplier_payments(cursor):
@@ -1383,8 +1514,8 @@ def get_supplier_payments(cursor):
 
 
 # ============================================================
-# 14. DEPARTMENT EXPENSES API
-# GET: /finance/api/dashboard/department-expenses
+# 14. DEPARTMENT EXPENSES
+# GET /finance/api/dashboard/department-expenses
 # ============================================================
 
 @finance_view_dashboard_bp.route(
@@ -1412,22 +1543,19 @@ def api_department_expenses():
 
     except Exception as e:
 
-        print("DEPARTMENT EXPENSES ERROR:", str(e))
+        print(
+            "DEPARTMENT EXPENSES ERROR:",
+            str(e)
+        )
 
         return jsonify({
-
             "success": False,
-            "message": str(e)
-
+            "message": "Failed to load department expenses.",
+            "error": str(e)
         }), 500
 
     finally:
-
-        if cursor:
-            cursor.close()
-
-        if conn:
-            conn.close()
+        close_db(conn, cursor)
 
 
 def get_department_expenses(cursor):

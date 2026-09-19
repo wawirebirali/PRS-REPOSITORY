@@ -205,6 +205,7 @@ def signup():
 
         username = request.form["username"].strip()
         email = request.form["email"].strip()
+        phone = request.form.get("phone", "").strip()
         password = request.form["password"]
         user_role = request.form["user_role"]
         department = request.form.get("department")
@@ -244,6 +245,7 @@ def signup():
         result = create_user(
             username=username,
             email=email,
+            phone=phone,
             password=password,
             user_role=user_role,
             department=department,

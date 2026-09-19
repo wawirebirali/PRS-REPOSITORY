@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='budget.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='ceo_insight.css') }}">
 <style>
 
 </style>
@@ -45,7 +46,7 @@
         CEO EXECUTIVE DASHBOARD MODULE
 ========================================================== -->
 
-<div id="insights" class="module dashboard-wrapper">
+<div id="insights" class="module dashboard-wrapper active">
 
 
     <!-- ======================================================
@@ -75,17 +76,23 @@
         <div class="header-actions">
 
 
-            <input 
-                type="date"
-                id="startDate"
-            >
+            <div class="filter-field">
+                <label for="startDate">Start date</label>
+                <input
+                    type="date"
+                    id="startDate"
+                >
+            </div>
 
 
 
-            <input 
-                type="date"
-                id="endDate"
-            >
+            <div class="filter-field">
+                <label for="endDate">End date</label>
+                <input
+                    type="date"
+                    id="endDate"
+                >
+            </div>
 
 
 
@@ -823,7 +830,7 @@
 <!-- ==========================================================
                     CEO BUDGET MANAGEMENT MODULE
 ========================================================== -->
-<div id="budgetModule" class="module active">
+<div id="budgetModule" class="module">
 
     <!-- ======================================================
                             HEADER
@@ -880,7 +887,9 @@
     <!-- ======================================================
                         COMPANY BUDGET TABLE
     ======================================================= -->
-    <div class="table-container">
+    <div
+        id="companyBudgetTable"
+        class="table-container">
 
         <table class="budget-table">
 
@@ -928,6 +937,68 @@
             </tbody>
 
         </table>
+
+    </div>
+
+    <div
+        id="departmentBudgetTab"
+        class="table-container"
+        style="display:none;">
+
+        <div class="predict-header">
+
+            <h2>
+                HOD Budget Breakdown: <span id="departmentBudgetHeading">Selected Department</span>
+            </h2>
+
+            <p>
+                Budget line items submitted by the department HOD.
+                Total: <strong id="departmentBudgetTotal">UGX 0</strong>
+            </p>
+
+        </div>
+
+        <table class="budget-table">
+
+            <thead>
+
+                <tr>
+                    <th>Budget No</th>
+                    <th>Department</th>
+                    <th>Budget Item</th>
+                    <th>Quantity</th>
+                    <th>Unit Cost</th>
+                    <th>Total Budget</th>
+                    <th>Budget Type</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Approval Date</th>
+                    <th>Actions</th>
+                </tr>
+
+            </thead>
+
+            <tbody id="departmentBudgetBody">
+
+                <tr>
+                    <td colspan="12">Select a department budget to view its HOD breakdown.</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+        <div class="button-area">
+
+            <button
+                class="cancel-btn"
+                type="button"
+                onclick="document.getElementById('departmentBudgetTab').style.display='none'; document.getElementById('companyBudgetTable').style.display='block'">
+                Close Breakdown
+            </button>
+
+        </div>
 
     </div>
 
@@ -1428,7 +1499,7 @@
 
 
 
-<div id="requisition" class="module active">
+<div id="requisition" class="module">
 <div class="container">
 
 <!-- ===================== LEFT ===================== -->

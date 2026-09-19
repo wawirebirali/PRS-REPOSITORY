@@ -73,6 +73,13 @@ function openModule(id,btn){
     if(id === "grn"){
         loadGRNData();
     }
+
+    if(id === "insights"){
+        requestAnimationFrame(() => {
+            loadCEODashboard();
+            window.dispatchEvent(new Event("resize"));
+        });
+    }
 }
 
 // ================= REQUISITION MODULE =================

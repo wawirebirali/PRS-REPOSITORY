@@ -687,7 +687,8 @@ async function loadCompanyBudgets() {
                         // ==================================
 
                         window.openDepartmentBudgetsForCompany(
-                            budget.company_budget_id
+                            budget.company_budget_id,
+                            budget.department_id
                         );
 
                     }
@@ -745,7 +746,8 @@ async function loadCompanyBudgets() {
 
 window.openDepartmentBudgetsForCompany =
 async function(
-    companyBudgetId
+    companyBudgetId,
+    departmentId
 ) {
 
     console.log(
@@ -779,6 +781,9 @@ async function(
 
     window.selectedCompanyBudgetId =
         companyBudgetId;
+
+    window.selectedDepartmentId =
+        departmentId || null;
 
 
     // ======================================================
@@ -833,7 +838,8 @@ async function(
     // ======================================================
 
     await loadDepartmentBudgetsForCompany(
-        companyBudgetId
+        companyBudgetId,
+        departmentId
     );
 
 
@@ -859,7 +865,8 @@ async function(
 // ==========================================================
 
 async function loadDepartmentBudgetsForCompany(
-    companyBudgetId
+    companyBudgetId,
+    departmentId
 ) {
 
     console.log(
@@ -912,9 +919,13 @@ async function loadDepartmentBudgetsForCompany(
         // CALL API
         // ==================================================
 
+        const query = departmentId
+            ? `?department_id=${encodeURIComponent(departmentId)}`
+            : "";
+
         const response =
             await fetch(
-                `/ceo/api/company-budget/${companyBudgetId}/department-budgets`,
+                `/ceo/api/company-budget/${companyBudgetId}/department-budgets${query}`,
                 {
 
                     method: "GET",
@@ -992,6 +1003,30 @@ async function loadDepartmentBudgetsForCompany(
 
         window.departmentBudgets =
             result.data || [];
+
+        const departmentHeading =
+            document.getElementById("departmentBudgetHeading");
+
+        if (departmentHeading) {
+            departmentHeading.textContent =
+                window.departmentBudgets[0]?.department_name ||
+                "Selected Department";
+        }
+
+        const departmentTotal =
+            document.getElementById("departmentBudgetTotal");
+
+        if (departmentTotal) {
+            departmentTotal.textContent =
+                "UGX " +
+                formatCurrency(
+                    window.departmentBudgets.reduce(
+                        (total, budget) =>
+                            total + Number(budget.total_budget || 0),
+                        0
+                    )
+                );
+        }
 
 
         // ==================================================
@@ -1158,7 +1193,42 @@ async function loadDepartmentBudgetsForCompany(
                         }
                     </td>
 
+                    <td class="budget-actions">
+                        <button
+                            type="button"
+                            class="approve-btn"
+                            data-budget-action="approve">
+                            Approve
+                        </button>
+                        <button
+                            type="button"
+                            class="reject-btn"
+                            data-budget-action="reject">
+                            Reject
+                        </button>
+                    </td>
+
                 `;
+
+                const approveButton =
+                    row.querySelector("[data-budget-action='approve']");
+
+                const rejectButton =
+                    row.querySelector("[data-budget-action='reject']");
+
+                if (approveButton) {
+                    approveButton.addEventListener("click", function(event) {
+                        event.stopPropagation();
+                        handleDepartmentBudgetDecision(budget, "Approved");
+                    });
+                }
+
+                if (rejectButton) {
+                    rejectButton.addEventListener("click", function(event) {
+                        event.stopPropagation();
+                        handleDepartmentBudgetDecision(budget, "Rejected");
+                    });
+                }
 
 
                 // ==========================================
@@ -1679,6 +1749,32 @@ async function rejectDepartmentBudget() {
 }
 
 
+async function handleDepartmentBudgetDecision(
+    budget,
+    status
+) {
+
+    if (!budget || !budget.department_budget_id) {
+        alert("Department budget information is missing.");
+        return;
+    }
+
+    if (!window.confirm(
+        `${status} budget ${budget.budget_no || "selected"}?`
+    )) {
+        return;
+    }
+
+    window.selectedDepartmentBudget = budget;
+
+    await updateDepartmentBudgetApproval(
+        budget.department_budget_id,
+        status
+    );
+
+}
+
+
 // ==========================================================
 // UPDATE DEPARTMENT BUDGET APPROVAL
 // ==========================================================
@@ -1860,7 +1956,8 @@ async function updateDepartmentBudgetApproval(
 
             await loadDepartmentBudgetsForCompany(
 
-                window.selectedCompanyBudgetId
+                window.selectedCompanyBudgetId,
+                window.selectedDepartmentId
 
             );
 
@@ -3619,11 +3716,12 @@ async function loadCompanyBudgets() {
 
 
                         // ==================================
-                        // OPEN APPROVAL PANEL
+                        // OPEN HOD BREAKDOWN TABLE
                         // ==================================
 
-                        window.openCompanyBudgetApproval(
-                            budget
+                        window.openDepartmentBudgetsForCompany(
+                            budget.company_budget_id,
+                            budget.department_id
                         );
 
                     }
@@ -4136,6 +4234,41 @@ async function predictBudget(){
 
 
         }
+        const departmentSelect =
+            document.getElementById("budgetDepartment");
+
+        const departmentName =
+            departmentSelect &&
+            departmentSelect.selectedOptions.length
+                ? departmentSelect.selectedOptions[0].textContent.trim()
+                : `Department ${data.department_id}`;
+
+        const period =
+            document.getElementById("predictPeriod")?.value ||
+            "Not specified";
+
+        const startDate =
+            document.getElementById("predictStart")?.value ||
+            "Not specified";
+
+        const endDate =
+            document.getElementById("predictEnd")?.value ||
+            "Not specified";
+
+        const itemSelect =
+            document.getElementById("predictItems");
+
+        const items = itemSelect
+            ? Array.from(itemSelect.selectedOptions)
+                .map(option => option.textContent.trim())
+                .filter(Boolean)
+            : [];
+
+        const itemSummary =
+            items.length
+                ? items.join(", ")
+                : "Not specified";
+
 
 
 
@@ -4158,13 +4291,28 @@ async function predictBudget(){
 
 
             <p>
+                <strong>Department:</strong>
+                ${departmentName}
+            </p>
 
-                <strong>
-                Department ID:
-                </strong>
+            <p>
+                <strong>Budget Period:</strong>
+                ${period}
+            </p>
 
-                ${data.department_id}
+            <p>
+                <strong>Start Date:</strong>
+                ${startDate}
+            </p>
 
+            <p>
+                <strong>End Date:</strong>
+                ${endDate}
+            </p>
+
+            <p>
+                <strong>Items:</strong>
+                ${itemSummary}
             </p>
 
 
@@ -4172,9 +4320,7 @@ async function predictBudget(){
 
             <p>
 
-                <strong>
-                Predicted Budget:
-                </strong>
+                <strong>Budget Amount:</strong>
 
 
                 UGX 
@@ -4199,6 +4345,13 @@ async function predictBudget(){
 
 
             </p>
+
+            <button
+                type="button"
+                class="predict-btn prediction-export-btn"
+                onclick="exportPredictionSummaryPDF()">
+                Export PDF
+            </button>
 
 
 
@@ -4239,5 +4392,75 @@ async function predictBudget(){
     }
 
 
+
+}
+
+
+/* ==========================================================
+   EXPORT AI PREDICTION SUMMARY
+========================================================== */
+
+async function exportPredictionSummaryPDF() {
+
+    if (typeof html2pdf === "undefined") {
+        alert("PDF export is unavailable. Please reload the page and try again.");
+        return;
+    }
+
+    const summary =
+        document.querySelector("#predictionContent .prediction-card");
+
+    if (!summary) {
+        alert("Generate a budget prediction before exporting it.");
+        return;
+    }
+
+    const exportCopy = summary.cloneNode(true);
+    const exportButton =
+        exportCopy.querySelector(".prediction-export-btn");
+
+    if (exportButton) {
+        exportButton.remove();
+    }
+
+    exportCopy.style.background = "#ffffff";
+    exportCopy.style.color = "#111827";
+    exportCopy.style.padding = "24px";
+    exportCopy.style.width = "720px";
+
+    const exportContainer = document.createElement("div");
+    exportContainer.style.position = "fixed";
+    exportContainer.style.left = "-10000px";
+    exportContainer.style.top = "0";
+    exportContainer.style.width = "760px";
+    exportContainer.style.background = "#ffffff";
+    exportContainer.appendChild(exportCopy);
+    document.body.appendChild(exportContainer);
+
+    const department =
+        document.getElementById("budgetDepartment")?.selectedOptions[0]?.textContent.trim() ||
+        "department";
+
+    const filenameDepartment =
+        department.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+
+    try {
+        await html2pdf()
+            .set({
+                margin: 0.5,
+                filename: `budget-prediction-${filenameDepartment || "summary"}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    backgroundColor: "#ffffff",
+                    useCORS: true
+                },
+                jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
+            })
+            .from(exportCopy)
+            .save();
+    } finally {
+        exportContainer.remove();
+    }
 
 }
