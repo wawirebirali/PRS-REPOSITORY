@@ -590,7 +590,7 @@ ALTER TABLE `grn` ADD `status` ENUM('verified','canceled','pending') NOT NULL AF
 CREATE TABLE approvals (
     approval_id INT AUTO_INCREMENT PRIMARY KEY,
 
-    module_name ENUM('PRS', 'PO', 'GRN', 'INVOICE', 'PAYMENT', 'QRF') NOT NULL,
+    module_name ENUM('PRS', 'PO', 'GRN', 'INVOICE', 'PAYMENT', 'QRF', 'QUOTATION') NOT NULL,
     document_id INT NOT NULL,
 
     hod_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
@@ -601,7 +601,7 @@ CREATE TABLE approvals (
     ceo_user_id INT NULL,
     ceo_approved_at DATETIME NULL,
 
-    final_status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING',
+    final_status ENUM('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED') DEFAULT 'PENDING',
 
     remarks TEXT NULL,
 

@@ -2594,23 +2594,34 @@ async function loadInvoiceDetails(invoiceId) {
         const signatures =
             data.signatures || {};
 
+        const approval = data.approval || {};
+        const setSignature = (id, path) => {
+            const image = document.getElementById(id);
+            if (!image) return;
+            if (!path) {
+                image.removeAttribute("src");
+                image.style.display = "none";
+                return;
+            }
+            image.src = path.startsWith("/")
+                ? path
+                : `/static/${path.replace(/^static\//, "")}`;
+            image.style.display = "block";
+        };
 
-        setText(
-            "sig_supplier_name",
-            signatures.supplier || "-"
-        );
+        setText("invoice_prepared_name", signatures.prepared_name);
+        setText("invoice_prepared_date", formatInvoiceDate(invoice.invoice_date));
+        setSignature("invoice_prepared_signature", signatures.prepared_signature);
 
+        setText("invoice_hod_name", signatures.hod);
+        setText("invoice_hod_status", approval.hod_status || "PENDING");
+        setText("invoice_hod_date", formatInvoiceDate(approval.hod_approved_at));
+        setSignature("invoice_hod_signature", signatures.hod_signature);
 
-        setText(
-            "sig_procurement_name",
-            signatures.procurement || "-"
-        );
-
-
-        setText(
-            "sig_finance_name",
-            signatures.finance || "-"
-        );
+        setText("invoice_ceo_name", signatures.ceo);
+        setText("invoice_ceo_status", approval.ceo_status || "PENDING");
+        setText("invoice_ceo_date", formatInvoiceDate(approval.ceo_approved_at));
+        setSignature("invoice_ceo_signature", signatures.ceo_signature);
 
     }
     catch (error) {

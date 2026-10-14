@@ -615,6 +615,7 @@ let monthlyChart = null;
 let departmentChart = null;
 let statusChart = null;
 let supplierChart = null;
+let spendingChart = null;
 
 
 // =====================================================
@@ -865,7 +866,8 @@ function loadSpendingChart(){
 
         if(!ctx) return;
 
-        const spendingChartInstance = new Chart(ctx,{
+        Chart.getChart(ctx)?.destroy();
+        spendingChart = new Chart(ctx,{
 
             type:"line",
 

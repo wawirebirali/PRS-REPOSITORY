@@ -20,6 +20,7 @@ href="{{ url_for('static', filename='employee.css') }}">
 
 <link rel="stylesheet" 
 href="{{ url_for('static', filename='forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='table_layout.css') }}">
 
 
 </head>
@@ -47,6 +48,7 @@ href="{{ url_for('static', filename='forms.css') }}">
 
 
     <button class="active"
+            id="dashboardNav"
             onclick="openModule('dashboardModule',this)">
         Dashboard
     </button>
@@ -56,6 +58,7 @@ href="{{ url_for('static', filename='forms.css') }}">
 
 
     <button
+        id="requisitionNav"
         onclick="openModule('requisition',this)">
         Requisition
     </button>
@@ -99,7 +102,7 @@ href="{{ url_for('static', filename='forms.css') }}">
 ===================================================== -->
 
 
-<div id="requisition" class="module active">
+<div id="requisition" class="module">
 
 
 
@@ -353,11 +356,7 @@ loadSlipFromRow(this.closest('tr'))
 
 
 
-<td>
-
-{{req.hod_status or 'PENDING'}}
-
-</td>
+<td>{{ req.final_status or 'PENDING' }}</td>
 
 
 
@@ -1197,31 +1196,6 @@ Approval Signatures
 
 
 
-<div class="sig-box">
-
-
-<h4>
-Prepared By
-</h4>
-
-
-
-
-
-<img id="sig_created_by" src="" class="signature-img" style="display:none;">
-
-
-
-
-
-
-
-<p>
-
-<b>
-Name:
-</b>
-
 <span id="created_by_name">
 -
 </span>
@@ -1267,30 +1241,7 @@ Date:
 
 
 
-<div class="sig-box">
-
-
-<h4>
-HOD Approval
-</h4>
-
-
-
-
-
-
-<img id="sig_hod" src="" class="signature-img" style="display:none;">
-
-
-
-
-
-
-
-<p>
-
-<b>
-Name:
+ </div>
 </b>
 
 
@@ -1344,31 +1295,6 @@ Date:
 
 
 
-<div class="sig-box">
-
-
-<h4>
-CEO Approval
-</h4>
-
-
-
-
-
-
-
-<img id="sig_ceo" src="" class="signature-img" style="display:none;">
-
-
-
-
-
-
-
-
-<p>
-
-<b>
 Name:
 </b>
 
@@ -1447,7 +1373,7 @@ Date:
 ===================================================== -->
 
 
-<div id="dashboardModule" class="module">
+<div id="dashboardModule" class="module active">
 
 
 
@@ -1509,31 +1435,6 @@ STATISTICS FOR MY REQUISITIONS 👋
 
 
 
-<div class="dashboard-cards">
-
-
-
-
-
-
-
-
-<!-- TOTAL -->
-
-
-<div class="dash-card">
-
-
-<div class="icon">
-
-📄
-
-</div>
-
-
-
-<div>
-
 
 <h3>
 Total Requisitions
@@ -1542,7 +1443,7 @@ Total Requisitions
 
 <h1 id="totalPRS">
 
-0
+{{ total_prs }}
 
 </h1>
 
@@ -1594,7 +1495,7 @@ Pending
 
 <h1 id="pendingPRS">
 
-0
+{{ pending_prs }}
 
 </h1>
 
@@ -1652,7 +1553,7 @@ Approved
 
 <h1 id="approvedPRS">
 
-0
+{{ approved_prs }}
 
 </h1>
 
@@ -1710,7 +1611,7 @@ Rejected
 
 <h1 id="rejectedPRS">
 
-0
+{{ rejected_prs }}
 
 </h1>
 
@@ -1761,8 +1662,7 @@ Returned
 
 
 <h2>
-
-🔄 Current Approval Stage
+My Document Tracking
 
 </h2>
 
@@ -1792,7 +1692,7 @@ HOD Approval
 
 <h1 id="hodPending">
 
-0
+{{ hod_pending }}
 
 </h1>
 
@@ -1829,7 +1729,7 @@ CEO Approval
 
 <h1 id="ceoPending">
 
-0
+{{ ceo_pending }}
 
 </h1>
 
@@ -1858,23 +1758,18 @@ Waiting CEO Decision
 
 
 <h3>
-
-Procurement
+Approved
 
 </h3>
 
 
-<h1>
-
-0
-
-</h1>
+<h1>{{ approved_prs }}</h1>
 
 
 
 <p>
 
-Processing Purchase
+Completed approval
 
 </p>
 
@@ -1895,23 +1790,18 @@ Processing Purchase
 
 
 <h3>
-
-Finance
+Rejected
 
 </h3>
 
 
-<h1>
-
-0
-
-</h1>
+<h1>{{ rejected_prs }}</h1>
 
 
 
 <p>
 
-Payment Processing
+Returned for changes
 
 </p>
 
@@ -1931,43 +1821,57 @@ Payment Processing
 <div class="stage-card">
 
 
-<h3>
+<h3>Documents Tracked</h3>
 
-Completed
+<h1>{{ total_prs }}</h1>
 
-</h3>
-
-
-<h1 id="completedPRS">
-
-0
-
-</h1>
-
-
-
-<p>
-
-Finished Requests
-
-</p>
+<p>All submitted requests</p>
 
 
 
 </div>
 
-
-
-
-
-
-
 </div>
 
-
-
-
-</div>
+<div class="tracking-table-wrap">
+    <h2>Requisition Status</h2>
+    <table class="tracking-table">
+        <thead>
+            <tr>
+                <th>PRS No.</th>
+                <th>Department</th>
+                <th>Submitted</th>
+                <th>HOD</th>
+                <th>CEO</th>
+                <th>Overall status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requisitions %}
+            <tr class="tracking-row" tabindex="0" role="button"
+                aria-label="Track requisition {{ req.prs_no }}"
+                data-id="{{ req.requisition_id }}"
+                onclick="openModule('requisition', document.getElementById('requisitionNav')); loadSlipFromRow(this)"
+                onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();openModule('requisition', document.getElementById('requisitionNav'));loadSlipFromRow(this)}">
+                <td>{{ req.prs_no }}</td>
+                <td>{{ req.department_name }}</td>
+                <td>{{ req.submission_date.strftime('%Y-%m-%d') if req.submission_date else 'N/A' }}</td>
+                <td><span class="status-pill status-{{ req.hod_status|lower }}">{{ req.hod_status|title }}</span></td>
+                <td><span class="status-pill status-{{ req.ceo_status|lower }}">{{ req.ceo_status|title }}</span></td>
+                <td><span class="status-pill status-{{ req.final_status|lower }}">{{ req.final_status|title }}</span></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="empty-tracking">
+                    <strong>No requisitions yet</strong>
+                    <span>Your submitted documents and approval progress will appear here.</span>
+                    <button type="button" onclick="openModule('requisition', document.getElementById('requisitionNav')); showCreateForm()">Create a requisition</button>
+                </td>
+            </tr>
+            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
 
 

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Account | PRMS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+    <style>
+        body { background: #f4f6fb; }
+        main { max-width: 780px; margin: 36px auto; padding: 24px; background: #fff; }
+        dl { display: grid; grid-template-columns: minmax(130px, 1fr) 2fr; gap: 12px 20px; }
+        dt { font-weight: 700; color: #334155; }
+        dd { margin: 0; overflow-wrap: anywhere; }
+        .actions { display: flex; gap: 12px; margin-top: 24px; }
+        .actions a { padding: 10px 14px; color: #fff; background: #2c7a7b; border-radius: 4px; text-decoration: none; }
+        @media (max-width: 520px) { dl { grid-template-columns: 1fr; gap: 4px; } dd { margin-bottom: 12px; } }
+    </style>
+</head>
+<body>
+<main>
+    <h1>User Account</h1>
+    <dl>
+        <dt>User ID</dt><dd>{{ user.user_id }}</dd>
+        <dt>Username</dt><dd>{{ user.username }}</dd>
+        <dt>Email</dt><dd>{{ user.email }}</dd>
+        <dt>Phone</dt><dd>{{ user.phone or 'Not provided' }}</dd>
+        <dt>Department</dt><dd>{{ user.department or 'Not assigned' }}</dd>
+        <dt>Role</dt><dd>{{ user.user_role|title }}</dd>
+        <dt>Status</dt><dd>{{ user.status|title }}</dd>
+        <dt>Created</dt><dd>{{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'N/A' }}</dd>
+        <dt>Last updated</dt><dd>{{ user.updated_at.strftime('%Y-%m-%d %H:%M') if user.updated_at else 'N/A' }}</dd>
+    </dl>
+    <div class="actions">
+        <a href="{{ url_for('admin_dashboard.edit_user', user_id=user.user_id) }}">Edit Account</a>
+        <a href="{{ url_for('admin_dashboard.admin_dashboard') }}">Back to Users</a>
+    </div>
+</main>
+</body>
+</html>

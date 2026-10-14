@@ -732,8 +732,12 @@ def invoice_details(invoice_id):
                 r.prs_no,
                 d.department_name,
 
+                i.created_at AS creator_date,
                 creator.username AS creator_name,
                 creator.signature AS creator_signature,
+
+                a.hod_approved_at,
+                a.ceo_approved_at,
 
                 hod_user.username AS hod_name,
                 hod_user.signature AS hod_signature,
@@ -756,9 +760,9 @@ def invoice_details(invoice_id):
             JOIN departments d
                 ON r.department_id = d.department_id
 
-            -- creator of requisition
+            -- user who entered the invoice
             LEFT JOIN users creator
-                ON r.user_id = creator.user_id
+                ON i.created_by = creator.user_id
 
             -- approval table
             LEFT JOIN approvals a
@@ -789,6 +793,10 @@ def invoice_details(invoice_id):
         if invoice.get("invoice_date"):
             invoice["invoice_date"] = \
                 invoice["invoice_date"].strftime("%Y-%m-%d")
+
+        for field in ("creator_date", "hod_approved_at", "ceo_approved_at"):
+            if invoice.get(field):
+                invoice[field] = invoice[field].isoformat()
 
         # ==========================================
         # ITEMS
@@ -824,14 +832,17 @@ def invoice_details(invoice_id):
 
             "creator_name": invoice["creator_name"],
             "creator_signature": invoice["creator_signature"],
+            "creator_date": invoice["creator_date"],
 
             "hod_name": invoice["hod_name"],
             "hod_signature": invoice["hod_signature"],
             "hod_status": invoice["hod_status"],
+            "hod_approved_at": invoice["hod_approved_at"],
 
             "ceo_name": invoice["ceo_name"],
             "ceo_signature": invoice["ceo_signature"],
             "ceo_status": invoice["ceo_status"],
+            "ceo_approved_at": invoice["ceo_approved_at"],
 
             "items": items
         })

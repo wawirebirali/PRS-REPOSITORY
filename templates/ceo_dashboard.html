@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='ceo_insight.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='table_layout.css') }}">
 <style>
 
 </style>
@@ -1999,6 +2000,7 @@
                         </div>
 
                         <p id="poPreparedBy">-</p>
+                        <small id="poPreparedDate">-</small>
                     </div>
 
                     <!-- HOD -->
@@ -2235,6 +2237,7 @@
                         </div>
 
                         <p id="grnReceiverNameSigText">-</p>
+                        <small id="grnReceiverDateSigText">-</small>
 
 
                 <br><br>
@@ -2456,6 +2459,7 @@
                             style="display:none; max-height:80px;">
 
                         <p id="invoice_creator_name">-</p>
+                        <small id="invoice_creator_date">-</small>
 
                     </div>
 
@@ -2471,6 +2475,7 @@
 
                         <p id="invoice_hod_name">-</p>
                         <p id="invoice_hod_status">PENDING</p>
+                        <small id="invoice_hod_date">-</small>
 
                     </div>
 
@@ -2486,6 +2491,7 @@
 
                         <p id="invoice_ceo_name">-</p>
                         <p id="invoice_ceo_status">PENDING</p>
+                        <small id="invoice_ceo_date">-</small>
 
                     </div>
 
@@ -2633,7 +2639,7 @@
 
                     <!-- FINANCE APPROVAL -->
                     <div class="sig-box">
-                        <p><strong>Finance Approval</strong></p>
+                        <p><strong>HOD Approval</strong></p>
 
                         <div class="sig-image">
                             <img id="payment_finance_signature"

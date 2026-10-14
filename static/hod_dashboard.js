@@ -78,8 +78,13 @@ function loadSlipFromRow(row) {
 
     row.classList.add("selected");
 
-    fetch("/hod/requisition/api/" + id)
-        .then(res => res.json())
+    fetch(`${window.location.origin}/hod/requisition/api/${encodeURIComponent(id)}`)
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`Requisition details returned HTTP ${res.status}`);
+            }
+            return res.json();
+        })
         .then(data => {
 
             if (!data.success) {
@@ -945,6 +950,8 @@ function selectPO(radio) {
             // ================= PREPARED BY =================
             document.getElementById("poPreparedBy").innerText =
                 data.created_by?.username || "-";
+            document.getElementById("poPreparedDate").innerText =
+                data.order_date ? formatDate(data.order_date) : "-";
 
             const preparedBySig = document.getElementById("poPreparedBySig");
             if (data.created_by?.signature) {
@@ -1278,6 +1285,8 @@ async function loadGRNDetails(grnId) {
         // ===================================================
         document.getElementById("grnReceiverNameSigText").innerText =
             data.received_by || "-";
+        document.getElementById("grnReceiverDateSigText").innerText =
+            data.received_date ? formatDate(data.received_date) : "-";
 
         const receiverImg = document.getElementById("grnReceivedBySig");
         if (data.receiver_signature) {
@@ -2030,6 +2039,8 @@ async function loadInvoiceDetails(invoiceId) {
         // ================= CREATOR =================
         document.getElementById("invoice_creator_name").textContent =
             data.creator_name || "-";
+        document.getElementById("invoice_creator_date").textContent =
+            data.creator_date ? formatDate(data.creator_date) : "-";
 
         function resolveSignatureSrc(signaturePath) {
             if (!signaturePath) {
@@ -2060,6 +2071,8 @@ async function loadInvoiceDetails(invoiceId) {
 
         document.getElementById("invoice_hod_status").textContent =
             data.hod_status || "PENDING";
+        document.getElementById("invoice_hod_date").textContent =
+            data.hod_approved_at ? formatDate(data.hod_approved_at) : "-";
 
         const hodSig = document.getElementById(
             "invoice_hod_signature"
@@ -2078,6 +2091,8 @@ async function loadInvoiceDetails(invoiceId) {
 
         document.getElementById("invoice_ceo_status").textContent =
             data.ceo_status || "PENDING";
+        document.getElementById("invoice_ceo_date").textContent =
+            data.ceo_approved_at ? formatDate(data.ceo_approved_at) : "-";
 
         const ceoSig = document.getElementById(
             "invoice_ceo_signature"

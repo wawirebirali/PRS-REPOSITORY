@@ -482,23 +482,25 @@ def approve_document():
     table, primary_key = table_map[module_name]
 
 
-    # =========================================================
-    # ONLY PAYMENT HAS A DIFFERENT STATUS COLUMN
-    #
-    # IMPORTANT:
-    # PRS DOES NOT USE requisitions.status.
-    # PRS approval information is stored ONLY in approvals.
-    # =========================================================
-
-    status_column_map = {
-
-        "PAYMENT": "payment_status"
+    # Approval status is canonical; only final CEO decisions update the
+    # separate document lifecycle status, using values valid for each table.
+    department_query_map = {
+        "PRS": "SELECT department_id FROM requisitions WHERE requisition_id = %s",
+        "QRF": "SELECT r.department_id FROM quotation_requests q JOIN requisitions r ON q.requisition_id = r.requisition_id WHERE q.qrf_id = %s",
+        "QUOTATION": "SELECT r.department_id FROM quotations q JOIN quotation_requests qr ON q.qrf_id = qr.qrf_id JOIN requisitions r ON qr.requisition_id = r.requisition_id WHERE q.quotation_id = %s",
+        "PO": "SELECT r.department_id FROM purchase_orders p JOIN requisitions r ON p.requisition_id = r.requisition_id WHERE p.purchase_order_id = %s",
+        "GRN": "SELECT r.department_id FROM grn g JOIN purchase_orders p ON g.po_id = p.purchase_order_id JOIN requisitions r ON p.requisition_id = r.requisition_id WHERE g.grn_id = %s",
+        "INVOICE": "SELECT r.department_id FROM invoices i JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id JOIN requisitions r ON p.requisition_id = r.requisition_id WHERE i.invoice_id = %s",
+        "PAYMENT": "SELECT r.department_id FROM payments pay JOIN invoices i ON pay.invoice_id = i.invoice_id JOIN purchase_orders p ON i.purchase_order_id = p.purchase_order_id JOIN requisitions r ON p.requisition_id = r.requisition_id WHERE pay.payment_id = %s",
     }
 
-
-    status_column = status_column_map.get(
-        module_name
-    )
+    ceo_document_status_map = {
+        "QRF": {"APPROVED": "COMPLETED", "REJECTED": "CANCELLED"},
+        "QUOTATION": {"APPROVED": "SELECTED", "REJECTED": "REJECTED"},
+        "PO": {"APPROVED": "Approved", "REJECTED": "Cancelled"},
+        "GRN": {"APPROVED": "verified", "REJECTED": "canceled"},
+        "INVOICE": {"APPROVED": "Verified", "REJECTED": "Rejected"},
+    }
 
 
     conn = None
@@ -544,6 +546,25 @@ def approve_document():
                     f"{document_id} was not found."
                 )
             }), 404
+
+        if role == "hod":
+            hod_department = get_hod_department(cursor)
+            if not hod_department:
+                return jsonify({
+                    "success": False,
+                    "message": "Your HOD department could not be determined."
+                }), 403
+
+            cursor.execute(department_query_map[module_name], (document_id,))
+            document_department = cursor.fetchone()
+            if (
+                not document_department
+                or document_department["department_id"] != hod_department["department_id"]
+            ):
+                return jsonify({
+                    "success": False,
+                    "message": "You can only approve documents from your department."
+                }), 403
 
 
         # =====================================================
@@ -595,9 +616,6 @@ def approve_document():
                     document_id
                 )
             )
-
-            conn.commit()
-
 
             # Reload approval
             cursor.execute(
@@ -673,68 +691,6 @@ def approve_document():
                 )
 
 
-                # -------------------------------------------------
-                # IMPORTANT:
-                # PRS DOES NOT UPDATE requisitions.status.
-                #
-                # approvals table is the source of approval data.
-                # -------------------------------------------------
-
-                if module_name == "PRS":
-
-                    cursor.execute(
-                        """
-                        UPDATE approvals
-                        SET final_status = 'PENDING'
-                        WHERE module_name = 'PRS'
-                          AND document_id = %s
-                        """,
-                        (
-                            document_id,
-                        )
-                    )
-
-
-                # -------------------------------------------------
-                # OTHER MODULES
-                #
-                # These may still have their own status columns.
-                # -------------------------------------------------
-
-                elif status_column:
-
-                    cursor.execute(
-                        f"""
-                        UPDATE {table}
-                        SET {status_column} = %s
-                        WHERE {primary_key} = %s
-                        """,
-                        (
-                            "PENDING_CEO",
-                            document_id
-                        )
-                    )
-
-
-                # -------------------------------------------------
-                # Other modules with a normal status column
-                # -------------------------------------------------
-
-                else:
-
-                    cursor.execute(
-                        f"""
-                        UPDATE {table}
-                        SET status = %s
-                        WHERE {primary_key} = %s
-                        """,
-                        (
-                            "PENDING_CEO",
-                            document_id
-                        )
-                    )
-
-
                 conn.commit()
 
 
@@ -787,47 +743,6 @@ def approve_document():
                         document_id
                     )
                 )
-
-
-                # -------------------------------------------------
-                # PRS:
-                # DO NOT UPDATE requisitions.status
-                # -------------------------------------------------
-
-                if module_name == "PRS":
-
-                    pass
-
-
-                # -------------------------------------------------
-                # OTHER MODULES
-                # -------------------------------------------------
-
-                elif status_column:
-
-                    cursor.execute(
-                        f"""
-                        UPDATE {table}
-                        SET {status_column} = 'REJECTED'
-                        WHERE {primary_key} = %s
-                        """,
-                        (
-                            document_id,
-                        )
-                    )
-
-                else:
-
-                    cursor.execute(
-                        f"""
-                        UPDATE {table}
-                        SET status = 'REJECTED'
-                        WHERE {primary_key} = %s
-                        """,
-                        (
-                            document_id,
-                        )
-                    )
 
 
                 conn.commit()
@@ -928,7 +843,7 @@ def approve_document():
                             ceo_status = 'APPROVED',
                             ceo_user_id = %s,
                             ceo_approved_at = NOW(),
-                            final_status = 'COMPLETED'
+                            final_status = 'APPROVED'
                         WHERE module_name = 'PAYMENT'
                           AND document_id = %s
                         """,
@@ -939,19 +854,7 @@ def approve_document():
                     )
 
 
-                    cursor.execute(
-                        """
-                        UPDATE payments
-                        SET payment_status = 'COMPLETED'
-                        WHERE payment_id = %s
-                        """,
-                        (
-                            document_id,
-                        )
-                    )
-
-
-                    final_status = "COMPLETED"
+                    final_status = "APPROVED"
 
 
                 # -------------------------------------------------
@@ -1011,31 +914,18 @@ def approve_document():
                     )
 
 
-                    # Update document status only for modules
-                    # that have their own status field.
-
-                    if status_column:
-
+                    document_status = ceo_document_status_map.get(
+                        module_name, {}
+                    ).get("APPROVED")
+                    if document_status:
                         cursor.execute(
                             f"""
                             UPDATE {table}
-                            SET {status_column} = 'APPROVED'
+                            SET status = %s
                             WHERE {primary_key} = %s
                             """,
                             (
-                                document_id,
-                            )
-                        )
-
-                    else:
-
-                        cursor.execute(
-                            f"""
-                            UPDATE {table}
-                            SET status = 'APPROVED'
-                            WHERE {primary_key} = %s
-                            """,
-                            (
+                                document_status,
                                 document_id,
                             )
                         )
@@ -1098,61 +988,18 @@ def approve_document():
                 )
 
 
-                # -------------------------------------------------
-                # PRS
-                # -------------------------------------------------
-                # Do NOT touch requisitions.status.
-                # -------------------------------------------------
-
-                if module_name == "PRS":
-
-                    pass
-
-
-                # -------------------------------------------------
-                # PAYMENT
-                # -------------------------------------------------
-
-                elif module_name == "PAYMENT":
-
-                    cursor.execute(
-                        """
-                        UPDATE payments
-                        SET payment_status = 'REJECTED'
-                        WHERE payment_id = %s
-                        """,
-                        (
-                            document_id,
-                        )
-                    )
-
-
-                # -------------------------------------------------
-                # OTHER MODULES
-                # -------------------------------------------------
-
-                elif status_column:
-
+                document_status = ceo_document_status_map.get(
+                    module_name, {}
+                ).get("REJECTED")
+                if document_status:
                     cursor.execute(
                         f"""
                         UPDATE {table}
-                        SET {status_column} = 'REJECTED'
+                        SET status = %s
                         WHERE {primary_key} = %s
                         """,
                         (
-                            document_id,
-                        )
-                    )
-
-                else:
-
-                    cursor.execute(
-                        f"""
-                        UPDATE {table}
-                        SET status = 'REJECTED'
-                        WHERE {primary_key} = %s
-                        """,
-                        (
+                            document_status,
                             document_id,
                         )
                     )

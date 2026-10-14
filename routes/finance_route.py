@@ -61,19 +61,19 @@ def get_finance_invoices():
         cursor.execute("""
             SELECT
                 i.invoice_id,
-                i.invoice_no,
+                i.invoice_number AS invoice_no,
                 i.invoice_date,
                 i.total_amount,
-                i.invoice_status,
+                i.status AS invoice_status,
 
                 g.grn_id,
                 g.grn_no,
 
-                po.po_id,
-                po.po_no,
+                po.purchase_order_id AS po_id,
+                po.po_number AS po_no,
 
-                s.supplier_id,
-                s.supplier_name,
+                po.supplier_id,
+                COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
 
                 r.requisition_id,
                 r.prs_no,
@@ -86,13 +86,17 @@ def get_finance_invoices():
             FROM invoices i
 
             LEFT JOIN grn g
-                ON i.grn_id = g.grn_id
+                ON g.grn_id = (
+                    SELECT MAX(g2.grn_id)
+                    FROM grn g2
+                    WHERE g2.po_id = i.purchase_order_id
+                )
 
             LEFT JOIN purchase_orders po
-                ON i.po_id = po.po_id
+                ON i.purchase_order_id = po.purchase_order_id
 
             LEFT JOIN suppliers s
-                ON i.supplier_id = s.supplier_id
+                ON po.supplier_id = s.supplier_id
 
             LEFT JOIN requisitions r
                 ON po.requisition_id = r.requisition_id
@@ -166,20 +170,20 @@ def get_finance_invoice_details(invoice_id):
         cursor.execute("""
             SELECT
                 i.invoice_id,
-                i.invoice_no,
+                i.invoice_number AS invoice_no,
                 i.invoice_date,
                 i.total_amount,
-                i.invoice_status,
+                i.status AS invoice_status,
                 i.created_by,
 
                 g.grn_id,
                 g.grn_no,
 
-                po.po_id,
-                po.po_no,
+                po.purchase_order_id AS po_id,
+                po.po_number AS po_no,
 
-                s.supplier_id,
-                s.supplier_name,
+                po.supplier_id,
+                COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
 
                 r.requisition_id,
                 r.prs_no,
@@ -190,13 +194,17 @@ def get_finance_invoice_details(invoice_id):
             FROM invoices i
 
             LEFT JOIN grn g
-                ON i.grn_id = g.grn_id
+                ON g.grn_id = (
+                    SELECT MAX(g2.grn_id)
+                    FROM grn g2
+                    WHERE g2.po_id = i.purchase_order_id
+                )
 
             LEFT JOIN purchase_orders po
-                ON i.po_id = po.po_id
+                ON i.purchase_order_id = po.purchase_order_id
 
             LEFT JOIN suppliers s
-                ON i.supplier_id = s.supplier_id
+                ON po.supplier_id = s.supplier_id
 
             LEFT JOIN requisitions r
                 ON po.requisition_id = r.requisition_id
@@ -226,17 +234,13 @@ def get_finance_invoice_details(invoice_id):
         cursor.execute("""
             SELECT
                 ii.invoice_item_id,
-                ii.item_id,
-                i.item_name,
+                ii.description AS item_name,
                 ii.description,
                 ii.quantity,
                 ii.unit_price,
-                ii.amount
+                ii.total_price AS amount
 
             FROM invoice_items ii
-
-            LEFT JOIN items i
-                ON ii.item_id = i.item_id
 
             WHERE ii.invoice_id = %s
 
@@ -288,7 +292,8 @@ def get_finance_invoice_details(invoice_id):
             cursor.execute("""
                 SELECT
                     user_id,
-                    username
+                    username,
+                    signature
 
                 FROM users
 
@@ -302,6 +307,11 @@ def get_finance_invoice_details(invoice_id):
             if creator:
 
                 procurement_name = creator["username"]
+                creator_signature = creator["signature"]
+            else:
+                creator_signature = None
+        else:
+            creator_signature = None
 
 
         # ====================================================
@@ -314,7 +324,8 @@ def get_finance_invoice_details(invoice_id):
 
             cursor.execute("""
                 SELECT
-                    username
+                    username,
+                    signature
 
                 FROM users
 
@@ -328,6 +339,11 @@ def get_finance_invoice_details(invoice_id):
             if hod_user:
 
                 hod_name = hod_user["username"]
+                hod_signature = hod_user["signature"]
+            else:
+                hod_signature = None
+        else:
+            hod_signature = None
 
 
         # ====================================================
@@ -340,7 +356,8 @@ def get_finance_invoice_details(invoice_id):
 
             cursor.execute("""
                 SELECT
-                    username
+                    username,
+                    signature
 
                 FROM users
 
@@ -354,6 +371,11 @@ def get_finance_invoice_details(invoice_id):
             if ceo_user:
 
                 ceo_name = ceo_user["username"]
+                ceo_signature = ceo_user["signature"]
+            else:
+                ceo_signature = None
+        else:
+            ceo_signature = None
 
 
         # ====================================================
@@ -372,19 +394,23 @@ def get_finance_invoice_details(invoice_id):
 
             "signatures": {
 
-                "supplier":
-                    invoice.get(
-                        "supplier_name"
-                    ),
-
-                "procurement":
+                "prepared_name":
                     procurement_name,
+
+                "prepared_signature":
+                    creator_signature,
 
                 "hod":
                     hod_name,
 
+                "hod_signature":
+                    hod_signature,
+
                 "ceo":
-                    ceo_name
+                    ceo_name,
+
+                "ceo_signature":
+                    ceo_signature
             }
 
         })
@@ -1079,11 +1105,11 @@ def get_grn_items(grn_id):
                 cursor.execute("""
                     SELECT
 
-                        purchase_order_item_id,
+                        po_item_id AS purchase_order_item_id,
 
                         purchase_order_id,
 
-                        material_name,
+                        item_name AS material_name,
 
                         description,
 
@@ -1097,7 +1123,7 @@ def get_grn_items(grn_id):
                         purchase_order_id = %s
 
                     ORDER BY
-                        purchase_order_item_id ASC
+                        po_item_id ASC
 
                 """, (
                     grn["po_id"],
@@ -2277,12 +2303,10 @@ def save_invoice():
                     description,
                     quantity,
                     unit_price,
-                    total_price,
                     created_at,
                     updated_at
                 )
                 VALUES (
-                    %s,
                     %s,
                     %s,
                     %s,
@@ -2294,8 +2318,7 @@ def save_invoice():
                 invoice_id,
                 item["description"],
                 item["quantity"],
-                item["unit_price"],
-                item["total_price"]
+                item["unit_price"]
             ))
 
 
@@ -3054,7 +3077,7 @@ def next_payment_no():
             WHERE payment_no LIKE %s
             ORDER BY payment_id DESC
             LIMIT 1
-        """, (f"PAY-{current_year}-%",))
+        """, (f"PAY/{current_year}/%",))
 
         last = cursor.fetchone()
 
@@ -3070,8 +3093,8 @@ def next_payment_no():
             last_no = last["payment_no"]
 
             try:
-                # PAY-2026-0001
-                last_num = int(last_no.split("-")[-1])
+                # PAY/2026/0001
+                last_num = int(last_no.split("/")[-1])
 
                 next_number = last_num + 1
 
@@ -3082,7 +3105,7 @@ def next_payment_no():
         # ----------------------------------------------------
         # Generate payment number
         # ----------------------------------------------------
-        new_no = f"PAY-{current_year}-{next_number:04d}"
+        new_no = f"PAY/{current_year}/{next_number:04d}"
 
         return jsonify({
             "success": True,
@@ -3325,7 +3348,7 @@ def get_payments():
                 s.supplier_name,
                 i.invoice_number AS invoice_no,
                 p.amount_paid,
-                a.final_status AS status,
+                p.payment_status AS status,
                 p.payment_date
 
             FROM payments p
@@ -3365,6 +3388,149 @@ def get_payments():
         conn.close()
 
 
+@finance_dashboard_bp.route("/mark_payment_paid", methods=["POST"])
+def mark_payment_paid():
+    if session.get("user_role") != "finance":
+        return jsonify({"success": False, "message": "Finance role required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    payment_id = data.get("payment_id")
+    try:
+        payment_id = int(payment_id)
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "message": "Select a valid payment."}), 400
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT
+                pay.payment_id,
+                pay.payment_status,
+                COALESCE(pay.requisition_id, po.requisition_id) AS requisition_id
+            FROM payments pay
+            JOIN invoices i ON i.invoice_id = pay.invoice_id
+            JOIN purchase_orders po ON po.purchase_order_id = i.purchase_order_id
+            WHERE pay.payment_id = %s
+            FOR UPDATE
+        """, (payment_id,))
+        payment = cursor.fetchone()
+        if not payment:
+            return jsonify({"success": False, "message": "Payment not found."}), 404
+
+        requisition_id = payment.get("requisition_id")
+        if not requisition_id:
+            conn.rollback()
+            return jsonify({
+                "success": False,
+                "message": "This payment is not linked to a requisition."
+            }), 409
+
+        cursor.execute("""
+            SELECT requisition_id
+            FROM requisitions
+            WHERE requisition_id = %s
+            FOR UPDATE
+        """, (requisition_id,))
+        if not cursor.fetchone():
+            conn.rollback()
+            return jsonify({
+                "success": False,
+                "message": "The requisition linked to this payment was not found."
+            }), 409
+
+        cursor.execute("""
+            SELECT ceo_status, final_status
+            FROM approvals
+            WHERE module_name = 'PAYMENT' AND document_id = %s
+            FOR UPDATE
+        """, (payment_id,))
+        approval = cursor.fetchone()
+        if not approval or approval.get("ceo_status") != "APPROVED":
+            conn.rollback()
+            return jsonify({
+                "success": False,
+                "message": "CEO approval is required before marking this payment as paid."
+            }), 409
+
+        if (
+            payment["payment_status"] == "Completed"
+            and approval.get("final_status") == "COMPLETED"
+        ):
+            cursor.execute(
+                "SELECT status FROM requisitions WHERE requisition_id = %s",
+                (requisition_id,)
+            )
+            requisition = cursor.fetchone()
+            if requisition and requisition.get("status") != "Completed":
+                cursor.execute("""
+                    UPDATE requisitions
+                    SET status = 'Completed'
+                    WHERE requisition_id = %s
+                """, (requisition_id,))
+            cursor.execute("""
+                UPDATE approvals
+                SET final_status = 'COMPLETED'
+                WHERE module_name = 'PRS' AND document_id = %s
+            """, (requisition_id,))
+            conn.commit()
+            return jsonify({
+                "success": True,
+                "message": "Payment is already marked as paid.",
+                "payment_id": payment_id,
+                "payment_status": "Completed",
+                "final_status": "COMPLETED",
+                "requisition_id": requisition_id,
+                "requisition_status": "Completed",
+                "requisition_final_status": "COMPLETED"
+            }), 200
+
+        cursor.execute("""
+            UPDATE payments
+            SET payment_status = 'Completed'
+            WHERE payment_id = %s
+        """, (payment_id,))
+        cursor.execute("""
+            UPDATE approvals
+            SET final_status = 'COMPLETED'
+            WHERE module_name = 'PAYMENT' AND document_id = %s
+        """, (payment_id,))
+        cursor.execute("""
+            UPDATE requisitions
+            SET status = 'Completed'
+            WHERE requisition_id = %s
+        """, (requisition_id,))
+        cursor.execute("""
+            UPDATE approvals
+            SET final_status = 'COMPLETED'
+            WHERE module_name = 'PRS' AND document_id = %s
+        """, (requisition_id,))
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Payment marked as paid.",
+            "payment_id": payment_id,
+            "payment_status": "Completed",
+            "final_status": "COMPLETED",
+            "requisition_id": requisition_id,
+            "requisition_status": "Completed",
+            "requisition_final_status": "COMPLETED"
+        }), 200
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print("MARK PAYMENT PAID ERROR:", e)
+        return jsonify({"success": False, "message": "Unable to mark payment as paid."}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @finance_dashboard_bp.route("/payment/<int:payment_id>")
 def payment_slip(payment_id):
 
@@ -3380,16 +3546,42 @@ def payment_slip(payment_id):
             p.balance,
             p.payment_method,
             p.payment_date,
+            p.payment_status AS status,
             i.invoice_number AS invoice_no,
-            s.supplier_name
+            s.supplier_name,
+            prepared.username AS prepared_by,
+            prepared.signature AS prepared_signature,
+            a.hod_status,
+            a.hod_approved_at,
+            hod.username AS hod_name,
+            hod.signature AS hod_signature,
+            a.ceo_status,
+            a.ceo_approved_at,
+            ceo.username AS ceo_name,
+            ceo.signature AS ceo_signature
         FROM payments p
         JOIN invoices i ON p.invoice_id = i.invoice_id
         JOIN purchase_orders po ON i.purchase_order_id = po.purchase_order_id
         JOIN suppliers s ON po.supplier_id = s.supplier_id
+        JOIN users prepared ON p.paid_by = prepared.user_id
+        LEFT JOIN approvals a
+            ON a.module_name = 'PAYMENT'
+            AND a.document_id = p.payment_id
+        LEFT JOIN users hod ON a.hod_user_id = hod.user_id
+        LEFT JOIN users ceo ON a.ceo_user_id = ceo.user_id
         WHERE p.payment_id = %s
     """, (payment_id,))
 
     payment = cursor.fetchone()
+
+    if not payment:
+        cursor.close()
+        conn.close()
+        return jsonify({"success": False, "message": "Payment not found."}), 404
+
+    for field in ("payment_date", "hod_approved_at", "ceo_approved_at"):
+        if payment.get(field):
+            payment[field] = payment[field].isoformat()
 
     cursor.execute("""
         SELECT 

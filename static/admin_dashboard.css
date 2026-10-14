@@ -133,6 +133,13 @@ tbody tr{
     cursor:pointer;
 }
 
+.user-row:hover,
+.user-row:focus-visible{
+    background:#e6f2f2;
+    outline:2px solid #2C7A7B;
+    outline-offset:-2px;
+}
+
 tbody tr.selected{
     background:#cfeeee;
 }

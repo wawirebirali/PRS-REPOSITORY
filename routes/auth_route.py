@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from model import get_user_by_username, create_user, insert_user
+from model import change_user_password, get_user_by_username, create_user, get_user_by_email, insert_user
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -200,6 +200,9 @@ def allowed_file(filename):
 
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
+    role = session.get("user_role") or session.get("role")
+    if not role or role.lower() != "admin":
+        return redirect(url_for("auth.admin_login"))
 
     if request.method == "POST":
 
@@ -209,6 +212,10 @@ def signup():
         password = request.form["password"]
         user_role = request.form["user_role"]
         department = request.form.get("department")
+
+        if user_role.lower() not in {"admin", "finance", "ceo", "hod", "procurement", "employee"}:
+            flash("Select a valid user role", "danger")
+            return render_template("signup.html")
 
         # =========================
         # CANVAS SIGNATURE (NEW)
@@ -260,12 +267,6 @@ def signup():
 
     return render_template("signup.html")
 
-from flask import request, render_template, redirect, url_for, session
-from werkzeug.security import check_password_hash
-from model import get_user_by_email
-
-from werkzeug.security import generate_password_hash
-
 def create_default_admin():
     admin_email = "admin@prs.com"
     admin_password = "admin123"
@@ -289,7 +290,6 @@ def create_default_admin():
 
     print("✅ Default admin created")
     print("📌 Email: admin@prs.com")
-    print("📌 Password: admin123")
 
 @auth_bp.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
@@ -299,9 +299,6 @@ def admin_login():
         password = request.form.get("password")
 
         user = get_user_by_email(email)
-
-        # DEBUG (optional)
-        print("USER:", user)
 
         if not user:
             return render_template("admin_login.html", error="Admin not found")
@@ -335,9 +332,32 @@ def forgot_password():
             flash('No user found with that email address.', 'danger')
             return render_template('forgot_password.html')
 
-        # In a real app, send a password reset email here.
-        flash('If the email exists, a reset link has been sent.', 'success')
-        return render_template('forgot_password.html')
+        if user.get("user_role") != "admin":
+            flash('That email is not an administrator account.', 'danger')
+            return render_template('forgot_password.html')
+
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not check_password_hash(user['password'], current_password):
+            flash('Current password is incorrect.', 'danger')
+            return render_template('forgot_password.html')
+
+        if len(new_password) < 8:
+            flash('New password must be at least 8 characters long.', 'danger')
+            return render_template('forgot_password.html')
+
+        if new_password != confirm_password:
+            flash('New password and confirmation do not match.', 'danger')
+            return render_template('forgot_password.html')
+
+        if not change_user_password(user['user_id'], new_password):
+            flash('Unable to update the password. Please try again.', 'danger')
+            return render_template('forgot_password.html')
+
+        flash('Password changed. Sign in with your new password.', 'success')
+        return redirect(url_for('auth.admin_login'))
 
     return render_template('forgot_password.html')
 

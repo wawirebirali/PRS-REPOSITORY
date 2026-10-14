@@ -6,6 +6,7 @@
 <title>Admin Dashboard</title>
 
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='table_layout.css') }}">
 </head>
 
 <body>
@@ -30,7 +31,7 @@
     <div class="sidebar">
 
         <a class="btn" onclick="showSection('home')">Home</a>
-        <a class="btn" onclick="showSection('users')">Add User</a>
+        <a class="btn" onclick="showSection('users')">Users</a>
         <a class="btn" onclick="showSection('requisitions')">Requisitions</a>
         
        
@@ -63,36 +64,7 @@
         <div id="users" class="section">
 
             <h2>Users</h2>
-               <div style="margin-top:15px;">
-        <a class="btn primary"
-           href="{{ url_for('auth.signup') }}">
-            + Add New User
-        </a>
-Report
-            <p>Below are registered users.</p>
-
-            <!-- ✅ FIXED BUTTON GROUP -->
-            <div class="button-group">
-
-                <button class="btn primary"
-                        onclick="window.location.href='/auth/signup'">
-                    Select User
-                </button>
-
-                <button class="btn primary"
-                        onclick="window.location.href='/auth/edit_user'">
-                    Edit User Account
-                </button>
-
-                <button class="btn danger"
-                        onclick="window.location.href='/auth/delete_user'">
-                    X
-                </button>
-
-            </div>
-        
-           
-    </div>
+            <p><a class="btn primary" href="{{ url_for('admin_dashboard.add_user') }}">+ Add New User</a></p>
 
             <table class="user-table">
                 <thead>
@@ -102,21 +74,29 @@ Report
                         <th>Email</th>
                         <th>Role</th>
                         <th>Date Added</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     {% for user in users %}
-                    <tr>
+                    <tr class="user-row" tabindex="0" role="link"
+                        aria-label="Edit {{ user.username }} account"
+                        data-edit-url="{{ url_for('admin_dashboard.edit_user', user_id=user.user_id) }}"
+                        onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();window.location.href=this.dataset.editUrl}">
                         <td>{{ user.username }}</td>
                         <td>{{ user.department or 'N/A' }}</td>
                         <td>{{ user.email }}</td>
                         <td>{{ user.user_role }}</td>
-                        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else 'N/A' }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_dashboard.view_user', user_id=user.user_id) }}" onclick="event.stopPropagation()">View</a>
+                            <a href="{{ url_for('admin_dashboard.edit_user', user_id=user.user_id) }}" onclick="event.stopPropagation()">Edit</a>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5">No users found.</td>
+                        <td colspan="6">No users found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -293,6 +273,14 @@ Report
 </div>
 
 <script src="{{ url_for('static', filename='admin_dashboard.js') }}"></script>
+<script>
+document.querySelectorAll('.user-row').forEach(row => {
+    row.addEventListener('click', event => {
+        if (event.target.closest('a')) return;
+        window.location.href = row.dataset.editUrl;
+    });
+});
+</script>
 
 </body>
 </html>

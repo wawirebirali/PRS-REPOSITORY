@@ -6,6 +6,7 @@
 
 <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='finance_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='table_layout.css') }}">
 
 <style>
 
@@ -488,9 +489,6 @@
 </div>
 
 
-
-</div>
-    
    
 <!-- ================= REQUISITION MODULE ================= -->
 <div id="requisition" class="module active">
@@ -824,6 +822,9 @@
 </div>
 
 
+</div>
+
+
 
 
 <!-- =========================================================
@@ -1016,45 +1017,32 @@
 
                     <div class="sig-box">
 
-                        <p>
-                            Supplier
-                        </p>
-
-                        <div class="sig-line"></div>
-
-                        <span id="sig_supplier_name">
-                            -
-                        </span>
+                        <p>Prepared By</p>
+                        <img id="invoice_prepared_signature" class="signature-img" src="" alt="Prepared By signature" style="display:none;">
+                        <p id="invoice_prepared_name">-</p>
+                        <small id="invoice_prepared_date">-</small>
 
                     </div>
 
 
                     <div class="sig-box">
 
-                        <p>
-                            Procurement
-                        </p>
-
-                        <div class="sig-line"></div>
-
-                        <span id="sig_procurement_name">
-                            -
-                        </span>
+                        <p>HOD Approval</p>
+                        <img id="invoice_hod_signature" class="signature-img" src="" alt="HOD signature" style="display:none;">
+                        <p id="invoice_hod_name">-</p>
+                        <p id="invoice_hod_status">PENDING</p>
+                        <small id="invoice_hod_date">-</small>
 
                     </div>
 
 
                     <div class="sig-box">
 
-                        <p>
-                            Finance
-                        </p>
-
-                        <div class="sig-line"></div>
-
-                        <span id="sig_finance_name">
-                            -
-                        </span>
+                        <p>CEO Approval</p>
+                        <img id="invoice_ceo_signature" class="signature-img" src="" alt="CEO signature" style="display:none;">
+                        <p id="invoice_ceo_name">-</p>
+                        <p id="invoice_ceo_status">PENDING</p>
+                        <small id="invoice_ceo_date">-</small>
 
                     </div>
 
@@ -1540,17 +1528,25 @@
 
                     <div class="sig-box">
                         <p>Prepared By</p>
-                        <br><br>
+                        <img id="payment_prepared_signature" class="signature-img" src="" alt="Prepared By signature" style="display:none;">
+                        <p id="payment_prepared_name">-</p>
+                        <small id="payment_prepared_date">-</small>
                     </div>
 
                     <div class="sig-box">
-                        <p>Approved By</p>
-                        <br><br>
+                        <p>HOD Approval</p>
+                        <img id="payment_hod_signature" class="signature-img" src="" alt="HOD signature" style="display:none;">
+                        <p id="payment_hod_name">-</p>
+                        <p id="payment_hod_status">PENDING</p>
+                        <small id="payment_hod_date">-</small>
                     </div>
 
                     <div class="sig-box">
-                        <p>Finance</p>
-                        <br><br>
+                        <p>CEO Approval</p>
+                        <img id="payment_ceo_signature" class="signature-img" src="" alt="CEO signature" style="display:none;">
+                        <p id="payment_ceo_name">-</p>
+                        <p id="payment_ceo_status">PENDING</p>
+                        <small id="payment_ceo_date">-</small>
                     </div>
 
                 </div>

@@ -440,7 +440,7 @@ function loadPaymentNo() {
 // =========================
 // INVOICE DROPDOWN / SELECTION
 // =========================
-function loadInvoices() {
+function loadPaymentInvoices() {
     fetch("/procurement/invoice_data")
         .then(res => res.json())
         .then(data => {
@@ -471,7 +471,7 @@ function loadInvoices() {
 
 function loadPayments() {
 
-    fetch("/finance/payments/api")
+    return fetch("/finance/payments/api")
         .then(res => res.json())
         .then(res => {
 
@@ -530,6 +530,11 @@ window.onload = function () {
 function selectPayment(row) {
 
     const id = row.getAttribute("data-id");
+    selectedPaymentId = Number(id);
+
+    document.querySelectorAll("#paymentBody tr").forEach(paymentRow => {
+        paymentRow.classList.toggle("selected", paymentRow === row);
+    });
 
     fetch(`/finance/payment/${id}`)
         .then(res => res.json())
@@ -552,6 +557,40 @@ function selectPayment(row) {
             document.getElementById("payStatus").innerText = d.status;
             document.getElementById("payDate").innerText = d.payment_date;
 
+            const setApprovalText = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value || "-";
+            };
+            const setApprovalSignature = (id, path) => {
+                const image = document.getElementById(id);
+                if (!image) return;
+                if (!path) {
+                    image.removeAttribute("src");
+                    image.style.display = "none";
+                    return;
+                }
+                image.src = path.startsWith("/")
+                    ? path
+                    : `/static/${path.replace(/^static\//, "")}`;
+                image.style.display = "block";
+            };
+            const approvalDate = value =>
+                value ? new Date(value).toLocaleDateString("en-GB") : "-";
+
+            setApprovalText("payment_prepared_name", d.prepared_by);
+            setApprovalText("payment_prepared_date", approvalDate(d.payment_date));
+            setApprovalSignature("payment_prepared_signature", d.prepared_signature);
+
+            setApprovalText("payment_hod_name", d.hod_name);
+            setApprovalText("payment_hod_status", d.hod_status || "PENDING");
+            setApprovalText("payment_hod_date", approvalDate(d.hod_approved_at));
+            setApprovalSignature("payment_hod_signature", d.hod_signature);
+
+            setApprovalText("payment_ceo_name", d.ceo_name);
+            setApprovalText("payment_ceo_status", d.ceo_status || "PENDING");
+            setApprovalText("payment_ceo_date", approvalDate(d.ceo_approved_at));
+            setApprovalSignature("payment_ceo_signature", d.ceo_signature);
+
             const tbody = document.getElementById("paymentItemsBody");
             tbody.innerHTML = "";
 
@@ -568,6 +607,42 @@ function selectPayment(row) {
 
         })
         .catch(err => console.error(err));
+}
+
+async function markPaid() {
+    if (!selectedPaymentId) {
+        alert("Select a payment first.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/finance/mark_payment_paid", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ payment_id: selectedPaymentId })
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            alert(result.message || "Unable to mark this payment as paid.");
+            return;
+        }
+
+        alert(result.message);
+        await loadPayments();
+        const updatedRow = document.querySelector(
+            `#paymentBody tr[data-id="${selectedPaymentId}"]`
+        );
+        if (updatedRow) {
+            selectPayment(updatedRow);
+        }
+    } catch (error) {
+        console.error("MARK PAYMENT PAID ERROR:", error);
+        alert("Unable to connect to the payment service.");
+    }
 }
 
 function logoutUser() {

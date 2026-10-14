@@ -1,6 +1,64 @@
 
 let rowIndex = 0;
 
+async function loadSlipFromRow(row) {
+    if (!row || !row.dataset.id) return;
+
+    try {
+        const response = await fetch(`/requisition/api/${row.dataset.id}`);
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Could not load requisition.");
+        }
+
+        const requisition = result.requisition;
+        const setText = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value || "-";
+        };
+        setText("slip_prs_no", requisition.prs_no);
+        setText("department_name", requisition.department_name);
+        setText("submission", requisition.submission_date);
+        setText("hod_status", requisition.hod_status || "PENDING");
+        setText("ceo_status", requisition.ceo_status || "PENDING");
+        setText("created_by_name", requisition.created_by_name);
+        setText("created_date", requisition.submission_date);
+        setText("hod_username", requisition.hod_username);
+        setText("hod_approval_date", requisition.hod_approved_at);
+        setText("ceo_username", requisition.ceo_username);
+        setText("ceo_approval_date", requisition.ceo_approved_at);
+
+        const setSignature = (id, path) => {
+            const image = document.getElementById(id);
+            if (!image) return;
+            image.style.display = path ? "block" : "none";
+            image.src = path ? `/static/${path.replace(/^\//, "")}` : "";
+        };
+        setSignature("sig_created_by", requisition.created_by_signature);
+        setSignature("sig_hod", requisition.hod_signature);
+        setSignature("sig_ceo", requisition.ceo_signature);
+
+        const itemsBody = document.getElementById("items_body");
+        if (itemsBody) {
+            itemsBody.replaceChildren();
+            result.items.forEach((item, index) => {
+                const rowElement = document.createElement("tr");
+                [index + 1, item.material_name, item.uom, item.qty_required].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent = value ?? "";
+                    rowElement.appendChild(cell);
+                });
+                itemsBody.appendChild(rowElement);
+            });
+        }
+
+        document.querySelectorAll("#prsTable tbody tr").forEach(item => item.classList.remove("selected"));
+        row.classList.add("selected");
+    } catch (error) {
+        alert(error.message || "Could not load requisition details.");
+    }
+}
+
 /* ==============================
    INITIALIZE FORM
 ================================= */
@@ -103,10 +161,8 @@ function showCreateForm() {
 
 async function loadNextPRSNumber() {
 
-    const prsInput =
-        document.getElementById(
-            "prs_no"
-        );
+    const prsInput = document.getElementById("generated_prs_no")
+        || document.getElementById("prs_no");
 
 
     if (!prsInput) {
@@ -944,6 +1000,9 @@ document.addEventListener(
             alert(
                 `Requisition ${result.prs_no} created successfully!`
             );
+
+            window.location.reload();
+            return;
 
 
             // ==================================================

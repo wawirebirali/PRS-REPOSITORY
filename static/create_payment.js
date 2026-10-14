@@ -419,7 +419,7 @@ function hideCreatePaymentForm() {
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
     loadPaymentNo();
-    loadInvoices();
+    loadPaymentInvoices();
     
 });
 
@@ -870,7 +870,7 @@ async function loadPaymentNo() {
                 text
             );
 
-            document.getElementById("cp_payment_no").value = "";
+            document.getElementById("cp_payment").value = "";
 
             return;
         }
@@ -882,7 +882,7 @@ async function loadPaymentNo() {
                 data.message || data.error
             );
 
-            document.getElementById("cp_payment_no").value = "";
+            document.getElementById("cp_payment").value = "";
 
             return;
         }
@@ -890,7 +890,7 @@ async function loadPaymentNo() {
         // ====================================================
         // SET PAYMENT NUMBER
         // ====================================================
-        document.getElementById("cp_payment_no").value =
+        document.getElementById("cp_payment").value =
             data.payment_no || "";
 
         console.log(
@@ -905,7 +905,7 @@ async function loadPaymentNo() {
             error
         );
 
-        const field = document.getElementById("cp_payment_no");
+        const field = document.getElementById("cp_payment");
 
         if (field) {
             field.value = "";
@@ -920,10 +920,10 @@ async function loadPaymentNo() {
 // ============================================================
 async function loadPaymentNo() {
 
-    const paymentNoField = document.getElementById("cp_payment_no");
+    const paymentNoField = document.getElementById("cp_payment");
 
     if (!paymentNoField) {
-        console.error("ERROR: cp_payment_no field does not exist.");
+        console.error("ERROR: cp_payment field does not exist.");
         return;
     }
 

@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='hod_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='homepage.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='table_layout.css') }}">
 <style>
 
 </style>
@@ -1542,13 +1543,13 @@
 
                         <div>
 
-                            <label for="prs_no">
+                            <label for="generated_prs_no">
                                 PRS Number
                             </label>
 
                             <input
                             type="text"
-                            id="prs_no"
+                            id="generated_prs_no"
                             name="prs_no"
                             readonly
                             placeholder="Generating PRS Number..."
@@ -2700,6 +2701,7 @@ function selectSupplier(
                         </div>
 
                         <p id="poPreparedBy">-</p>
+                        <small id="poPreparedDate">-</small>
                     </div>
 
                     <!-- HOD -->
@@ -2936,6 +2938,7 @@ function selectSupplier(
                         </div>
 
                         <p id="grnReceiverNameSigText">-</p>
+                        <small id="grnReceiverDateSigText">-</small>
 
 
                 <br><br>
@@ -3157,6 +3160,7 @@ function selectSupplier(
                             style="display:none; max-height:80px;">
 
                         <p id="invoice_creator_name">-</p>
+                        <small id="invoice_creator_date">-</small>
 
                     </div>
 
@@ -3172,6 +3176,7 @@ function selectSupplier(
 
                         <p id="invoice_hod_name">-</p>
                         <p id="invoice_hod_status">PENDING</p>
+                        <small id="invoice_hod_date">-</small>
 
                     </div>
 
@@ -3187,6 +3192,7 @@ function selectSupplier(
 
                         <p id="invoice_ceo_name">-</p>
                         <p id="invoice_ceo_status">PENDING</p>
+                        <small id="invoice_ceo_date">-</small>
 
                     </div>
 
@@ -3334,7 +3340,7 @@ function selectSupplier(
 
                     <!-- FINANCE APPROVAL -->
                     <div class="sig-box">
-                        <p><strong>Finance Approval</strong></p>
+                        <p><strong>HOD Approval</strong></p>
 
                         <div class="sig-image">
                             <img id="payment_finance_signature"
@@ -3404,9 +3410,8 @@ function selectSupplier(
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='/hod_budget.js') }}"></script>
-<script src="{{ url_for('static', filename='/hod_dashboard.js') }}"></script>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script src="{{ url_for('static', filename='/requisition.js') }}"></script>
+<script src="{{ url_for('static', filename='hod_dashboard.js', v='20261004') }}"></script>
+<script src="{{ url_for('static', filename='requisition.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='/hod_homepage.js') }}"></script>
 

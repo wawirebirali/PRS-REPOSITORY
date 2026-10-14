@@ -501,19 +501,19 @@ tbody td{
    SIGNATURE
 ===================================================== */
 
-.signature-section{
-    display:flex;
-    justify-content:space-between;
-    gap:16px;
+.signature-section,
+.approval-section{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:12px;
+    width:100%;
     margin-top:30px;
-    flex-wrap:wrap;
-    align-items:center;
+    align-items:start;
 }
 
 .sig-box,
 .signature-box{
-    flex:1;
-    min-width:180px;
+    min-width:0;
     text-align:center;
     font-size:12px;
     border:none;
@@ -521,6 +521,12 @@ tbody td{
     padding:10px 0;
     background:transparent;
     box-shadow:none;
+}
+
+.approval-box{
+    min-width:0;
+    text-align:center;
+    overflow-wrap:anywhere;
 }
 
 .sig-box img,
