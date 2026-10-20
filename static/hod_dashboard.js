@@ -55,185 +55,655 @@ let selectedAction = null;
 let selectedQuotationId = null;
 let quotationPendingAction = null;
 let selectedQuotationMode = null;
-
+let selectedRequisitionId = null;
 // ================= ACTION =================
 function setAction(action) {
     selectedAction = action;
 }
 
-// ================= LOAD SLIP =================
-function loadSlipFromRow(row) {
 
-    const id = row.getAttribute("data-id");
 
-    if (!id) {
-        alert("Invalid selection");
-        return;
-    }
+// =======================================================
+// SELECTED HOD REQUISITION
+// Declare this only once in your HOD JavaScript file
+// =======================================================
 
-    selectedDocumentId = id;
 
-    document.querySelectorAll("#prsTable tbody tr")
-        .forEach(r => r.classList.remove("selected"));
 
-    row.classList.add("selected");
 
-    fetch(`${window.location.origin}/hod/requisition/api/${encodeURIComponent(id)}`)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`Requisition details returned HTTP ${res.status}`);
-            }
-            return res.json();
-        })
-        .then(data => {
+// =======================================================
+// LOAD CEO REQUISITIONS TABLE
+// =======================================================
 
-            if (!data.success) {
-                alert("Failed to load requisition");
-                return;
-            }
+async function loadRequisitionData(){
 
-            const r = data.requisition;
+    try {
 
-            // ================= HEADER =================
-            document.getElementById("prs_no").innerText = r.prs_no || "-";
-            document.getElementById("department_name").innerText = r.department_name || "-";
-            document.getElementById("submission").innerText = r.submission_date || "-";
+        const response = await fetch("/hod/api/requisitions");
 
-            document.getElementById("hod_status").innerText = r.hod_status || "PENDING";
-            document.getElementById("ceo_status").innerText = r.ceo_status || "PENDING";
-            
+        if(!response.ok){
+            throw new Error(
+                "Requisition API failed: " + response.status
+            );
+        }
 
-            // ================= ITEMS =================
-            const body = document.getElementById("items_body");
-            body.innerHTML = "";
 
-            data.items.forEach((item, i) => {
-                body.innerHTML += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${item.material_name}</td>
-                        <td>${item.uom}</td>
-                        <td>${item.qty_required}</td>
-                    </tr>
-                `;
-            });
+        const data = await response.json();
 
-            // ================= SIGNATURES =================
+        console.log("HOD REQUISITIONS:", data);
 
-            // CREATED BY
-            document.getElementById("created_by_name").innerText =
-                r.creator_name || data.created_by?.name || "-";
-            document.getElementById("created_date").innerText =
-    r.submission_date || "-";
 
-            if (data.created_by?.signature) {
-                const img = document.getElementById("sig_created_by");
-                img.src = "/static/" + data.created_by.signature;
-                img.style.display = "block";
-            }
+        if(!data.success){
 
-            // HOD
-            document.getElementById("hod_username").innerText =
-                data.hod_signature?.username || "-";
+            alert(data.message || "Failed loading requisitions");
+            return;
 
-            document.getElementById("hod_approval_date").innerText =
-                data.hod_signature?.hod_approved_at || "-";
+        }
 
-            if (data.hod_signature?.signature) {
-                const img = document.getElementById("sig_hod");
-                img.src = "/static/" + data.hod_signature.signature;
-                img.style.display = "block";
-            }
 
-            // CEO
-            document.getElementById("ceo_username").innerText =
-                data.ceo_signature?.username || "-";
+        const tbody =
+        document.getElementById("prsTableBody");
 
-            document.getElementById("ceo_approval_date").innerText =
-                data.ceo_signature?.ceo_approved_at || "-";
 
-            if (data.ceo_signature?.signature) {
-                const img = document.getElementById("sig_ceo");
-                img.src = "/static/" + data.ceo_signature.signature;
-                img.style.display = "block";
-            }
+        if(!tbody){
 
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Server error while loading requisition");
-        });
-}
+            console.error(
+                "prsTableBody not found"
+            );
 
-// ================= APPROVAL =================
-function submitApproval() {
-
-    if (!selectedDocumentId || !selectedAction) {
-        alert("Select document and action first");
-        return;
-    }
-
-    // Get current status from the slip
-    const hodStatus = document.getElementById("hod_status").innerText.trim();
-
-    // Prevent approving twice
-    if (hodStatus === "APPROVED") {
-        alert("This requisition has already been approved.");
-        return;
-    }
-
-    // Prevent rejecting after approval
-    if (hodStatus === "REJECTED") {
-        alert("This requisition has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedDocumentId,
-            module_name: "PRS",
-            action: selectedAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message);
             return;
         }
 
-        alert("Success");
-        location.reload();
 
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error");
-    });
+        tbody.innerHTML = "";
+
+
+        if(!data.requisitions || data.requisitions.length === 0){
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        No requisitions found
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+
+        data.requisitions.forEach(req=>{
+
+
+            const row =
+            document.createElement("tr");
+
+
+            row.dataset.id =
+            req.requisition_id;
+
+
+
+            row.innerHTML = `
+
+                <td>
+                    <input 
+                    type="radio"
+                    name="selectedPRS"
+                    data-prs-id="${req.requisition_id}">
+                </td>
+
+
+                <td>
+                    ${req.prs_no || "-"}
+                </td>
+
+
+                <td>
+                    ${req.department_name || "-"}
+                </td>
+
+
+                <td>
+                    ${req.ceo_status || "PENDING"}
+                </td>
+
+
+                <td>
+                    ${formatDate(req.submission_date)}
+                </td>
+
+
+                <td>
+                    ${req.due || "-"}
+                </td>
+
+
+                <td>
+                    ${req.final_status || "-"}
+                </td>
+
+            `;
+
+
+
+            row.addEventListener(
+                "click",
+                ()=>{
+
+
+                    document
+                    .querySelectorAll("#prsTableBody tr")
+                    .forEach(r=>
+                        r.classList.remove("selected")
+                    );
+
+
+                    row.classList.add("selected");
+
+
+                    const radio =
+                    row.querySelector(
+                        "input[type='radio']"
+                    );
+
+
+                    radio.checked = true;
+
+
+                    loadRequisitionDetails(
+                        req.requisition_id
+                    );
+
+
+                }
+            );
+
+
+            tbody.appendChild(row);
+
+
+        });
+
+
+
+    }
+
+    catch(error){
+
+        console.error(
+            "LOAD REQUISITION ERROR:",
+            error
+        );
+
+    }
+
 }
 
-let pendingAction = null;
 
-function confirmApproval(action) {
-    pendingAction = action;
+// =======================================================
+// PAGE INITIAL LOAD
+// =======================================================
 
-    const prsNo = document.getElementById("prs_no").innerText || "-";
+document.addEventListener("DOMContentLoaded", function () {
 
-    if (action === "APPROVED") {
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${prsNo}</b>?`;
-    } else {
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${prsNo}</b>?`;
+    console.log("HOD DASHBOARD DOM READY");
+
+
+    // Load HOD requisitions
+    loadRequisitionData();
+
+
+    // Load other modules only when needed
+    // They are loaded by openModule()
+
+});
+
+
+// =======================================================
+// LOAD SINGLE REQUISITION DETAILS
+// =======================================================
+
+
+async function loadRequisitionDetails(id){
+
+
+    selectedRequisitionId = id;
+
+
+    try{
+
+
+        const response =
+        await fetch(
+            `/hod/requisition_details/${id}`
+        );
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Details API failed "
+                + response.status
+            );
+
+        }
+
+
+        const data =
+        await response.json();
+
+
+
+        console.log(
+            "REQUISITION DETAILS:",
+            data
+        );
+
+
+
+        if(!data.success){
+
+            alert(
+                data.message ||
+                "Unable to load details"
+            );
+
+            return;
+
+        }
+
+
+
+        const r =
+        data.requisition;
+
+
+
+        // HEADER
+
+        setText(
+            "prs_no",
+            r.prs_no
+        );
+
+
+        setText(
+            "department_name",
+            r.department_name
+        );
+
+
+        setText(
+            "submission",
+            formatDate(r.submission_date)
+        );
+
+
+        setText(
+            "hod_status",
+            r.hod_status || "PENDING"
+        );
+
+
+        setText(
+            "ceo_status",
+            r.ceo_status || "PENDING"
+        );
+
+
+
+
+        // CREATED BY
+
+        setText(
+            "created_by_name",
+            r.created_by_name
+        );
+
+
+        setText(
+            "created_date",
+            formatDate(r.submission_date)
+        );
+
+
+
+        // HOD
+
+        setText(
+            "hod_username",
+            r.hod_username
+        );
+
+
+        setText(
+            "hod_approval_date",
+            formatDate(r.hod_approved_at)
+        );
+
+
+        setImage(
+            "sig_hod",
+            r.hod_signature
+        );
+
+
+
+
+        // CEO
+
+        setText(
+            "ceo_username",
+            r.ceo_username
+        );
+
+
+        setText(
+            "ceo_approval_date",
+            formatDate(r.ceo_approved_at)
+        );
+
+
+        setImage(
+            "sig_ceo",
+            r.ceo_signature
+        );
+
+
+
+
+
+        // ITEMS
+
+        const tbody =
+        document.getElementById(
+            "items_body"
+        );
+
+
+        tbody.innerHTML="";
+
+
+        if(data.items){
+
+
+            data.items.forEach(
+                (item,index)=>{
+
+
+                    tbody.innerHTML += `
+
+                    <tr>
+
+                    <td>${index+1}</td>
+
+                    <td>
+                    ${item.material_name || "-"}
+                    </td>
+
+
+                    <td>
+                    ${item.uom || "-"}
+                    </td>
+
+
+                    <td>
+                    ${item.qty_required || 0}
+                    </td>
+
+
+                    </tr>
+
+                    `;
+
+
+                }
+            );
+
+        }
+
+
+
     }
+
+    catch(error){
+
+        console.error(
+            "DETAIL ERROR:",
+            error
+        );
+
+    }
+
+}
+
+
+
+
+
+// =======================================================
+// CEO APPROVAL SEND
+// =======================================================
+
+// =======================================================
+// SUBMIT REQUISITION APPROVAL
+// =======================================================
+
+
+// =======================================================
+// HOD REQUISITION APPROVAL
+// =======================================================
+
+
+async function submitApproval() {
+
+    // Ensure requisition is selected
+    if (!selectedRequisitionId) {
+        alert("Please select a requisition first.");
+        return;
+    }
+
+    // Ensure action is selected
+    if (!requisitionPendingAction) {
+        alert("Please choose approve or reject.");
+        return;
+    }
+
+    // Read current statuses
+    const getStatus = (id) => (
+        document.getElementById(id)?.innerText || "PENDING"
+    ).trim().toUpperCase();
+
+    const hodStatus = getStatus("hod_status");
+    const ceoStatus = getStatus("ceo_status");
+    const finalStatus = getStatus("final_status");
+
+    // Prevent action on completed requisition
+    if (finalStatus === "COMPLETED") {
+        alert("This requisition is completed. No further action is allowed.");
+        return;
+    }
+
+    // CEO must wait for HOD approval
+    if (hodStatus !== "APPROVED") {
+
+        if (hodStatus === "REJECTED") {
+            alert(
+                "You cannot process this requisition because it has been rejected by the HOD."
+            );
+        } else {
+            alert(
+                "You cannot approve or reject this requisition before the HOD approves it."
+            );
+        }
+
+        return;
+    }
+
+    // Prevent duplicate CEO decisions
+    if (ceoStatus === "APPROVED") {
+        alert("This requisition has already been approved by the CEO.");
+        return;
+    }
+
+    if (ceoStatus === "REJECTED") {
+        alert("This requisition has already been rejected by the CEO.");
+        return;
+    }
+
+    const documentId = selectedRequisitionId;
+    const action = requisitionPendingAction;
+
+    try {
+
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: documentId,
+                module_name: "PRS",
+                action: action
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            alert(data.message || "HOD approval failed.");
+            return;
+        }
+
+        alert(
+            action === "APPROVED"
+                ? "Requisition approved successfully by the HOD."
+                : "Requisition rejected successfully by the HOD."
+        );
+
+        selectedRequisitionId = null;
+        requisitionPendingAction = null;
+
+        closeModal();
+        await loadRequisitionData();
+
+    } catch (error) {
+        console.error("HOD APPROVAL ERROR:", error);
+        alert("Server error while processing HOD approval.");
+    }
+}
+
+
+function confirmRequisitionApproval(action) {
+
+    if (!selectedRequisitionId) {
+
+        alert("Select requisition first");
+        return;
+    }
+
+    requisitionPendingAction = action;
+
+    const prs =
+        document.getElementById("prs_no")?.innerText || "-";
+
+    document.getElementById("confirmMessage").innerHTML =
+        action === "APPROVED"
+            ? `Are you sure you want to approve <b>${prs}</b>?`
+            : `Are you sure you want to reject <b>${prs}</b>?`;
 
     document.getElementById("confirmModal").style.display = "block";
 }
+
+// =======================================================
+// APPROVE BUTTON
+// =======================================================
+
+function approveRequisition() {
+
+    confirmRequisitionApproval(
+        "APPROVED"
+    );
+}
+
+
+// =======================================================
+// REJECT BUTTON
+// =======================================================
+
+function rejectRequisition() {
+
+    confirmRequisitionApproval(
+        "REJECTED"
+    );
+}
+
+
+// =======================================================
+// CONFIRM BUTTON INSIDE MODAL
+// =======================================================
+
+async function confirmAction() {
+
+    // Do NOT close the modal before approval finishes.
+    await submitApproval();
+
+}
+
+
+// =======================================================
+// CLOSE CONFIRMATION MODAL
+// =======================================================
+
+function closeModal() {
+
+    const modal =
+        document.getElementById("confirmModal");
+
+
+    if (modal) {
+
+        modal.style.display = "none";
+    }
+}
+
+
+
+// =======================================================
+// SET IMAGE
+// =======================================================
+
+function setImage(id, path) {
+
+    const img =
+        document.getElementById(id);
+
+
+    if (!img) {
+        return;
+    }
+
+
+    if (path) {
+
+        img.src =
+            path.startsWith("/")
+                ? path
+                : "/static/" + path;
+
+        img.style.display = "block";
+
+    }
+    else {
+
+        img.removeAttribute("src");
+
+        img.style.display = "none";
+    }
+}
+
 
 function confirmQuotationApproval(action) {
     if (!selectedQuotationId) {
@@ -703,41 +1173,74 @@ function approvePayment() {
 function rejectPayment() {
     confirmPayment("REJECTED");
 }
+// =====================================================
+// SHARED APPROVAL CONFIRMATION HANDLER
+// Supports HOD PRS and existing modules
+// =====================================================
 
-function executeApproval() {
+// =====================================================
+// SHARED APPROVAL CONFIRMATION
+// =====================================================
 
-    if (paymentPendingAction) {
+async function executeApproval() {
 
-        sendPaymentApproval();
-
-    } else if (invoicePendingAction) {
-
-        sendInvoiceApproval();
-
-    } else if (quotationPendingAction) {
-
-        sendQuotationApproval();
-
-    } else if (pOpendingAction) {
-
-        approvePO();
-
-    } else if (grnPendingAction) {
-
-        approveGRN();
-
-    } else if (pendingAction) {
-
-        setAction(pendingAction);
-        submitApproval();
-
-    } else {
-
-        alert("No approval action selected.");
+    // HOD REQUISITION APPROVAL
+    if (
+        typeof selectedRequisitionId !== "undefined" &&
+        selectedRequisitionId &&
+        typeof requisitionPendingAction !== "undefined" &&
+        ["APPROVED", "REJECTED"].includes(
+            String(requisitionPendingAction || "").trim().toUpperCase()
+        )
+    ) {
+        await submitApproval();
         return;
     }
 
-    closeModal();
+    // PAYMENT APPROVAL
+    if (typeof paymentPendingAction !== "undefined" && paymentPendingAction) {
+        sendPaymentApproval();
+        closeModal();
+        return;
+    }
+
+    // INVOICE APPROVAL
+    if (typeof invoicePendingAction !== "undefined" && invoicePendingAction) {
+        sendInvoiceApproval();
+        closeModal();
+        return;
+    }
+
+    // QUOTATION APPROVAL
+    if (typeof quotationPendingAction !== "undefined" && quotationPendingAction) {
+        sendQuotationApproval();
+        closeModal();
+        return;
+    }
+
+    // PURCHASE ORDER APPROVAL
+    if (typeof pOpendingAction !== "undefined" && pOpendingAction) {
+        approvePO();
+        closeModal();
+        return;
+    }
+
+    // GRN APPROVAL
+    if (typeof grnPendingAction !== "undefined" && grnPendingAction) {
+        approveGRN();
+        closeModal();
+        return;
+    }
+
+    // OTHER EXISTING APPROVALS
+    if (typeof pendingAction !== "undefined" && pendingAction) {
+        setAction(pendingAction);
+        submitApproval();
+        closeModal();
+        return;
+    }
+
+    alert("No approval action selected.");
 }
 
 function sendPaymentApproval() {

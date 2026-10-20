@@ -630,22 +630,9 @@ async function loadCompanyBudgets() {
                         }
                     </td>
 
-                    <td>
-                        ${
-                            budget.ceo_status ||
-                            "Pending"
-                        }
-                    </td>
+                   
 
-                    <td>
-                        ${
-                            budget.ceo_approval_date
-                                ? formatDateTime(
-                                    budget.ceo_approval_date
-                                )
-                                : "-"
-                        }
-                    </td>
+                    
 
                 `;
 

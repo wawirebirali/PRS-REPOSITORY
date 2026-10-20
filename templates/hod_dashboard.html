@@ -1372,23 +1372,14 @@
                 <div class="action-buttons">
 
 
-                    <button
-                        class="btn success"
-                        onclick="confirmApproval('APPROVED')">
-
+                        <button class="btn success" 
+                        onclick="confirmRequisitionApproval('APPROVED')">
                         Approve
+                        </button>
 
-                    </button>
-
-
-
-                    <button
-                        class="btn danger"
-                        onclick="confirmApproval('REJECTED')">
-
-                        Reject
-
-                    </button>
+        <button class="btn danger" onclick="confirmRequisitionApproval('REJECTED')">
+            Reject
+        </button>
 
 
 
@@ -1409,88 +1400,23 @@
                 <br>
 
 
+     <table id="prsTable" class="prs-table">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>PRS No</th>
+                    <th>Department</th>
+                    <th>CEO Status</th>
+                    <th>submissionDate</th>
+                    <th>Due</th>
+                    <th>Final Status</th>
+                </tr>
+            </thead>
 
-                <table id="prsTable">
-
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Select</th>
-                            <th>PRS No</th>
-                            <th>Department</th>
-                            <th>Approval Status</th>
-                            <th>Date</th>
-                            <th>Approval Date</th>
-
-                        </tr>
-
-                    </thead>
-
-
-
-
-                    <tbody>
-
-
-                        {% for req in requisitions %}
-
-
-                        <tr
-                            data-id="{{req.requisition_id}}"
-                            onclick="loadSlipFromRow(this)">
-
-
-
-                            <td>
-
-                                <input
-                                    type="radio"
-                                    name="selected_prs"
-                                    onclick="event.stopPropagation();
-                                    loadSlipFromRow(this.closest('tr'))">
-
-                            </td>
-
-
-
-                            <td>
-                                {{req.prs_no}}
-                            </td>
-
-
-                            <td>
-                                {{req.department_name}}
-                            </td>
-
-
-                            <td>
-                                {{req.hod_status or 'PENDING'}}
-                            </td>
-
-
-                            <td>
-                                {{req.submission_date}}
-                            </td>
-
-
-                            <td>
-                                {{req.hod_approved_at or '-'}}
-                            </td>
-
-
-
-                        </tr>
-
-
-                        {% endfor %}
-
-
-                    </tbody>
-
-
-                </table>
+            <tbody id="prsTableBody">
+                <!-- AJAX will insert rows here -->
+            </tbody>
+        </table>
 
 
             </div>

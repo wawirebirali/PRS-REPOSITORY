@@ -508,160 +508,109 @@ async function loadRequisitionDetails(id){
 // SUBMIT REQUISITION APPROVAL
 // =======================================================
 
+
+// =======================================================
+// HOD REQUISITION APPROVAL
+// =======================================================
+
+
 async function submitApproval() {
 
-    // -----------------------------------------------
-    // Validate selection
-    // -----------------------------------------------
-
-    if (!selectedRequisitionId || !requisitionPendingAction) {
-
-        alert("Select requisition and action first");
+    // Ensure requisition is selected
+    if (!selectedRequisitionId) {
+        alert("Please select a requisition first.");
         return;
     }
 
+    // Ensure action is selected
+    if (!requisitionPendingAction) {
+        alert("Please choose approve or reject.");
+        return;
+    }
 
-    // -----------------------------------------------
-    // Store values before request
-    // -----------------------------------------------
+    // Read current statuses
+    const getStatus = (id) => (
+        document.getElementById(id)?.innerText || "PENDING"
+    ).trim().toUpperCase();
+
+    const hodStatus = getStatus("hod_status");
+    const ceoStatus = getStatus("ceo_status");
+    const finalStatus = getStatus("final_status");
+
+    // Prevent action on completed requisition
+    if (finalStatus === "COMPLETED") {
+        alert("This requisition is completed. No further action is allowed.");
+        return;
+    }
+
+    // CEO must wait for HOD approval
+    if (ceoStatus !== "APPROVED") {
+
+        if (ceoStatus === "REJECTED") {
+            alert(
+                "You cannot process this requisition because it has been rejected by the CEO."
+            );
+        } else {
+            alert(
+                "You cannot approve or reject this requisition before the CEO approves it."
+            );
+        }
+
+        return;
+    }
+
+    // Prevent duplicate CEO decisions
+    if (ceoStatus === "APPROVED") {
+        alert("This requisition has already been approved by the CEO.");
+        return;
+    }
+
+    if (ceoStatus === "REJECTED") {
+        alert("This requisition has already been rejected by the CEO.");
+        return;
+    }
 
     const documentId = selectedRequisitionId;
     const action = requisitionPendingAction;
 
-
-    console.log("Submitting requisition approval:", {
-        document_id: documentId,
-        module_name: "PRS",
-        action: action
-    });
-
-
     try {
 
-        // -------------------------------------------
-        // Send approval request
-        // -------------------------------------------
-
-        const response = await fetch(
-            "/hod/approve",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    document_id: documentId,
-
-                    module_name: "PRS",
-
-                    action: action
-
-                })
-            }
-        );
-
-
-        // -------------------------------------------
-        // Check HTTP response
-        // -------------------------------------------
-
-        if (!response.ok) {
-
-            const errorText = await response.text();
-
-            console.error(
-                "APPROVAL HTTP ERROR:",
-                response.status,
-                errorText
-            );
-
-            alert(
-                `Approval failed. Server returned HTTP ${response.status}`
-            );
-
-            return;
-        }
-
-
-        // -------------------------------------------
-        // Read JSON response
-        // -------------------------------------------
+        const response = await fetch("/ceo/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: documentId,
+                module_name: "PRS",
+                action: action
+            })
+        });
 
         const data = await response.json();
 
-
-        console.log(
-            "APPROVAL RESPONSE:",
-            data
-        );
-
-
-        // -------------------------------------------
-        // Check backend result
-        // -------------------------------------------
-
-        if (!data.success) {
-
-            alert(
-                data.message ||
-                "Approval failed"
-            );
-
+        if (!response.ok || !data.success) {
+            alert(data.message || "CEO approval failed.");
             return;
         }
 
-
-        // -------------------------------------------
-        // Success
-        // -------------------------------------------
-
         alert(
             action === "APPROVED"
-                ? "Requisition approved successfully."
-                : "Requisition rejected successfully."
+                ? "Requisition approved successfully by the CEO."
+                : "Requisition rejected successfully by the CEO."
         );
-
-
-        // -------------------------------------------
-        // Reset selected values
-        // -------------------------------------------
 
         selectedRequisitionId = null;
-
         requisitionPendingAction = null;
 
-
-        // -------------------------------------------
-        // Close modal
-        // -------------------------------------------
-
         closeModal();
-
-
-        // -------------------------------------------
-        // Reload requisition data
-        // -------------------------------------------
-
         await loadRequisitionData();
 
-
-    }
-    catch (error) {
-
-        console.error(
-            "APPROVAL ERROR:",
-            error
-        );
-
-        alert(
-            "Server error while processing requisition approval."
-        );
+    } catch (error) {
+        console.error("CEO APPROVAL ERROR:", error);
+        alert("Server error while processing CEO approval.");
     }
 }
-
 
 
 function confirmRequisitionApproval(action) {
@@ -897,14 +846,14 @@ function approvePO() {
             .toUpperCase();
 
     // Prevent double approval
-    if (hodStatus === "APPROVED") {
-        alert("This purchase order has already been approved.");
+    if (ceoStatus === "APPROVED") {
+        alert("This purchase order has already been approved by the CEO.");
         return;
     }
 
     // Prevent double rejection
-    if (hodStatus === "REJECTED") {
-        alert("This purchase order has already been rejected.");
+    if (ceoStatus === "REJECTED") {
+        alert("This purchase order has already been rejected by the CEO.");
         return;
     }
 
@@ -1034,14 +983,14 @@ function approveGRN() {
             .toUpperCase();
 
     // Prevent double approval
-    if (hodStatus === "APPROVED") {
-        alert("This goods receipt note has already been approved.");
+    if (ceoStatus === "APPROVED") {
+        alert("This goods receipt note has already been approved by the CEO.");
         return;
     }
 
     // Prevent double rejection
-    if (hodStatus === "REJECTED") {
-        alert("This goods receipt note has already been rejected.");
+    if (ceoStatus === "REJECTED") {
+        alert("This goods receipt note has already been rejected by the CEO.");
         return;
     }
 
@@ -1064,7 +1013,7 @@ function approveGRN() {
             return;
         }
 
-        alert("Goods Receipt Note updated successfully.");
+        alert("Goods Receipt Note updated successfully by the CEO.");
 
         // Refresh GRN details
         loadGRNData();
@@ -1198,13 +1147,13 @@ function sendPaymentApproval() {
 
     const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
 
-    if (status === "APPROVED") {
-        alert("This payment has already been approved.");
+    if (ceoStatus === "APPROVED") {
+        alert("This payment has already been approved by the CEO.");
         return;
     }
 
-    if (status === "REJECTED") {
-        alert("This payment has already been rejected.");
+    if (ceoStatus === "REJECTED") {
+        alert("This payment has already been rejected by the CEO.");
         return;
     }
 
@@ -1224,7 +1173,7 @@ function sendPaymentApproval() {
             return;
         }
 
-        alert("Payment updated successfully.");
+        alert("Payment updated successfully by the CEO.");
         loadPaymentData();
     })
     .catch(err => {
@@ -1246,12 +1195,12 @@ function sendInvoiceApproval() {
 
     const status = document.getElementById("i_status").innerText.trim().toUpperCase();
 
-    if (status === "APPROVED") {
+    if (ceoStatus === "APPROVED") {
         alert("This invoice has already been approved.");
         return;
     }
 
-    if (status === "REJECTED") {
+    if (ceoStatus === "REJECTED") {
         alert("This invoice has already been rejected.");
         return;
     }
@@ -1563,7 +1512,7 @@ function loadPOModule() {
                     <td>${item.po_number || "-"}</td>
                     <td>${item.prs_no || "-"}</td>
                     <td>${item.supplier_name || "-"}</td>
-                    <td>${item.status || "-"}</td>
+                    <td>${item.final_status || "-"}</td>
                     <td>${item.department || "-"}</td>
                     <td>${item.order_date || "-"}</td>
                 `;
@@ -1685,7 +1634,7 @@ async function loadGRNData() {
 
     try {
 
-        const response = await fetch("/hod/hod_grn_data");
+        const response = await fetch("/ceo/ceo_grn_data");
 
         const data = await response.json();
 
@@ -1714,7 +1663,7 @@ async function loadGRNData() {
 
                     <td>${grn.supplier_name || ''}</td>
 
-                    <td>${grn.status || ''}</td>
+                    <td>${grn.final_status || ''}</td>
 
                     <td>${grn.department || ''}</td>
 
@@ -1772,7 +1721,7 @@ async function loadGRNDetails(grnId) {
             data.received_by || "-";
 
         document.getElementById("grnStatus").innerText =
-            data.inspection_status || "-";
+    data.final_status || "PENDING";
 
         document.getElementById("grn_hod_Status").innerText =
             data.hod_status || "PENDING";
@@ -2454,7 +2403,7 @@ async function loadPaymentData() {
                 <td>${payment.invoice_number || "-"}</td>
                 <td>${payment.supplier_name || "-"}</td>
                 <td>${payment.requisition_department || "-"}</td>
-                <td>${payment.status || "PENDING"}</td>
+                <td>${payment.final_status || "PENDING"}</td>
                 <td>${paymentDate}</td>
             `;
 
@@ -2669,7 +2618,7 @@ function renderQuotationTable(list) {
             <td>${q.quotation_no || "-"}</td>
             <td>${q.qrf_no || "-"}</td>
             <td>${q.supplier_name || "-"}</td>
-            <td>${q.status || "-"}</td>
+            <td>${q.final_status || "-"}</td>
             <td>${q.department || "-"}</td>
             <td>${q.created_at || "-"}</td>
         `;

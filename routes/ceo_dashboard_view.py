@@ -259,46 +259,42 @@ def invoice_data():
 
 
 
-@ceo_dashboard_view_bp.route("/hod_grn_data")
-def hod_grn_data():
+@ceo_dashboard_view_bp.route("/ceo_grn_data")
+def ceo_grn_data():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
         SELECT
-            g.grn_id,
-            g.grn_no,
-            p.po_number,
-            r.prs_no,
-            s.supplier_name,
-
-            COALESCE(a.final_status, 'PENDING') AS status,
-
-            d.department_name AS department,
-            g.received_date
-
-        FROM grn g
-
-        JOIN purchase_orders p
-            ON g.po_id = p.purchase_order_id
-
-        JOIN requisitions r
-            ON p.requisition_id = r.requisition_id
-
-        JOIN departments d
-            ON r.department_id = d.department_id
-
-        JOIN suppliers s
-            ON g.supplier_id = s.supplier_id
-
-        LEFT JOIN approvals a
-            ON a.document_id = g.grn_id
-           AND a.module_name = 'GRN'
-
+           g.grn_id,
+           g.grn_no,
+           r.prs_no,
+           s.supplier_name,
+           d.department_name AS department,
+           g.received_date,
+           COALESCE(a.final_status, 'PENDING') AS final_status
+       
+       FROM grn g
+       
+       JOIN purchase_orders p
+           ON g.po_id = p.purchase_order_id
+       
+       JOIN requisitions r
+           ON p.requisition_id = r.requisition_id
+       
+       JOIN departments d
+           ON r.department_id = d.department_id
+       
+       JOIN suppliers s
+           ON g.supplier_id = s.supplier_id
+       
+       LEFT JOIN approvals a
+           ON a.module_name = 'GRN'
+           AND a.document_id = g.grn_id
         WHERE COALESCE(a.hod_status, 'PENDING') = 'APPROVED'
-
-        ORDER BY g.grn_id DESC
+       
+       ORDER BY g.grn_id DESC;
     """)
 
     rows = cursor.fetchall()
@@ -430,6 +426,7 @@ ORDER BY
     finally:
         cursor.close()
         conn.close()
+        
 def ceo_pending_requisitions():
 
     conn = get_db_connection()

@@ -566,8 +566,16 @@ def create_rfq():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT requisition_id, prs_no
-        FROM requisitions
+        SELECT r.requisition_id,
+r.prs_no,
+COALESCE(a.final_status, 'PENDING') 
+
+AS final_status FROM requisitions r
+LEFT JOIN approvals a 
+ON a.document_id = r.requisition_id 
+AND a.module_name = 'PRS' 
+WHERE a.final_status = 'PENDING' 
+ORDER BY r.requisition_id DESC;
     """)
     requisitions = cursor.fetchall()
 

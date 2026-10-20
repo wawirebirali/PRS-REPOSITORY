@@ -4,6 +4,362 @@ from model import get_db_connection, get_requisition_by_id, get_requisition_item
 hod_dashboard_view_bp = Blueprint("hod_dashboard_view", __name__, template_folder="../templates")
 
 
+
+
+@hod_dashboard_view_bp.route("/api/requisitions")
+def hod_requisitions_api():
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # 1. Get the currently logged-in user's ID
+        user_id = session.get("user_id")
+
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "message": "Please log in to access requisitions."
+            }), 401
+
+        # 2. Confirm the logged-in user is an HOD and get their department
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.department,
+                d.department_id,
+                d.department_name
+            FROM users u
+            LEFT JOIN departments d
+                ON LOWER(TRIM(d.department_name)) =
+                   LOWER(TRIM(u.department))
+            WHERE u.user_id = %s
+            LIMIT 1
+        """, (user_id,))
+
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Logged-in user was not found."
+            }), 404
+
+        role = str(
+            session.get("role") or session.get("user_role") or ""
+        ).strip().upper()
+
+        if role not in ("HOD", "HEAD OF DEPARTMENT"):
+            return jsonify({
+                "success": False,
+                "message": "Access denied. Only HODs can access this list."
+            }), 403
+
+        department_id = user.get("department_id")
+
+        if not department_id:
+            return jsonify({
+                "success": False,
+                "message": "Your account is not linked to a valid department."
+            }), 400
+
+        # 3. Retrieve requisitions ONLY from this HOD's department
+        cursor.execute("""
+            SELECT
+                r.requisition_id,
+                r.prs_no,
+                d.department_name,
+                r.item_budget,
+                r.submission_date,
+                DATEDIFF(
+                    CURDATE(),
+                    DATE(r.submission_date)
+                ) AS due,
+                COALESCE(a.hod_status, 'PENDING') AS hod_status,
+                COALESCE(a.ceo_status, 'PENDING') AS ceo_status,
+                COALESCE(a.final_status, 'PENDING') AS final_status
+            FROM requisitions r
+            JOIN departments d
+                ON d.department_id = r.department_id
+            LEFT JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+            WHERE r.department_id = %s
+            ORDER BY r.requisition_id DESC
+        """, (department_id,))
+
+        requisitions = cursor.fetchall()
+
+        # 4. Convert dates into JSON-friendly strings
+        for requisition in requisitions:
+            if requisition.get("submission_date"):
+                requisition["submission_date"] = (
+                    requisition["submission_date"].isoformat()
+                    if hasattr(
+                        requisition["submission_date"], "isoformat"
+                    )
+                    else str(requisition["submission_date"])
+                )
+
+        return jsonify({
+            "success": True,
+            "department": user.get("department_name"),
+            "requisitions": requisitions
+        }), 200
+
+    except Exception as e:
+        print("HOD Requisition API Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load requisitions."
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+# =========================================================
+# REQUISITION DETAILS API
+# =========================================================
+@hod_dashboard_view_bp.route("/requisition/api/<int:requisition_id>")
+def requisition_api(requisition_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # =====================================================
+        # HEADER + APPROVALS + USERS
+        # =====================================================
+        cursor.execute("""
+            SELECT 
+                r.requisition_id,
+                r.prs_no,
+                d.department_name,
+                r.submission_date,
+
+                COALESCE(a.hod_status,'PENDING') AS hod_status,
+                COALESCE(a.ceo_status,'PENDING') AS ceo_status,
+
+                a.hod_approved_at,
+                a.ceo_approved_at,
+
+                u.user_id AS creator_id,
+                u.username AS creator_name,
+                u.signature AS creator_signature
+
+            FROM requisitions r
+
+            LEFT JOIN departments d 
+                ON r.department_id = d.department_id
+
+            LEFT JOIN approvals a 
+                ON a.module_name = 'PRS'
+                AND a.document_id = r.requisition_id
+
+            LEFT JOIN users u 
+                ON u.user_id = r.user_id
+
+            WHERE r.requisition_id = %s
+        """, (requisition_id,))
+
+        requisition = cursor.fetchone()
+
+        if not requisition:
+            return jsonify({"success": False, "message": "Not found"}), 404
+
+        # =====================================================
+        # ITEMS
+        # =====================================================
+        cursor.execute("""
+            SELECT 
+                item_id,
+                material_name,
+                uom,
+                qty_required
+            FROM requisition_items
+            WHERE requisition_id = %s
+        """, (requisition_id,))
+
+        items = cursor.fetchall()
+
+        # =====================================================
+        # HOD SIGNATURE
+        # =====================================================
+        cursor.execute("""
+            SELECT 
+                u.username,
+                u.signature,
+                a.hod_approved_at
+            FROM approvals a
+            LEFT JOIN users u ON u.user_id = a.hod_user_id
+            WHERE a.module_name = 'PRS'
+              AND a.document_id = %s
+              AND a.hod_status = 'APPROVED'
+            LIMIT 1
+        """, (requisition_id,))
+
+        hod_sig = cursor.fetchone()
+
+        # =====================================================
+        # CEO SIGNATURE
+        # =====================================================
+        cursor.execute("""
+            SELECT 
+                u.username,
+                u.signature,
+                a.ceo_approved_at
+            FROM approvals a
+            LEFT JOIN users u ON u.user_id = a.ceo_user_id
+            WHERE a.module_name = 'PRS'
+              AND a.document_id = %s
+              AND a.ceo_status = 'APPROVED'
+            LIMIT 1
+        """, (requisition_id,))
+
+        ceo_sig = cursor.fetchone()
+
+        return jsonify({
+            "success": True,
+            "requisition": requisition,
+            "items": items,
+            "created_by": {
+                "name": requisition["creator_name"],
+                "signature": requisition["creator_signature"]
+            },
+            "hod_signature": hod_sig,
+            "ceo_signature": ceo_sig
+        })
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
+@hod_dashboard_view_bp.route("/requisition_details/<int:requisition_id>")
+def requisition_details(requisition_id):
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        # =========================
+        # PRS HEADER
+        # =========================
+        cursor.execute("""
+            SELECT
+                r.requisition_id,
+                r.prs_no,
+                r.submission_date,
+
+                d.department_name,
+
+                COALESCE(a.hod_status,'PENDING') AS hod_status,
+                COALESCE(a.final_status,'PENDING') AS ceo_status,
+
+                creator.username AS created_by_name,
+                creator.signature AS created_signature,
+
+                hod.username AS hod_username,
+                hod.signature AS hod_signature,
+                a.hod_approved_at,
+
+                ceo.username AS ceo_username,
+                ceo.signature AS ceo_signature,
+                a.ceo_approved_at
+
+            FROM requisitions r
+
+            JOIN departments d
+                ON r.department_id = d.department_id
+
+            JOIN users creator
+                ON r.user_id = creator.user_id
+
+            LEFT JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name='PRS'
+
+            LEFT JOIN users hod
+                ON a.hod_user_id = hod.user_id
+
+            LEFT JOIN users ceo
+                ON a.ceo_user_id = ceo.user_id
+
+            WHERE r.requisition_id=%s
+
+        """, (requisition_id,))
+
+
+        requisition = cursor.fetchone()
+
+
+        if not requisition:
+            return jsonify({
+                "success": False,
+                "message": "Requisition not found"
+            }),404
+
+
+
+        # =========================
+        # ITEMS
+        # =========================
+        cursor.execute("""
+            SELECT
+                material_name,
+                uom,
+                qty_required
+
+            FROM requisition_items
+
+            WHERE requisition_id=%s
+
+            ORDER BY item_id
+
+        """,(requisition_id,))
+
+
+        items = cursor.fetchall()
+
+
+
+        return jsonify({
+
+            "success":True,
+
+            "requisition":requisition,
+
+            "items":items
+
+        })
+
+
+
+    except Exception as e:
+
+        print("CEO requisition details error:",e)
+
+        return jsonify({
+
+            "success":False,
+
+            "error":str(e)
+
+        }),500
+
+
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+
 @hod_dashboard_view_bp.route("/supplier_list")
 def supplier_list():
     conn = get_db_connection()
@@ -34,35 +390,119 @@ def supplier_list():
 
 @hod_dashboard_view_bp.route("/quotationRequest_data")
 def quotationRequest_data():
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("""
-        SELECT
-            q.qrf_id,
-            q.qrf_no,
-            r.prs_no,
-            s.supplier_name,
-            q.status,
-            d.department_name AS department,
-            q.request_date
-        FROM quotation_requests q
-        JOIN requisitions r ON q.requisition_id = r.requisition_id
-        JOIN departments d ON r.department_id = d.department_id
-        JOIN quotation_request_suppliers qrs ON q.qrf_id = qrs.qrf_id
-        JOIN suppliers s ON qrs.supplier_id = s.supplier_id
-        ORDER BY q.qrf_id DESC
-    """)
+    try:
+        # 1. Get the logged-in user's ID
+        user_id = session.get("user_id")
 
-    quotations = cursor.fetchall()
-    for item in quotations:
-        if item.get("request_date") is not None:
-            item["request_date"] = item["request_date"].isoformat()
+        if not user_id:
+            return jsonify({
+                "success": False,
+                "message": "Please log in to access quotation requests."
+            }), 401
 
-    cursor.close()
-    conn.close()
+        # 2. Get the user's department and role
+        cursor.execute("""
+            SELECT
+                u.user_id,
+                u.department,
+                u.role,
+                d.department_id,
+                d.department_name
+            FROM users u
+            LEFT JOIN departments d
+                ON LOWER(TRIM(d.department_name)) =
+                   LOWER(TRIM(u.department))
+            WHERE u.user_id = %s
+            LIMIT 1
+        """, (user_id,))
 
-    return jsonify(quotations)
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Logged-in user was not found."
+            }), 404
+
+        role = str(
+            session.get("role")
+            or session.get("user_role")
+            or user.get("role")
+            or ""
+        ).strip().upper()
+
+        if role not in ("HOD", "HEAD OF DEPARTMENT"):
+            return jsonify({
+                "success": False,
+                "message": "Access denied. Only HODs can access this data."
+            }), 403
+
+        department_id = user.get("department_id")
+
+        if not department_id:
+            return jsonify({
+                "success": False,
+                "message": "Your account is not linked to a valid department."
+            }), 400
+
+        # 3. Get quotation requests and the final PRS approval status
+        cursor.execute("""
+            SELECT
+                q.qrf_id,
+                q.qrf_no,
+                r.prs_no,
+                s.supplier_name,
+                COALESCE(a.final_status, 'PENDING') AS status,
+                d.department_name AS department,
+                q.request_date
+            FROM quotation_requests q
+            JOIN requisitions r
+                ON q.requisition_id = r.requisition_id
+            JOIN departments d
+                ON r.department_id = d.department_id
+            JOIN quotation_request_suppliers qrs
+                ON q.qrf_id = qrs.qrf_id
+            JOIN suppliers s
+                ON qrs.supplier_id = s.supplier_id
+            LEFT JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+            WHERE r.department_id = %s
+            ORDER BY q.qrf_id DESC
+        """, (department_id,))
+
+        quotations = cursor.fetchall()
+
+        # 4. Convert dates to JSON-friendly strings
+        for item in quotations:
+            if item.get("request_date") is not None:
+                item["request_date"] = (
+                    item["request_date"].isoformat()
+                    if hasattr(item["request_date"], "isoformat")
+                    else str(item["request_date"])
+                )
+
+        return jsonify({
+            "success": True,
+            "department": user.get("department_name"),
+            "quotations": quotations
+        }), 200
+
+    except Exception as e:
+        print("HOD Quotation Request API Error:", e)
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load quotation requests."
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 @hod_dashboard_view_bp.route("/quotationRequest_details/<int:qrf_id>")
 def quotationRequest_details(qrf_id):
@@ -237,18 +677,30 @@ def po_data():
 
     cursor.execute("""
         SELECT
-            p.purchase_order_id,
-            p.po_number,
-            r.prs_no,
-            s.supplier_name,
-            p.status,
-            d.department_name AS department,
-            p.order_date
-        FROM purchase_orders p
-        JOIN requisitions r ON p.requisition_id = r.requisition_id
-        JOIN suppliers s ON p.supplier_id = s.supplier_id
-        JOIN departments d ON r.department_id = d.department_id
-        ORDER BY p.purchase_order_id DESC
+    p.purchase_order_id,
+    p.po_number,
+    r.prs_no,
+    s.supplier_name,
+    COALESCE(a.final_status, 'PENDING') AS final_status,
+    d.department_name AS department,
+    p.order_date
+
+FROM purchase_orders p
+
+JOIN requisitions r
+    ON p.requisition_id = r.requisition_id
+
+JOIN suppliers s
+    ON p.supplier_id = s.supplier_id
+
+JOIN departments d
+    ON r.department_id = d.department_id
+
+LEFT JOIN approvals a
+    ON a.module_name = 'PO'
+    AND a.document_id = p.purchase_order_id
+
+ORDER BY p.purchase_order_id DESC;
     """)
 
     rows = cursor.fetchall()
@@ -418,21 +870,34 @@ def hod_grn_data():
     cursor = conn.cursor(dictionary=True)
 
     cursor.execute("""
-        SELECT
-            g.grn_id,
-            g.grn_no,
-            p.po_number,
-            r.prs_no,
-            s.supplier_name,
-            g.inspection_status AS status,
-            d.department_name AS department,
-            g.received_date
-        FROM grn g
-        JOIN purchase_orders p ON g.po_id = p.purchase_order_id
-        JOIN requisitions r ON p.requisition_id = r.requisition_id
-        JOIN departments d ON r.department_id = d.department_id
-        JOIN suppliers s ON g.supplier_id = s.supplier_id
-        ORDER BY g.grn_id DESC
+       SELECT
+    g.grn_id,
+    g.grn_no,
+    r.prs_no,
+    s.supplier_name,
+    d.department_name AS department,
+    g.received_date,
+    COALESCE(a.final_status, 'PENDING') AS final_status
+
+FROM grn g
+
+JOIN purchase_orders p
+    ON g.po_id = p.purchase_order_id
+
+JOIN requisitions r
+    ON p.requisition_id = r.requisition_id
+
+JOIN departments d
+    ON r.department_id = d.department_id
+
+JOIN suppliers s
+    ON g.supplier_id = s.supplier_id
+
+LEFT JOIN approvals a
+    ON a.module_name = 'GRN'
+    AND a.document_id = g.grn_id
+
+ORDER BY g.grn_id DESC;
     """)
 
     rows = cursor.fetchall()

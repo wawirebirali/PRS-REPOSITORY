@@ -984,6 +984,7 @@ def get_company_budgets():
                     AS created_by_name,
 
                 cb.created_at,
+                
 
                 cb.updated_at,
 
@@ -1632,7 +1633,8 @@ def get_department_budget_items(department_id):
                 start_date,
                 end_date,
                 remarks,
-                ceo_status
+                ceo_status,
+                ceo_approval_date
             FROM department_budget
             WHERE department_id = %s
             ORDER BY department_budget_id DESC
