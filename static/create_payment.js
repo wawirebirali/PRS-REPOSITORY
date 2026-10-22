@@ -998,3 +998,52 @@ async function loadPaymentNo() {
         paymentNoField.value = "";
     }
 }
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    loadApprovedInvoices();
+});
+
+async function loadApprovedInvoices() {
+    const select = document.getElementById("invoice_id");
+
+    if (!select) {
+        console.error("Invoice dropdown #invoice_id was not found.");
+        return;
+    }
+
+    select.disabled = true;
+    select.innerHTML = '<option value="">Loading approved invoices...</option>';
+
+    try {
+        const response = await fetch("/finance/api/approved-invoices");
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Could not load invoices.");
+        }
+
+        select.innerHTML = '<option value="">-- Select Approved Invoice --</option>';
+
+        if (!result.invoices || result.invoices.length === 0) {
+            select.innerHTML = '<option value="">No approved invoices with outstanding balances</option>';
+            return;
+        }
+
+        result.invoices.forEach(function (invoice) {
+            const option = document.createElement("option");
+
+            option.value = invoice.invoice_id;
+            option.textContent =
+                `${invoice.invoice_number} - ${invoice.supplier_name} - Balance: ${invoice.balance}`;
+
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Error loading approved invoices:", error);
+        select.innerHTML = '<option value="">Failed to load invoices</option>';
+    } finally {
+        select.disabled = false;
+    }
+}

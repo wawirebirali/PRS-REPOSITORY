@@ -495,8 +495,6 @@ async function loadRequisitionDetails(id){
 // =======================================================
 // HOD REQUISITION APPROVAL
 // =======================================================
-
-
 async function submitApproval() {
 
     // Ensure requisition is selected
@@ -511,6 +509,9 @@ async function submitApproval() {
         return;
     }
 
+    const documentId = selectedRequisitionId;
+    const action = requisitionPendingAction;
+
     // Read current statuses
     const getStatus = (id) => (
         document.getElementById(id)?.innerText || "PENDING"
@@ -520,44 +521,19 @@ async function submitApproval() {
     const ceoStatus = getStatus("ceo_status");
     const finalStatus = getStatus("final_status");
 
-    // Prevent action on completed requisition
+    // Prevent action on completed requisitions
     if (finalStatus === "COMPLETED") {
         alert("This requisition is completed. No further action is allowed.");
         return;
     }
 
-    // CEO must wait for HOD approval
-    if (hodStatus !== "APPROVED") {
-
-        if (hodStatus === "REJECTED") {
-            alert(
-                "You cannot process this requisition because it has been rejected by the HOD."
-            );
-        } else {
-            alert(
-                "You cannot approve or reject this requisition before the HOD approves it."
-            );
-        }
-
+    // Prevent duplicate HOD decisions
+    if (hodStatus === "APPROVED" || hodStatus === "REJECTED") {
+        alert("The HOD has already made a decision on this requisition.");
         return;
     }
-
-    // Prevent duplicate CEO decisions
-    if (ceoStatus === "APPROVED") {
-        alert("This requisition has already been approved by the CEO.");
-        return;
-    }
-
-    if (ceoStatus === "REJECTED") {
-        alert("This requisition has already been rejected by the CEO.");
-        return;
-    }
-
-    const documentId = selectedRequisitionId;
-    const action = requisitionPendingAction;
 
     try {
-
         const response = await fetch("/hod/approve", {
             method: "POST",
             headers: {
@@ -587,6 +563,7 @@ async function submitApproval() {
         requisitionPendingAction = null;
 
         closeModal();
+
         await loadRequisitionData();
 
     } catch (error) {
@@ -594,7 +571,6 @@ async function submitApproval() {
         alert("Server error while processing HOD approval.");
     }
 }
-
 
 function confirmRequisitionApproval(action) {
 
@@ -836,79 +812,105 @@ function closeModal() {
 // =======================================================
 // SEND APPROVAL TO SERVER
 // =======================================================
-function approvePO() {
+async function approvePO() {
 
-    // Ensure PO selected
+    // 1. Ensure a PO is selected
     if (!selectedPOId) {
-        alert("Please select a purchase order first");
+        alert("Please select a purchase order first.");
         return;
     }
 
-    // Ensure action selected
+    // 2. Ensure an action is selected
     if (!pOpendingAction) {
-        alert("Please choose approve or reject");
+        alert("Please choose approve or reject.");
         return;
     }
 
-    const hodStatus =
-        document.getElementById("po_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
+    const action = String(pOpendingAction).trim().toUpperCase();
 
-    // Prevent double approval
+    if (!["APPROVED", "REJECTED"].includes(action)) {
+        alert("Invalid approval action.");
+        return;
+    }
+
+    // 3. Read the selected PO's HOD status
+    const hodStatusElement = document.getElementById("po_hod_Status");
+
+    if (!hodStatusElement) {
+        console.error("Missing element: po_hod_Status");
+        alert("Unable to read the HOD approval status. Check the PO details HTML.");
+        return;
+    }
+
+    const hodStatus = (
+        hodStatusElement.textContent || "PENDING"
+    ).trim().toUpperCase();
+
+    console.log("Selected PO ID:", selectedPOId);
+    console.log("Current HOD status:", hodStatus);
+    console.log("Requested action:", action);
+
+    // 4. Prevent duplicate HOD decisions
     if (hodStatus === "APPROVED") {
-        alert("This purchase order has already been approved.");
+        alert("This purchase order has already been approved by the HOD.");
         return;
     }
 
-    // Prevent double rejection
     if (hodStatus === "REJECTED") {
-        alert("This purchase order has already been rejected.");
+        alert("This purchase order has already been rejected by the HOD.");
         return;
     }
 
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedPOId,
-            module_name: "PO",
-            action: pOpendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
+    // 5. Submit the HOD decision
+    try {
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedPOId,
+                module_name: "PO",
+                action: action
+            })
+        });
 
-        if (!data.success) {
-            alert(data.message || "Approval failed");
+        const responseText = await response.text();
+
+        console.log("HTTP status:", response.status);
+        console.log("Server response:", responseText);
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            alert(
+                "The server returned an invalid response. Check the Flask terminal and browser console."
+            );
             return;
         }
 
-        alert("Purchase Order updated successfully.");
-
-        // Refresh PO details
-        loadPOModule();
-
-        if (selectedPOId) {
-            const radio = document.querySelector(
-                `input[data-po-id="${selectedPOId}"]`
-            );
-
-            if (radio) {
-                selectPO(radio);
-            }
+        if (!response.ok || data.success !== true) {
+            alert(data.message || "HOD approval failed.");
+            return;
         }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
+
+        alert(
+            action === "APPROVED"
+                ? "Purchase Order approved successfully by the HOD."
+                : "Purchase Order rejected successfully by the HOD."
+        );
+
+        // 6. Refresh the PO module
+        await loadPOModule();
+
+    } catch (error) {
+        console.error("HOD PO approval error:", error);
+        alert("Server error while processing HOD approval.");
+    }
 }
-
-
 
 
 
@@ -1054,25 +1056,42 @@ function approveGRN() {
 
 
 
-
-
 let selectedInvoiceId = null;
 let invoicePendingAction = null;
+
+/* CONFIRM INVOICE APPROVAL */
 function confirmInvoice(action) {
     if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
+        alert("Please select an invoice first.");
         return;
     }
 
-    invoicePendingAction = action;
+    invoicePendingAction = String(action).trim().toUpperCase();
 
-    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
-            ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
-            : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
+    if (!["APPROVED", "REJECTED"].includes(invoicePendingAction)) {
+        invoicePendingAction = null;
+        alert("Invalid invoice approval action.");
+        return;
+    }
 
-    document.getElementById("confirmModal").style.display = "block";
+    const invoiceNumber =
+        document.getElementById("i_invoice_number")?.textContent?.trim() || "-";
+
+    const messageElement = document.getElementById("confirmMessage");
+    const modal = document.getElementById("confirmModal");
+
+    if (!messageElement || !modal) {
+        alert("Confirmation modal not found.");
+        invoicePendingAction = null;
+        return;
+    }
+
+    messageElement.textContent =
+        invoicePendingAction === "APPROVED"
+            ? `Are you sure you want to approve invoice ${invoiceNumber}?`
+            : `Are you sure you want to reject invoice ${invoiceNumber}?`;
+
+    modal.style.display = "block";
 }
 
 function approveInvoice() {
@@ -1083,66 +1102,77 @@ function rejectInvoice() {
     confirmInvoice("REJECTED");
 }
 
-
-
-function sendInvoiceApproval() {
+/* SEND INVOICE APPROVAL */
+async function sendInvoiceApproval() {
     if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
+        alert("Please select an invoice first.");
         return;
     }
 
     if (!invoicePendingAction) {
-        alert("Please choose approve or reject");
+        alert("Please choose approve or reject.");
         return;
     }
 
-    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
+    const action = invoicePendingAction;
 
-    if (status === "APPROVED") {
-        alert("This invoice has already been approved.");
-        return;
-    }
+    try {
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedInvoiceId,
+                module_name: "INVOICE",
+                action: action,
+                role: "ceo"
+            })
+        });
 
-    if (status === "REJECTED") {
-        alert("This invoice has already been rejected.");
-        return;
-    }
+        const responseText = await response.text();
+        let data;
 
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedInvoiceId,
-            module_name: "INVOICE",
-            action: invoicePendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Invoice approval failed");
+        try {
+            data = JSON.parse(responseText);
+        } catch {
+            console.error("Unexpected server response:", responseText);
+            alert("The server returned an invalid response.");
             return;
         }
 
-        alert("Invoice updated successfully.");
-        invoicePendingAction = null;
-        loadInvoices();
-        if (selectedInvoiceId) {
-            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
-            if (radio) selectInvoice(radio);
+        if (!response.ok || !data.success) {
+            alert(data.message || "Invoice approval failed.");
+            return;
         }
-    })
-    .catch(err => {
-        console.error(err);
+
+        alert(data.message || "Invoice updated successfully.");
+
+        invoicePendingAction = null;
+
+        const modal = document.getElementById("confirmModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+
+        await loadInvoices();
+
+        if (selectedInvoiceId) {
+            const radio = document.querySelector(
+                `input[data-invoice-id="${selectedInvoiceId}"]`
+            );
+
+            if (radio) {
+                selectInvoice(radio);
+            }
+        }
+
+    } catch (error) {
+        console.error("Invoice approval error:", error);
         alert("Server error while processing invoice approval.");
-    });
+    }
 }
-
-
-
-
-
-
 
 
 

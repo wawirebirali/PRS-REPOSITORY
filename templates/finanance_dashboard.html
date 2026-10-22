@@ -1346,9 +1346,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Invoice</label>
-                    <select id="cp_invoice" onchange="onInvoiceChange()">
-                        <option value="">-- Select Invoice --</option>
+                    <label for="invoice_id">Approved Invoice</label>
+
+                    <select
+                        id="invoice_id"
+                        name="invoice_id"
+                        onchange="loadInvoiceDetails(this.value)"
+                        required
+                    >
+                        <option value="">Loading approved invoices...</option>
                     </select>
                 </div>
 

@@ -59,52 +59,57 @@ def get_finance_invoices():
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute("""
-            SELECT
-                i.invoice_id,
-                i.invoice_number AS invoice_no,
-                i.invoice_date,
-                i.total_amount,
-                i.status AS invoice_status,
+           SELECT
+        i.invoice_id,
+        i.invoice_number AS invoice_no,
+        i.invoice_date,
+        i.total_amount,
 
-                g.grn_id,
-                g.grn_no,
+        a.final_status AS invoice_status,
 
-                po.purchase_order_id AS po_id,
-                po.po_number AS po_no,
+        g.grn_id,
+        g.grn_no,
 
-                po.supplier_id,
-                COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
+        po.purchase_order_id AS po_id,
+        po.po_number AS po_no,
 
-                r.requisition_id,
-                r.prs_no,
+        po.supplier_id,
+        COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
 
-                d.department_id,
-                d.department_name,
+        r.requisition_id,
+        r.prs_no,
 
-                i.created_by
+        d.department_id,
+        d.department_name,
 
-            FROM invoices i
+        i.created_by
 
-            LEFT JOIN grn g
-                ON g.grn_id = (
-                    SELECT MAX(g2.grn_id)
-                    FROM grn g2
-                    WHERE g2.po_id = i.purchase_order_id
-                )
+    FROM invoices i
 
-            LEFT JOIN purchase_orders po
-                ON i.purchase_order_id = po.purchase_order_id
+    INNER JOIN approvals a
+        ON a.document_id = i.invoice_id
+        AND UPPER(TRIM(a.module_name)) = 'INVOICE'
 
-            LEFT JOIN suppliers s
-                ON po.supplier_id = s.supplier_id
+    LEFT JOIN grn g
+        ON g.grn_id = (
+            SELECT MAX(g2.grn_id)
+            FROM grn g2
+            WHERE g2.po_id = i.purchase_order_id
+        )
 
-            LEFT JOIN requisitions r
-                ON po.requisition_id = r.requisition_id
+    LEFT JOIN purchase_orders po
+        ON i.purchase_order_id = po.purchase_order_id
 
-            LEFT JOIN departments d
-                ON r.department_id = d.department_id
+    LEFT JOIN suppliers s
+        ON po.supplier_id = s.supplier_id
 
-            ORDER BY i.invoice_id DESC
+    LEFT JOIN requisitions r
+        ON po.requisition_id = r.requisition_id
+
+    LEFT JOIN departments d
+        ON r.department_id = d.department_id
+
+    ORDER BY i.invoice_id DESC;
         """)
 
         invoices = cursor.fetchall()
@@ -169,52 +174,56 @@ def get_finance_invoice_details(invoice_id):
 
         cursor.execute("""
             SELECT
-                i.invoice_id,
-                i.invoice_number AS invoice_no,
-                i.invoice_date,
-                i.total_amount,
-                i.status AS invoice_status,
-                i.created_by,
+            i.invoice_id,
+            i.invoice_number AS invoice_no,
+            i.invoice_date,
+            i.total_amount,
+            COALESCE(a.final_status, 'PENDING') AS invoice_status,
+            i.created_by,
 
-                g.grn_id,
-                g.grn_no,
+            g.grn_id,
+            g.grn_no,
 
-                po.purchase_order_id AS po_id,
-                po.po_number AS po_no,
+            po.purchase_order_id AS po_id,
+            po.po_number AS po_no,
 
-                po.supplier_id,
-                COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
+            po.supplier_id,
+            COALESCE(i.supplier_name, s.supplier_name) AS supplier_name,
 
-                r.requisition_id,
-                r.prs_no,
+            r.requisition_id,
+            r.prs_no,
 
-                d.department_id,
-                d.department_name
+            d.department_id,
+            d.department_name
 
-            FROM invoices i
+        FROM invoices i
 
-            LEFT JOIN grn g
-                ON g.grn_id = (
-                    SELECT MAX(g2.grn_id)
-                    FROM grn g2
-                    WHERE g2.po_id = i.purchase_order_id
-                )
+        LEFT JOIN approvals a
+            ON a.document_id = i.invoice_id
+            AND UPPER(TRIM(a.module_name)) = 'INVOICE'
 
-            LEFT JOIN purchase_orders po
-                ON i.purchase_order_id = po.purchase_order_id
+        LEFT JOIN grn g
+            ON g.grn_id = (
+                SELECT MAX(g2.grn_id)
+                FROM grn g2
+                WHERE g2.po_id = i.purchase_order_id
+            )
 
-            LEFT JOIN suppliers s
-                ON po.supplier_id = s.supplier_id
+        LEFT JOIN purchase_orders po
+            ON i.purchase_order_id = po.purchase_order_id
 
-            LEFT JOIN requisitions r
-                ON po.requisition_id = r.requisition_id
+        LEFT JOIN suppliers s
+            ON po.supplier_id = s.supplier_id
 
-            LEFT JOIN departments d
-                ON r.department_id = d.department_id
+        LEFT JOIN requisitions r
+            ON po.requisition_id = r.requisition_id
 
-            WHERE i.invoice_id = %s
+        LEFT JOIN departments d
+            ON r.department_id = d.department_id
 
-            LIMIT 1
+        WHERE i.invoice_id = %s
+
+        LIMIT 1;
         """, (invoice_id,))
 
         invoice = cursor.fetchone()
@@ -819,7 +828,6 @@ def get_next_invoice_number():
 # ============================================================
 # 5. LOAD AVAILABLE GRNs FOR INVOICE
 # ============================================================
-
 @finance_dashboard_bp.route(
     "/api/invoices/grns",
     methods=["GET"]
@@ -830,7 +838,6 @@ def get_invoice_grns():
     cursor = None
 
     try:
-
         conn = get_db_connection()
 
         if conn is None:
@@ -842,12 +849,9 @@ def get_invoice_grns():
 
         cursor = conn.cursor(dictionary=True)
 
-        # ====================================================
-        # LOAD GRNs
-        #
-        # Only ACCEPTED GRNs should normally be available
-        # for invoice creation.
-        # ====================================================
+        # ==========================================
+        # LOAD ONLY APPROVED GRNs
+        # ==========================================
 
         cursor.execute("""
             SELECT
@@ -856,7 +860,7 @@ def get_invoice_grns():
                 g.po_id,
                 g.supplier_id,
                 g.received_date,
-                g.status,
+                a.final_status AS grn_status,
 
                 po.po_number,
 
@@ -868,6 +872,10 @@ def get_invoice_grns():
 
             FROM grn g
 
+            INNER JOIN approvals a
+                ON a.document_id = g.grn_id
+                AND UPPER(TRIM(a.module_name)) = 'GRN'
+
             LEFT JOIN purchase_orders po
                 ON po.purchase_order_id = g.po_id
 
@@ -875,7 +883,8 @@ def get_invoice_grns():
                 ON s.supplier_id = g.supplier_id
 
             WHERE
-                g.inspection_status = 'ACCEPTED'
+                UPPER(TRIM(a.final_status)) = 'APPROVED'
+                AND UPPER(TRIM(g.inspection_status)) = 'ACCEPTED'
 
             ORDER BY
                 g.grn_id DESC
@@ -883,57 +892,38 @@ def get_invoice_grns():
 
         grns = cursor.fetchall()
 
-        # ====================================================
-        # RESPONSE
-        # ====================================================
-
         return jsonify({
-
             "success": True,
-
             "count": len(grns),
-
             "grns": grns
-
-        })
+        }), 200
 
     except Exception as e:
 
         import traceback
-
         traceback.print_exc()
 
-        print(
-            "INVOICE GRN LIST ERROR:",
-            str(e)
-        )
+        print("INVOICE GRN LIST ERROR:", str(e))
 
         return jsonify({
-
             "success": False,
-
-            "message": str(e),
-
+            "message": "Unable to load approved GRNs.",
             "grns": []
-
         }), 500
 
     finally:
 
         if cursor:
-
             try:
                 cursor.close()
             except Exception:
                 pass
 
         if conn:
-
             try:
                 conn.close()
             except Exception:
                 pass
-
 
 # ============================================================
 # 6. LOAD COMPLETE GRN DETAILS FOR INVOICE
@@ -2451,24 +2441,30 @@ def save_invoice():
 
 
 
-from flask import request, jsonify, session
-from datetime import datetime
-from db_connect import get_db_connection
+
 
 
 # ============================================================
 # GET INVOICE FOR PAYMENT
 # ============================================================
-
-@finance_dashboard_bp.route("/api/invoice/<int:invoice_id>", methods=["GET"])
+@finance_dashboard_bp.route(
+    "/api/invoice/<int:invoice_id>",
+    methods=["GET"]
+)
 def get_invoice(invoice_id):
 
     conn = None
     cursor = None
 
     try:
-
         conn = get_db_connection()
+
+        if conn is None:
+            return jsonify({
+                "success": False,
+                "message": "Database connection failed."
+            }), 500
+
         cursor = conn.cursor(dictionary=True)
 
         cursor.execute("""
@@ -2478,6 +2474,11 @@ def get_invoice(invoice_id):
                 i.supplier_name,
                 i.total_amount,
 
+                COALESCE(
+                    a.final_status,
+                    'PENDING'
+                ) AS invoice_status,
+
                 po.purchase_order_id,
                 po.po_number,
 
@@ -2485,11 +2486,20 @@ def get_invoice(invoice_id):
                 r.prs_no,
 
                 COALESCE(
-                    SUM(p.amount_paid),
+                    (
+                        SELECT SUM(p.amount_paid)
+                        FROM payments p
+                        WHERE p.invoice_id = i.invoice_id
+                          AND UPPER(TRIM(p.payment_status)) = 'COMPLETED'
+                    ),
                     0
                 ) AS previous_paid
 
             FROM invoices i
+
+            LEFT JOIN approvals a
+                ON a.document_id = i.invoice_id
+                AND UPPER(TRIM(a.module_name)) = 'INVOICE'
 
             LEFT JOIN purchase_orders po
                 ON i.purchase_order_id = po.purchase_order_id
@@ -2497,105 +2507,52 @@ def get_invoice(invoice_id):
             LEFT JOIN requisitions r
                 ON po.requisition_id = r.requisition_id
 
-            LEFT JOIN payments p
-                ON i.invoice_id = p.invoice_id
-
             WHERE i.invoice_id = %s
 
-            GROUP BY
-                i.invoice_id,
-                i.invoice_number,
-                i.supplier_name,
-                i.total_amount,
-                po.purchase_order_id,
-                po.po_number,
-                r.requisition_id,
-                r.prs_no
-
+            LIMIT 1
         """, (invoice_id,))
 
         invoice = cursor.fetchone()
 
-
-        # ====================================================
-        # INVOICE NOT FOUND
-        # ====================================================
-
+        # Invoice not found
         if not invoice:
-
             return jsonify({
                 "success": False,
                 "message": "Invoice not found."
             }), 404
 
+        # Calculate invoice balance
+        invoice_total = float(invoice["total_amount"] or 0)
+        previous_paid = float(invoice["previous_paid"] or 0)
 
-        # ====================================================
-        # CALCULATE REAL BALANCE
-        # ====================================================
-
-        invoice_total = float(
-            invoice["total_amount"] or 0
-        )
-
-        previous_paid = float(
-            invoice["previous_paid"] or 0
-        )
-
-        balance = invoice_total - previous_paid
-
-
-        # NEVER ALLOW NEGATIVE BALANCE
-        if balance < 0:
-            balance = 0
-
-
-        # ====================================================
-        # RETURN INVOICE
-        # ====================================================
+        balance = max(invoice_total - previous_paid, 0)
 
         return jsonify({
-
             "success": True,
 
-            "invoice_id":
-                invoice["invoice_id"],
+            "invoice_id": invoice["invoice_id"],
+            "invoice_number": invoice["invoice_number"],
 
-            "invoice_number":
-                invoice["invoice_number"],
+            "invoice_status": invoice["invoice_status"],
 
-            "supplier_name":
-                invoice["supplier_name"] or "",
+            "supplier_name": invoice["supplier_name"] or "",
 
-            "total_amount":
-                f"{invoice_total:.2f}",
+            "total_amount": f"{invoice_total:.2f}",
+            "previous_paid": f"{previous_paid:.2f}",
+            "balance": f"{balance:.2f}",
 
-            "previous_paid":
-                f"{previous_paid:.2f}",
+            "purchase_order_id": invoice["purchase_order_id"],
+            "po_number": invoice["po_number"] or "",
 
-            "balance":
-                f"{balance:.2f}",
-
-            "purchase_order_id":
-                invoice["purchase_order_id"],
-
-            "po_number":
-                invoice["po_number"] or "",
-
-            "requisition_id":
-                invoice["requisition_id"],
-
-            "prs_no":
-                invoice["prs_no"] or ""
-
+            "requisition_id": invoice["requisition_id"],
+            "prs_no": invoice["prs_no"] or ""
         }), 200
 
-
     except Exception as e:
+        import traceback
+        traceback.print_exc()
 
-        print(
-            "GET INVOICE ERROR:",
-            str(e)
-        )
+        print("GET INVOICE ERROR:", str(e))
 
         return jsonify({
             "success": False,
@@ -2603,9 +2560,7 @@ def get_invoice(invoice_id):
             "error": str(e)
         }), 500
 
-
     finally:
-
         if cursor:
             cursor.close()
 
@@ -2613,9 +2568,112 @@ def get_invoice(invoice_id):
             conn.close()
 
 
+
+# ============================================================
+# GET APPROVED INVOICES FOR PAYMENT
+# ============================================================
+@finance_dashboard_bp.route(
+    "/api/approved-invoices",
+    methods=["GET"]
+)
+def get_approved_invoices():
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+
+        if conn is None:
+            return jsonify({
+                "success": False,
+                "message": "Database connection failed.",
+                "invoices": []
+            }), 500
+
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                i.invoice_id,
+                i.invoice_number,
+                i.supplier_name,
+                i.total_amount,
+
+                a.final_status AS invoice_status,
+
+                COALESCE(
+                    (
+                        SELECT SUM(p.amount_paid)
+                        FROM payments p
+                        WHERE p.invoice_id = i.invoice_id
+                          AND UPPER(TRIM(p.payment_status)) = 'COMPLETED'
+                    ),
+                    0
+                ) AS previous_paid
+
+            FROM invoices i
+
+            INNER JOIN approvals a
+                ON a.document_id = i.invoice_id
+                AND UPPER(TRIM(a.module_name)) = 'INVOICE'
+
+            WHERE UPPER(TRIM(a.final_status)) = 'APPROVED'
+
+            ORDER BY i.invoice_id DESC
+        """)
+
+        rows = cursor.fetchall()
+        invoices = []
+
+        for row in rows:
+            total = float(row["total_amount"] or 0)
+            paid = float(row["previous_paid"] or 0)
+            balance = max(total - paid, 0)
+
+            # Only invoices with an outstanding balance
+            # are available for payment.
+            if balance > 0:
+                invoices.append({
+                    "invoice_id": row["invoice_id"],
+                    "invoice_number": row["invoice_number"],
+                    "supplier_name": row["supplier_name"] or "",
+                    "total_amount": f"{total:.2f}",
+                    "previous_paid": f"{paid:.2f}",
+                    "balance": f"{balance:.2f}",
+                    "invoice_status": row["invoice_status"]
+                })
+
+        return jsonify({
+            "success": True,
+            "count": len(invoices),
+            "invoices": invoices
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load approved invoices.",
+            "error": str(e),
+            "invoices": []
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+            
 # ============================================================
 # GENERATE PAYMENT NUMBER
 # ============================================================
+
+
 
 def generate_payment_no(cursor):
 

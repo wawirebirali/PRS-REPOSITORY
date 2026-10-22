@@ -2143,3 +2143,124 @@ function escapeHTML(value) {
         );
 
 }
+
+
+/* =========================================================
+   GRN MANAGEMENT - LOAD APPROVED PURCHASE ORDERS
+   Connects JavaScript frontend to Flask backend
+   ========================================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+    console.log("GRN JavaScript initialized.");
+
+    loadApprovedPOs();
+});
+
+
+/* =========================================================
+   LOAD APPROVED PURCHASE ORDERS FROM FLASK
+   ========================================================= */
+
+async function loadApprovedPOs() {
+    const poSelect = document.getElementById("po_id");
+
+    if (!poSelect) {
+        console.error("PO dropdown #po_id was not found.");
+        return;
+    }
+
+    poSelect.innerHTML = `
+        <option value="">Loading approved Purchase Orders...</option>
+    `;
+
+    poSelect.disabled = true;
+
+    try {
+        const response = await fetch(
+            "/procurement/api/approved_pos",
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Server error: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success !== true) {
+            throw new Error(
+                data.message || "Failed to load approved Purchase Orders."
+            );
+        }
+
+        const pos = Array.isArray(data.data) ? data.data : [];
+
+        poSelect.innerHTML = `
+            <option value="">-- Select Approved PO --</option>
+        `;
+
+        if (pos.length === 0) {
+            poSelect.innerHTML = `
+                <option value="">No approved Purchase Orders available</option>
+            `;
+            console.log("No approved POs were returned by Flask.");
+            return;
+        }
+
+        pos.forEach(function (po) {
+            const option = document.createElement("option");
+
+            option.value = po.purchase_order_id;
+
+            option.textContent =
+                `${po.po_number} - ${po.supplier_name || "Unknown Supplier"}`;
+
+            poSelect.appendChild(option);
+        });
+
+        console.log(`${pos.length} approved Purchase Orders loaded.`);
+
+    } catch (error) {
+        console.error("Error loading approved POs:", error);
+
+        poSelect.innerHTML = `
+            <option value="">Failed to load approved POs</option>
+        `;
+
+    } finally {
+        poSelect.disabled = false;
+    }
+}
+
+
+/* =========================================================
+   LOAD SELECTED PO DETAILS AND ITEMS
+   Uses your existing loadPOForGRN() function
+   ========================================================= */
+
+function handlePOSelection() {
+    const poSelect = document.getElementById("po_id");
+
+    if (!poSelect) {
+        return;
+    }
+
+    const poId = poSelect.value;
+
+    if (!poId) {
+        return;
+    }
+
+    if (typeof loadPOForGRN === "function") {
+        loadPOForGRN(poId);
+    } else {
+        console.error(
+            "loadPOForGRN() was not found. Check your JavaScript files."
+        );
+    }
+}

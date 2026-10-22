@@ -3,6 +3,7 @@ import base64
 from flask import Blueprint, render_template, request, redirect, flash, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
+from flask import current_app
 import os
 import uuid
 
@@ -267,6 +268,58 @@ def signup():
 
     return render_template("signup.html")
 
+@auth_bp.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            return render_template(
+                "admin_login.html",
+                error="Please enter your email and password."
+            )
+
+        user = get_user_by_email(email)
+
+        if not user:
+            return render_template(
+                "admin_login.html",
+                error="Admin account not found."
+            )
+
+        if str(user.get("user_role", "")).strip().lower() != "admin":
+            return render_template(
+                "admin_login.html",
+                error="This account is not an administrator."
+            )
+
+        if str(user.get("status", "active")).strip().lower() != "active":
+            return render_template(
+                "admin_login.html",
+                error="This administrator account is inactive."
+            )
+
+        stored_password = user.get("password")
+
+        if not stored_password or not check_password_hash(
+            stored_password, password
+        ):
+            return render_template(
+                "admin_login.html",
+                error="Invalid email or password."
+            )
+
+        session.clear()
+        session["user_id"] = user["user_id"]
+        session["role"] = "admin"
+        session["user_role"] = "admin"
+        session["username"] = user["username"]
+
+        return redirect(url_for("admin_dashboard.admin_dashboard"))
+
+    return render_template("admin_login.html")
+
 def create_default_admin():
     admin_email = "admin@prs.com"
     admin_password = "admin123"
@@ -291,76 +344,49 @@ def create_default_admin():
     print("✅ Default admin created")
     print("📌 Email: admin@prs.com")
 
-@auth_bp.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
+@auth_bp.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
 
     if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-
+        email = request.form.get("email", "").strip().lower()
         user = get_user_by_email(email)
 
         if not user:
-            return render_template("admin_login.html", error="Admin not found")
+            flash("No user found with that email address.", "danger")
+            return render_template("forgot_password.html")
 
-        # ensure user is admin
-        if user["user_role"] != "admin":
-            return render_template("admin_login.html", error="Not an admin account")
+        if str(user.get("user_role", "")).strip().lower() != "admin":
+            flash("That email is not an administrator account.", "danger")
+            return render_template("forgot_password.html")
 
-        # check password
-        if not check_password_hash(user["password"], password):
-            return render_template("admin_login.html", error="Invalid password")
+        if str(user.get("status", "active")).strip().lower() != "active":
+            flash("This administrator account is inactive.", "danger")
+            return render_template("forgot_password.html")
 
-        # create session
-        session["user_id"] = user["user_id"]
-        session["role"] = user["user_role"]
-        session["username"] = user["username"]
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
 
-        # redirect to admin dashboard (FIXED)
-        return redirect(url_for("admin_dashboard.admin_dashboard"))
-
-    # GET request → show login page (FIXED)
-    return render_template("admin_login.html")
-
-@auth_bp.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip()
-        user = get_user_by_email(email)
-
-        if not user:
-            flash('No user found with that email address.', 'danger')
-            return render_template('forgot_password.html')
-
-        if user.get("user_role") != "admin":
-            flash('That email is not an administrator account.', 'danger')
-            return render_template('forgot_password.html')
-
-        current_password = request.form.get('current_password', '')
-        new_password = request.form.get('new_password', '')
-        confirm_password = request.form.get('confirm_password', '')
-
-        if not check_password_hash(user['password'], current_password):
-            flash('Current password is incorrect.', 'danger')
-            return render_template('forgot_password.html')
+        if not check_password_hash(user["password"], current_password):
+            flash("Current password is incorrect.", "danger")
+            return render_template("forgot_password.html")
 
         if len(new_password) < 8:
-            flash('New password must be at least 8 characters long.', 'danger')
-            return render_template('forgot_password.html')
+            flash("New password must be at least 8 characters long.", "danger")
+            return render_template("forgot_password.html")
 
         if new_password != confirm_password:
-            flash('New password and confirmation do not match.', 'danger')
-            return render_template('forgot_password.html')
+            flash("New password and confirmation do not match.", "danger")
+            return render_template("forgot_password.html")
 
-        if not change_user_password(user['user_id'], new_password):
-            flash('Unable to update the password. Please try again.', 'danger')
-            return render_template('forgot_password.html')
+        if not change_user_password(user["user_id"], new_password):
+            flash("Unable to update the password. Please try again.", "danger")
+            return render_template("forgot_password.html")
 
-        flash('Password changed. Sign in with your new password.', 'success')
-        return redirect(url_for('auth.admin_login'))
+        flash("Password changed successfully. Please sign in.", "success")
+        return redirect(url_for("auth.admin_login"))
 
-    return render_template('forgot_password.html')
-
+    return render_template("forgot_password.html")
 
 
 @auth_bp.route("/logout")

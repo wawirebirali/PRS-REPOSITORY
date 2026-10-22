@@ -55,13 +55,13 @@
         GRN
     </button>
 
-    <button onclick="openModule('invoice', this)">
+    <!--<button onclick="openModule('invoice', this)">
         Invoice
-    </button>
+    </button>  -->
 
 </div>
 
-
+ 
 <div class="main">
 
 <!-- =====================================================
@@ -1361,30 +1361,18 @@ Date
 
                     <div>
 
-                        <label>
-
+                        <label for="quotationRequestPRS">
                             Purchase Requisition
-
                         </label>
 
-                        <select id="quotationRequestPRS">
-
-                            <option value="">
-
-                                -- Select PRS --
-
-                            </option>
+                        <select id="quotationRequestPRS" name="requisition_id">
+                            <option value="">-- Select PRS --</option>
 
                             {% for prs in requisitions %}
-
-                            <option value="{{ prs.requisition_id }}">
-
-                                {{ prs.prs_no }}
-
-                            </option>
-
+                                <option value="{{ prs.requisition_id }}">
+                                    {{ prs.prs_no }}
+                                </option>
                             {% endfor %}
-
                         </select>
 
                     </div>
@@ -1921,37 +1909,22 @@ Date
                 ======================================= -->
 
                 <div class="form-group">
-
-                    <label>
-
-                        Quotation Request (QRF)
-
-                    </label>
+                    <label>Quotation Request (QRF)</label>
 
                     <select
                         id="quotationQrfSelect"
                         onchange="loadQRFDetails()">
 
-                        <option value="">
-
-                            -- Select QRF --
-
-                        </option>
+                        <option value="">-- Select QRF --</option>
 
                         {% for qrf in qrfs %}
-
                         <option value="{{ qrf.qrf_id }}">
-
                             {{ qrf.qrf_no }}
-
                         </option>
-
                         {% endfor %}
 
                     </select>
-
                 </div>
-
                 <!-- ======================================
                         SUPPLIER
                 ======================================= -->
@@ -2604,39 +2577,16 @@ Date
                 ================================================== -->
 
                 <div class="form-group">
-
-                    <label for="po_prs_id">
-
-                        PRS Number
-
-                    </label>
-
+                    <label for="po_prs_id">PRS Number</label>
 
                     <select
                         id="po_prs_id"
                         onchange="loadPRSQuotationsForPO()">
 
-                        <option value="">
-
-                            -- Select PRS --
-
-                        </option>
-
-
-                        {% for r in requisitions %}
-
-                        <option value="{{ r.requisition_id }}">
-
-                            {{ r.prs_no }}
-
-                        </option>
-
-                        {% endfor %}
+                        <option value="">-- Select PRS --</option>
 
                     </select>
-
                 </div>
-
 
                 <!-- =================================================
                         QUOTATION COMPARISON
@@ -3600,34 +3550,18 @@ Date
 
 
                     
+               <div class="form-group">
+                    <label for="po_id">Approved Purchase Order</label>
 
-                    <div class="form-group">
-
-                        <label for="po_id">
-
-                            Purchase Order
-
-                        </label>
-
-
-                       <select
+                    <select
                         id="po_id"
-                        name="po_id"
-                        onchange="console.log('SELECTED PO ID:', this.value); loadPOForGRN(this.value)"
+                        name="purchase_order_id"
+                        onchange="handlePOSelection()"
                         required
                     >
-                        <option value="">
-                            -- Select Purchase Order --
-                        </option>
-
-                        {% for po in pos %}
-                        <option value="{{ po.purchase_order_id }}">
-                            {{ po.po_number }} — ID: {{ po.purchase_order_id }}
-                        </option>
-                        {% endfor %}
-
+                        <option value="">Loading approved Purchase Orders...</option>
                     </select>
-                    </div>
+                </div>
 
 
                     <!-- ================= GRN NUMBER ================= -->
@@ -3647,6 +3581,25 @@ Date
                             name="grn_no"
                             placeholder="GRN/2026/0001"
                             readonly
+                        >
+
+                    </div>
+
+                     <div class="form-group">
+
+                        <label for="grn_no">
+
+                            Delivery note no
+
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="grn_no"
+                            name="delivry_note"
+                            placeholder="Enter delivery note number"
+                            
                         >
 
                     </div>
@@ -3755,39 +3708,22 @@ Date
 
                     <div class="summary-item">
 
-                        <strong>
-                            PO Number:
-                        </strong>
-
-                        <span id="selectedPONumber">
-                            -
-                        </span>
+                        
 
                     </div>
 
 
                     <div class="summary-item">
 
-                        <strong>
-                            Supplier:
-                        </strong>
-
-                        <span id="selectedSupplierName">
-                            -
-                        </span>
+                       
 
                     </div>
 
 
                     <div class="summary-item">
 
-                        <strong>
-                            GRN Number:
-                        </strong>
-
-                        <span id="selectedGRNNumber">
-                            -
-                        </span>
+                       
+                           
 
                     </div>
 
@@ -3804,9 +3740,7 @@ Date
                         Purchase Order Items
                     </h3>
 
-                    <p>
-                        Select a Purchase Order above to load its items.
-                    </p>
+                  
 
                 </div>
 

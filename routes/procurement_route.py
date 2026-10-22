@@ -559,48 +559,71 @@ def add_supplier():
 # quotation request form page
 
 
+
 @procurement_dashboard_bp.route("/create_rfq")
 def create_rfq():
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
-    cursor.execute("""
-        SELECT r.requisition_id,
-r.prs_no,
-COALESCE(a.final_status, 'PENDING') 
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-AS final_status FROM requisitions r
-LEFT JOIN approvals a 
-ON a.document_id = r.requisition_id 
-AND a.module_name = 'PRS' 
-WHERE a.final_status = 'PENDING' 
-ORDER BY r.requisition_id DESC;
-    """)
-    requisitions = cursor.fetchall()
+        # Get requisitions awaiting final approval
+        cursor.execute("""
+            SELECT
+                r.requisition_id,
+                r.prs_no,
+                COALESCE(a.final_status, 'PENDING') AS final_status
+            FROM requisitions r
+            INNER JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+            WHERE a.hod_status = 'APPROVED'
+              AND a.final_status = 'APPROVED'
+            ORDER BY r.requisition_id DESC
+        """)
 
-    cursor.execute("""
-        SELECT supplier_id, supplier_name
-        FROM suppliers
-    """)
-    suppliers = cursor.fetchall()
+        requisitions = cursor.fetchall()
 
-    cursor.execute("""
-        SELECT user_id, username
-        FROM users
-    """)
-    users = cursor.fetchall()
+        # Get suppliers
+        cursor.execute("""
+            SELECT supplier_id, supplier_name
+            FROM suppliers
+            ORDER BY supplier_name
+        """)
 
-    cursor.close()
-    conn.close()
+        suppliers = cursor.fetchall()
 
-    return render_template(
-        "create_quotation_form.html",
-        requisitions=requisitions,
-        suppliers=suppliers,
-        users=users,
-        created_by=session.get("username")
-    )
+        # Get users
+        cursor.execute("""
+            SELECT user_id, username
+            FROM users
+            ORDER BY username
+        """)
+
+        users = cursor.fetchall()
+
+        return render_template(
+            "create_quotation_form.html",
+            requisitions=requisitions,
+            suppliers=suppliers,
+            users=users,
+            created_by=session.get("username")
+        )
+
+    except Exception as e:
+        print("CREATE QRF PAGE ERROR:", str(e))
+        return "Failed to load QRF form.", 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 @procurement_dashboard_bp.route("/save_qrf", methods=["POST"])
 def save_qrf():
 
@@ -608,55 +631,87 @@ def save_qrf():
     cursor = None
 
     try:
-
-        # ==========================
-        # RECEIVE JSON
-        # ==========================
-        data = request.get_json()
+        # Receive JSON
+        data = request.get_json(silent=True)
 
         if not data:
             return jsonify({
                 "success": False,
-                "message": "No JSON data received"
+                "message": "No JSON data received."
             }), 400
 
-        qrf_no = data.get("qrf_no")
-
-        # FORCE logged-in user (correct approach)
+        qrf_no = (data.get("qrf_no") or "").strip()
         requested_by = session.get("user_id")
-
         submission_date = data.get("submission_date")
         requisition_id = data.get("requisition_id")
         supplier_id = data.get("supplier_id")
-        items = data.get("items", [])
 
-        # ==========================
-        # VALIDATION
-        # ==========================
+        # Validate required fields
         if not qrf_no:
-            return jsonify({"success": False, "message": "QRF Number required"}), 400
+            return jsonify({
+                "success": False,
+                "message": "QRF number is required."
+            }), 400
 
         if not requested_by:
-            return jsonify({"success": False, "message": "User not logged in"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Please log in before creating a QRF."
+            }), 401
 
         if not requisition_id:
-            return jsonify({"success": False, "message": "Requisition required"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Please select a requisition."
+            }), 400
 
         if not supplier_id:
-            return jsonify({"success": False, "message": "Supplier required"}), 400
+            return jsonify({
+                "success": False,
+                "message": "Please select a supplier."
+            }), 400
 
-        if len(items) == 0:
-            return jsonify({"success": False, "message": "No items added"}), 400
-
-        # ==========================
-        # DB CONNECTION
-        # ==========================
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
 
-        # ==========================
-        # CHECK DUPLICATE QRF
-        # ==========================
+        # Verify that the PRS has passed HOD and CEO approval
+        cursor.execute("""
+            SELECT r.requisition_id
+            FROM requisitions r
+            INNER JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+            WHERE r.requisition_id = %s
+              AND a.hod_status = 'APPROVED'
+              AND a.final_status = 'APPROVED'
+            LIMIT 1
+        """, (requisition_id,))
+
+        approved_prs = cursor.fetchone()
+
+        if not approved_prs:
+            return jsonify({
+                "success": False,
+                "message": (
+                    "Only requisitions approved by both HOD "
+                    "and CEO can be used to create a QRF."
+                )
+            }), 400
+
+        # Verify supplier exists
+        cursor.execute("""
+            SELECT supplier_id
+            FROM suppliers
+            WHERE supplier_id = %s
+        """, (supplier_id,))
+
+        if not cursor.fetchone():
+            return jsonify({
+                "success": False,
+                "message": "Selected supplier does not exist."
+            }), 400
+
+        # Check duplicate QRF number
         cursor.execute("""
             SELECT qrf_id
             FROM quotation_requests
@@ -666,12 +721,31 @@ def save_qrf():
         if cursor.fetchone():
             return jsonify({
                 "success": False,
-                "message": "QRF already exists"
+                "message": "QRF number already exists."
             }), 400
 
-        # ==========================
-        # INSERT HEADER
-        # ==========================
+        # Retrieve items directly from requisition_items
+        cursor.execute("""
+            SELECT
+                item_id,
+                material_name,
+                description,
+                qty_required,
+                uom
+            FROM requisition_items
+            WHERE requisition_id = %s
+            ORDER BY item_id
+        """, (requisition_id,))
+
+        prs_items = cursor.fetchall()
+
+        if not prs_items:
+            return jsonify({
+                "success": False,
+                "message": "The selected PRS contains no items."
+            }), 400
+
+        # Insert QRF header
         cursor.execute("""
             INSERT INTO quotation_requests (
                 qrf_no,
@@ -680,7 +754,7 @@ def save_qrf():
                 request_date,
                 status
             )
-            VALUES (%s,%s,%s,%s,%s)
+            VALUES (%s, %s, %s, %s, %s)
         """, (
             qrf_no,
             requisition_id,
@@ -691,9 +765,7 @@ def save_qrf():
 
         qrf_id = cursor.lastrowid
 
-        # ==========================
-        # INSERT SUPPLIER
-        # ==========================
+        # Insert supplier associated with the QRF
         cursor.execute("""
             INSERT INTO quotation_request_suppliers (
                 qrf_id,
@@ -701,7 +773,7 @@ def save_qrf():
                 sent_date,
                 supplier_response
             )
-            VALUES (%s,%s,%s,%s)
+            VALUES (%s, %s, %s, %s)
         """, (
             qrf_id,
             supplier_id,
@@ -709,10 +781,8 @@ def save_qrf():
             "PENDING"
         ))
 
-        # ==========================
-        # INSERT ITEMS (WITH UOM FIX)
-        # ==========================
-        for item in items:
+        # Copy PRS items into quotation_request_items
+        for item in prs_items:
 
             cursor.execute("""
                 INSERT INTO quotation_request_items (
@@ -722,23 +792,27 @@ def save_qrf():
                     quantity,
                     uom
                 )
-                VALUES (%s,%s,%s,%s,%s)
+                VALUES (%s, %s, %s, %s, %s)
             """, (
                 qrf_id,
-                item.get("item"),
-                item.get("description", ""),
-                item.get("qty", 0),
-                item.get("uom", "")   # ✅ IMPORTANT FIX
+                item["material_name"],
+                item["description"],
+                item["qty_required"],
+                item["uom"]
             ))
 
+        # Save all records together
         conn.commit()
 
         return jsonify({
             "success": True,
-            "message": "QRF created successfully",
+            "message": "QRF created successfully with PRS items.",
             "qrf_id": qrf_id,
             "qrf_no": qrf_no,
-            "redirect": url_for("procurement_dashboard.procurement_dashboard")
+            "items_count": len(prs_items),
+            "redirect": url_for(
+                "procurement_dashboard.procurement_dashboard"
+            )
         })
 
     except Exception as e:
@@ -746,21 +820,69 @@ def save_qrf():
         if conn:
             conn.rollback()
 
-        print("ERROR:", str(e))
+        print("SAVE QRF ERROR:", str(e))
 
         return jsonify({
             "success": False,
-            "message": str(e)
+            "message": "Failed to create QRF: " + str(e)
         }), 500
 
     finally:
-
         if cursor:
             cursor.close()
 
         if conn:
             conn.close()
 
+
+
+
+@procurement_dashboard_bp.route(
+    "/api/requisition/<int:requisition_id>/items",
+    methods=["GET"]
+)
+def get_requisition_items(requisition_id):
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                item_id,
+                material_name,
+                description,
+                qty_required,
+                uom
+            FROM requisition_items
+            WHERE requisition_id = %s
+            ORDER BY item_id
+        """, (requisition_id,))
+
+        items = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "items": items
+        }), 200
+
+    except Exception as e:
+        print("LOAD QRF ITEMS ERROR:", str(e))
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load PRS items."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 # =========================
 # QUOTATION PAGE (GET)
@@ -788,6 +910,72 @@ def enterQuotation():
 # =========================
 # GET QRF DETAILS
 # =========================
+# ==========================================================
+# LOAD APPROVED QUOTATION REQUESTS (QRF)
+# ==========================================================
+
+@procurement_dashboard_bp.route(
+    "/api/approved-quotation-requests",
+    methods=["GET"]
+)
+def get_approved_quotation_requests():
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                qrf.qrf_id,
+                qrf.qrf_no,
+                qrf.requisition_id,
+                qrf.request_date,
+                qrf.deadline_date,
+                qrf.status,
+                qrf.remarks,
+                COALESCE(a.hod_status, 'PENDING') AS hod_status,
+                COALESCE(a.final_status, 'PENDING') AS final_status
+            FROM quotation_requests qrf
+            INNER JOIN approvals a
+                ON a.document_id = qrf.qrf_id
+                AND a.module_name = 'QRF'
+            WHERE a.hod_status = 'APPROVED'
+              AND a.final_status = 'APPROVED'
+            ORDER BY qrf.qrf_id DESC
+        """)
+
+        quotation_requests = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "count": len(quotation_requests),
+            "quotation_requests": quotation_requests
+        }), 200
+
+    except Exception as e:
+        print("LOAD APPROVED QRF ERROR:", str(e))
+
+        return jsonify({
+            "success": False,
+            "message": "Failed to load approved quotation requests."
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
+# ==========================================================
+# GET QUOTATION REQUEST DETAILS
+# KEEP YOUR EXISTING FUNCTION UNCHANGED
+# ==========================================================
+
 @procurement_dashboard_bp.route(
     "/api/quotation-request/<int:qrf_id>",
     methods=["GET"]
@@ -828,7 +1016,6 @@ def get_quotation_request_details(qrf_id):
                 "message": "Quotation Request not found."
             }), 404
 
-
         # ==========================================
         # LOAD SUPPLIERS ATTACHED TO QRF
         # ==========================================
@@ -849,7 +1036,6 @@ def get_quotation_request_details(qrf_id):
 
         suppliers = cursor.fetchall()
 
-
         # ==========================================
         # LOAD QRF ITEMS
         # ==========================================
@@ -863,30 +1049,19 @@ def get_quotation_request_details(qrf_id):
 
         items = cursor.fetchall()
 
-
         return jsonify({
-
             "success": True,
-
             "qrf": qrf,
-
             "suppliers": suppliers,
-
             "items": items
-
         })
-
 
     except Exception as e:
 
         return jsonify({
-
             "success": False,
-
             "message": str(e)
-
         }), 500
-
 
     finally:
 
@@ -895,11 +1070,13 @@ def get_quotation_request_details(qrf_id):
 
         if conn:
             conn.close()
-# =========================
+
+
+# ==========================================================
 # SAVE QUOTATION (POST)
+# KEEP YOUR EXISTING SAVE QUOTATION CODE BELOW THIS LINE
 # ==========================================================
-# SAVE QUOTATION
-# ==========================================================
+
 @procurement_dashboard_bp.route(
     "/api/quotation/save",
     methods=["POST"]
@@ -1495,11 +1672,17 @@ def get_prs_list():
 
         cursor.execute("""
             SELECT
-                requisition_id,
-                prs_no
-            FROM requisitions
-            ORDER BY requisition_id DESC
-        """)
+                r.requisition_id,
+                r.prs_no
+            FROM requisitions r
+            INNER JOIN approvals a
+                ON a.document_id = r.requisition_id
+                AND a.module_name = 'PRS'
+            WHERE a.hod_status = 'APPROVED'
+            AND a.ceo_status = 'APPROVED'
+            AND a.final_status = 'APPROVED'
+            ORDER BY r.requisition_id DESC;
+                    """)
 
         prs_list = cursor.fetchall()
 
@@ -2719,21 +2902,21 @@ from datetime import datetime
 # URL:
 # /procurement/create_grn
 # ============================================================
-
+# ============================================================
+# CREATE GRN PAGE
+# LOAD ONLY FULLY APPROVED PURCHASE ORDERS
+# ============================================================
 @procurement_dashboard_bp.route("/create_grn", methods=["GET"])
 def create_grn():
-
-    conn = get_db_connection()
-
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
 
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-        # ====================================================
-        # LOAD PURCHASE ORDERS
-        # Only load POs that can still receive goods
-        # ====================================================
-
+        # Load only fully approved Purchase Orders
+        # Approval status comes from the approvals table.
         cursor.execute("""
             SELECT
                 po.purchase_order_id,
@@ -2741,45 +2924,35 @@ def create_grn():
                 po.supplier_id,
                 s.supplier_name,
                 po.requisition_id,
-                po.status
-
+                a.hod_status,
+                a.ceo_status,
+                a.final_status AS po_status
             FROM purchase_orders po
 
             LEFT JOIN suppliers s
                 ON s.supplier_id = po.supplier_id
 
-            WHERE po.status IN (
-                'Pending',
-                'Approved'
-            )
+            INNER JOIN approvals a
+                ON a.document_id = po.purchase_order_id
+                AND UPPER(TRIM(a.module_name)) = 'PO'
 
-            ORDER BY
-                po.purchase_order_id DESC
+            WHERE UPPER(TRIM(a.hod_status)) = 'APPROVED'
+              AND UPPER(TRIM(a.ceo_status)) = 'APPROVED'
+              AND UPPER(TRIM(a.final_status)) = 'APPROVED'
+
+            ORDER BY po.purchase_order_id DESC
         """)
 
         pos = cursor.fetchall()
 
-
-        # ====================================================
-        # LOAD USERS
-        # ====================================================
-
+        # Load users
         cursor.execute("""
-            SELECT
-                user_id,
-                username
-
+            SELECT user_id, username
             FROM users
-
             ORDER BY username ASC
         """)
 
         users = cursor.fetchall()
-
-
-        # ====================================================
-        # RETURN PAGE
-        # ====================================================
 
         return render_template(
             "create_grn.html",
@@ -2787,60 +2960,38 @@ def create_grn():
             users=users
         )
 
-
     except Exception as e:
-
-        print(
-            "CREATE GRN PAGE ERROR:",
-            e
-        )
-
+        print("CREATE GRN PAGE ERROR:", str(e))
         flash(
-            f"Error loading Create GRN page: {str(e)}",
+            "Error loading approved Purchase Orders.",
             "danger"
         )
-
         return redirect(
-            url_for(
-                "procurement_dashboard.procurement_dashboard"
-            )
+            url_for("procurement_dashboard.procurement_dashboard")
         )
 
-
     finally:
+        if cursor:
+            cursor.close()
 
-        cursor.close()
-
-        conn.close()
-
+        if conn:
+            conn.close()
 
 # ============================================================
 # GENERATE NEXT GRN NUMBER
-#
-# Example:
-# GRN/2026/0001
-# GRN/2026/0002
-# GRN/2026/0003
+# KEEP YOUR EXISTING GRN NUMBER GENERATION CODE BELOW
+# ============================================================
+# ============================================================
 # ============================================================
 # ============================================================
 # GENERATE NEXT GRN NUMBER
 #
-# Format:
-# GRN/2026/0001
-# GRN/2026/0002
-# GRN/2026/0003
+
 # ============================================================
 from datetime import datetime
 from flask import jsonify
 
-# ============================================================
-# GENERATE NEXT GRN NUMBER
-#
-# FORMAT:
-# GRN/2026/0001
-# GRN/2026/0002
-# GRN/2026/0003
-# ============================================================
+
 
 @procurement_dashboard_bp.route(
     "/api/next_grn_number",
@@ -2968,7 +3119,65 @@ def next_grn_number():
 
         conn.close()
 
-        
+
+
+
+@procurement_dashboard_bp.route("/api/approved_pos", methods=["GET"])
+def get_approved_pos():
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("""
+            SELECT
+                po.purchase_order_id,
+                po.po_number,
+                po.supplier_id,
+                COALESCE(s.supplier_name, 'Unknown Supplier')
+                    AS supplier_name,
+                po.requisition_id,
+                a.hod_status,
+                a.ceo_status,
+                a.final_status AS po_status
+            FROM purchase_orders po
+            INNER JOIN approvals a
+                ON a.document_id = po.purchase_order_id
+                AND UPPER(TRIM(a.module_name)) = 'PO'
+            LEFT JOIN suppliers s
+                ON s.supplier_id = po.supplier_id
+            WHERE UPPER(TRIM(a.hod_status)) = 'APPROVED'
+              AND UPPER(TRIM(a.ceo_status)) = 'APPROVED'
+              AND UPPER(TRIM(a.final_status)) = 'APPROVED'
+            ORDER BY po.purchase_order_id DESC
+        """)
+
+        pos = cursor.fetchall()
+
+        return jsonify({
+            "success": True,
+            "count": len(pos),
+            "data": pos
+        }), 200
+
+    except Exception as e:
+        print("APPROVED PO API ERROR:", str(e))
+
+        return jsonify({
+            "success": False,
+            "message": "Unable to load approved Purchase Orders.",
+            "data": []
+        }), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+            
 # ============================================================
 # GET PO DETAILS AND ITEMS
 #

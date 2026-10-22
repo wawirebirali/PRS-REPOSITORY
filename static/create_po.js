@@ -2652,3 +2652,67 @@ document.addEventListener(
 
     }
 );
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    loadApprovedPRSForPO();
+});
+
+async function loadApprovedPRSForPO() {
+    const prsSelect = document.getElementById("po_prs_id");
+
+    if (!prsSelect) {
+        console.error("PRS dropdown #po_prs_id was not found.");
+        return;
+    }
+
+    prsSelect.innerHTML = `
+        <option value="">Loading approved PRSs...</option>
+    `;
+
+    try {
+        const response = await fetch("/procurement/get_prs_list", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            },
+            credentials: "same-origin"
+        });
+
+        const result = await response.json();
+
+        prsSelect.innerHTML = `
+            <option value="">-- Select PRS --</option>
+        `;
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Failed to load approved PRSs.");
+        }
+
+        if (!result.data || result.data.length === 0) {
+            prsSelect.innerHTML = `
+                <option value="">No approved PRSs available</option>
+            `;
+            return;
+        }
+
+        result.data.forEach(function (r) {
+            const option = document.createElement("option");
+
+            option.value = r.requisition_id;
+            option.textContent = r.prs_no;
+
+            prsSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error("Error loading approved PRSs:", error);
+
+        prsSelect.innerHTML = `
+            <option value="">Failed to load approved PRSs</option>
+        `;
+    }
+}

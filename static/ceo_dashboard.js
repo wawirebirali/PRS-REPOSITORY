@@ -513,87 +513,169 @@ async function loadRequisitionDetails(id){
 // HOD REQUISITION APPROVAL
 // =======================================================
 
-
 async function submitApproval() {
 
-    // Ensure requisition is selected
-    if (!selectedRequisitionId) {
+    // ==========================================
+    // 1. VALIDATE SELECTED REQUISITION
+    // ==========================================
+    if (
+        typeof selectedRequisitionId === "undefined" ||
+        !selectedRequisitionId
+    ) {
         alert("Please select a requisition first.");
         return;
     }
 
-    // Ensure action is selected
-    if (!requisitionPendingAction) {
+    if (
+        typeof requisitionPendingAction === "undefined" ||
+        !requisitionPendingAction
+    ) {
         alert("Please choose approve or reject.");
         return;
     }
 
-    // Read current statuses
-    const getStatus = (id) => (
-        document.getElementById(id)?.innerText || "PENDING"
-    ).trim().toUpperCase();
+    // ==========================================
+    // 2. READ CURRENT APPROVAL STATUSES
+    // ==========================================
+    function getStatus(elementId) {
+        const element = document.getElementById(elementId);
+
+        return (
+            element?.textContent ||
+            element?.innerText ||
+            "PENDING"
+        ).trim().toUpperCase();
+    }
 
     const hodStatus = getStatus("hod_status");
     const ceoStatus = getStatus("ceo_status");
     const finalStatus = getStatus("final_status");
 
-    // Prevent action on completed requisition
+    // ==========================================
+    // 3. PREVENT ACTION ON COMPLETED REQUISITION
+    // ==========================================
     if (finalStatus === "COMPLETED") {
-        alert("This requisition is completed. No further action is allowed.");
+        alert(
+            "This requisition is completed. No further approval action is allowed."
+        );
         return;
     }
 
-    // CEO must wait for HOD approval
-    if (ceoStatus !== "APPROVED") {
+    // ==========================================
+    // 4. CEO CAN ACT ONLY AFTER HOD APPROVAL
+    // ==========================================
+    if (hodStatus !== "APPROVED") {
 
-        if (ceoStatus === "REJECTED") {
+        if (hodStatus === "REJECTED") {
             alert(
-                "You cannot process this requisition because it has been rejected by the CEO."
+                "You cannot process this requisition because it was rejected by the HOD."
             );
         } else {
             alert(
-                "You cannot approve or reject this requisition before the CEO approves it."
+                "You cannot approve or reject this requisition before the HOD approves it."
             );
         }
 
         return;
     }
 
-    // Prevent duplicate CEO decisions
+    // ==========================================
+    // 5. PREVENT DUPLICATE CEO DECISIONS
+    // ==========================================
     if (ceoStatus === "APPROVED") {
-        alert("This requisition has already been approved by the CEO.");
+        alert(
+            "This requisition has already been approved by the CEO."
+        );
         return;
     }
 
     if (ceoStatus === "REJECTED") {
-        alert("This requisition has already been rejected by the CEO.");
+        alert(
+            "This requisition has already been rejected by the CEO."
+        );
         return;
     }
 
-    const documentId = selectedRequisitionId;
-    const action = requisitionPendingAction;
+    // ==========================================
+    // 6. VALIDATE ACTION
+    // ==========================================
+    const action = String(requisitionPendingAction)
+        .trim()
+        .toUpperCase();
 
+    if (!["APPROVED", "REJECTED"].includes(action)) {
+        alert("Invalid approval action. Please approve or reject.");
+        return;
+    }
+
+    // ==========================================
+    // 7. USE YOUR EXISTING FLASK ENDPOINT
+    // ==========================================
+    const endpoint = "/hod/approve";
+
+    // ==========================================
+    // 8. SEND CEO APPROVAL REQUEST
+    // ==========================================
     try {
 
-        const response = await fetch("/ceo/approve", {
+        const response = await fetch(endpoint, {
             method: "POST",
+
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Accept": "application/json"
             },
+
             body: JSON.stringify({
-                document_id: documentId,
+                document_id: selectedRequisitionId,
                 module_name: "PRS",
-                action: action
+                action: action,
+                role: "ceo"
             })
         });
 
-        const data = await response.json();
+        // Read raw response so HTML error pages do not cause
+        // an unhandled JSON parsing error.
+        const responseText = await response.text();
 
-        if (!response.ok || !data.success) {
-            alert(data.message || "CEO approval failed.");
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+
+            console.error(
+                "CEO approval endpoint returned a non-JSON response."
+            );
+
+            console.error("HTTP status:", response.status);
+            console.error("Response:", responseText);
+
+            alert(
+                "The server returned an invalid response (HTTP " +
+                response.status +
+                "). Check the Flask terminal for the actual error."
+            );
+
             return;
         }
 
+        // ==========================================
+        // 9. HANDLE SERVER ERRORS
+        // ==========================================
+        if (!response.ok || data.success !== true) {
+
+            alert(
+                data.message ||
+                "CEO approval failed. Please check the server logs."
+            );
+
+            return;
+        }
+
+        // ==========================================
+        // 10. SUCCESS
+        // ==========================================
         alert(
             action === "APPROVED"
                 ? "Requisition approved successfully by the CEO."
@@ -603,15 +685,23 @@ async function submitApproval() {
         selectedRequisitionId = null;
         requisitionPendingAction = null;
 
-        closeModal();
-        await loadRequisitionData();
+        if (typeof closeModal === "function") {
+            closeModal();
+        }
+
+        if (typeof loadRequisitionData === "function") {
+            await loadRequisitionData();
+        }
 
     } catch (error) {
+
         console.error("CEO APPROVAL ERROR:", error);
-        alert("Server error while processing CEO approval.");
+
+        alert(
+            "A network or server error occurred while processing CEO approval. Check the Flask terminal."
+        );
     }
 }
-
 
 function confirmRequisitionApproval(action) {
 
@@ -779,32 +869,185 @@ function rejectQuotation() {
 // =======================================================
 // APPROVE / REJECT BUTTON CLICK
 // =======================================================
+
+/* =======================================================
+   CEO: APPROVE / REJECT BUTTON CLICK
+======================================================= */
+
 function confirmPoApproval(action) {
 
-    // Ensure a PO is selected
     if (!selectedPOId) {
-        alert("Please select a purchase order first");
+        alert("Please select a purchase order first.");
         return;
     }
 
-    pOpendingAction = action;
+    pOpendingAction = String(action).trim().toUpperCase();
 
-    const poNumber =
-        document.getElementById("poNumber").innerText || "-";
-
-    if (action === "APPROVED") {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${poNumber}</b>?`;
-
-    } else {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${poNumber}</b>?`;
-
+    if (!["APPROVED", "REJECTED"].includes(pOpendingAction)) {
+        alert("Invalid approval action.");
+        return;
     }
 
-    document.getElementById("confirmModal").style.display = "block";
+    const poNumberElement = document.getElementById("poNumber");
+    const confirmMessage = document.getElementById("confirmMessage");
+    const confirmModal = document.getElementById("confirmModal");
+
+    if (!confirmMessage || !confirmModal) {
+        alert("The confirmation modal could not be found.");
+        return;
+    }
+
+    const poNumber = poNumberElement?.textContent?.trim() || "-";
+
+    confirmMessage.textContent = "";
+
+    const message = document.createElement("span");
+    message.textContent =
+        pOpendingAction === "APPROVED"
+            ? `Are you sure you want to approve ${poNumber}?`
+            : `Are you sure you want to reject ${poNumber}?`;
+
+    confirmMessage.appendChild(message);
+    confirmModal.style.display = "block";
+}
+
+
+/* =======================================================
+   CLOSE CONFIRMATION MODAL
+======================================================= */
+
+function closeModal() {
+    const modal = document.getElementById("confirmModal");
+
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+
+/* =======================================================
+   CEO: CONFIRM BUTTON HANDLER
+   Set the modal Confirm button to onclick="approvePO()"
+======================================================= */
+
+async function approvePO() {
+
+    if (!selectedPOId) {
+        alert("Please select a purchase order first.");
+        return;
+    }
+
+    if (!pOpendingAction) {
+        alert("Please choose approve or reject.");
+        return;
+    }
+
+    const action = String(pOpendingAction).trim().toUpperCase();
+
+    if (!["APPROVED", "REJECTED"].includes(action)) {
+        alert("Invalid approval action.");
+        return;
+    }
+
+    // Read HOD status: CEO must wait for HOD approval.
+    const hodElement = document.getElementById("po_hod_Status");
+
+    const hodStatus = (
+        hodElement?.textContent || "PENDING"
+    ).trim().toUpperCase();
+
+    if (hodStatus !== "APPROVED") {
+        alert(
+            hodStatus === "REJECTED"
+                ? "The HOD has rejected this purchase order. The CEO cannot approve it."
+                : "The HOD must approve this purchase order before the CEO can act."
+        );
+        return;
+    }
+
+    // Read CEO status separately.
+    const ceoElement = document.getElementById("po_ceo_Status");
+
+    const ceoStatus = (
+        ceoElement?.textContent || "PENDING"
+    ).trim().toUpperCase();
+
+    if (ceoStatus === "APPROVED") {
+        alert("This purchase order has already been approved by the CEO.");
+        return;
+    }
+
+    if (ceoStatus === "REJECTED") {
+        alert("This purchase order has already been rejected by the CEO.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedPOId,
+                module_name: "PO",
+                action: action,
+                role: "ceo"
+            })
+        });
+
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error("Invalid server response:", responseText);
+            console.error("HTTP status:", response.status);
+
+            alert(
+                "The server returned an invalid response. Check the Flask terminal and browser console."
+            );
+            return;
+        }
+
+        if (!response.ok || data.success !== true) {
+            alert(data.message || "CEO approval failed.");
+            return;
+        }
+
+        alert(
+            action === "APPROVED"
+                ? "Purchase Order approved successfully by the CEO."
+                : "Purchase Order rejected successfully by the CEO."
+        );
+
+        closeModal();
+
+        const previousPOId = selectedPOId;
+
+        await loadPOModule();
+
+        // Reselect the same PO if it is still listed.
+        if (previousPOId) {
+            const radio = document.querySelector(
+                `input[data-po-id="${previousPOId}"]`
+            );
+
+            if (radio && typeof selectPO === "function") {
+                selectPO(radio);
+            }
+        }
+
+        pOpendingAction = null;
+
+    } catch (error) {
+        console.error("CEO PO approval error:", error);
+        alert("Server error while processing CEO approval.");
+    }
 }
 
 
@@ -822,85 +1065,6 @@ function closeModal() {
 
 
 
-// =======================================================
-// SEND APPROVAL TO SERVER
-// =======================================================
-function approvePO() {
-
-    // Ensure PO selected
-    if (!selectedPOId) {
-        alert("Please select a purchase order first");
-        return;
-    }
-
-    // Ensure action selected
-    if (!pOpendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const hodStatus =
-        document.getElementById("po_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
-
-    // Prevent double approval
-    if (ceoStatus === "APPROVED") {
-        alert("This purchase order has already been approved by the CEO.");
-        return;
-    }
-
-    // Prevent double rejection
-    if (ceoStatus === "REJECTED") {
-        alert("This purchase order has already been rejected by the CEO.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedPOId,
-            module_name: "PO",
-            action: pOpendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (!data.success) {
-            alert(data.message || "Approval failed");
-            return;
-        }
-
-        alert("Purchase Order updated successfully.");
-
-        // Refresh PO details
-        loadPOModule();
-
-        if (selectedPOId) {
-            const radio = document.querySelector(
-                `input[data-po-id="${selectedPOId}"]`
-            );
-
-            if (radio) {
-                selectPO(radio);
-            }
-        }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
-}
-
-
-
-
-
 
 
 
@@ -909,34 +1073,34 @@ function approvePO() {
 // =======================================================
 // APPROVE / REJECT BUTTON CLICK
 // =======================================================
+// =======================================================
+// CEO: OPEN GRN CONFIRMATION MODAL
+// =======================================================
 function confirmGRNApproval(action) {
 
-    // Ensure a GRN is selected
     if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
+        alert("Please select a goods receipt note first.");
         return;
     }
 
-    grnPendingAction = action;
+    grnPendingAction = String(action).trim().toUpperCase();
+
+    if (!["APPROVED", "REJECTED"].includes(grnPendingAction)) {
+        alert("Invalid GRN approval action.");
+        grnPendingAction = null;
+        return;
+    }
 
     const grnNumber =
-        document.getElementById("grnNumber").innerText || "-";
+        document.getElementById("grnNumber")?.textContent?.trim() || "-";
 
-    if (action === "APPROVED") {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to approve <b>${grnNumber}</b>?`;
-
-    } else {
-
-        document.getElementById("confirmMessage").innerHTML =
-            `Are you sure you want to reject <b>${grnNumber}</b>?`;
-
-    }
+    document.getElementById("confirmMessage").innerHTML =
+        `Are you sure you want to ${
+            grnPendingAction === "APPROVED" ? "approve" : "reject"
+        } <b>${grnNumber}</b>?`;
 
     document.getElementById("confirmModal").style.display = "block";
 }
-
 
 // =======================================================
 // CLOSE MODAL
@@ -962,79 +1126,128 @@ function closeModal() {
 // =======================================================
 // SEND APPROVAL TO SERVER
 // =======================================================
-function approveGRN() {
+// =======================================================
+// CEO: APPROVE / REJECT GRN
+// =======================================================
+async function approveGRN() {
 
-    // Ensure GRN selected
     if (!selectedGRNId) {
-        alert("Please select a goods receipt note first");
+        alert("Please select a goods receipt note first.");
         return;
     }
 
-    // Ensure action selected
     if (!grnPendingAction) {
-        alert("Please choose approve or reject");
+        alert("Please choose approve or reject.");
         return;
     }
 
-    const hodStatus =
-        document.getElementById("grn_hod_Status")
-            .innerText
-            .trim()
-            .toUpperCase();
+    const action = String(grnPendingAction).trim().toUpperCase();
 
-    // Prevent double approval
+    if (!["APPROVED", "REJECTED"].includes(action)) {
+        alert("Invalid approval action.");
+        return;
+    }
+
+    // Check HOD decision first.
+    const hodElement = document.getElementById("grn_hod_Status");
+
+    const hodStatus = (
+        hodElement?.textContent || "PENDING"
+    ).trim().toUpperCase();
+
+    if (hodStatus !== "APPROVED") {
+        alert(
+            hodStatus === "REJECTED"
+                ? "The HOD has rejected this GRN. The CEO cannot approve it."
+                : "The HOD must approve this GRN before the CEO can act."
+        );
+        return;
+    }
+
+    // Check CEO decision separately.
+    const ceoElement = document.getElementById("grn_ceo_Status");
+
+    const ceoStatus = (
+        ceoElement?.textContent || "PENDING"
+    ).trim().toUpperCase();
+
     if (ceoStatus === "APPROVED") {
         alert("This goods receipt note has already been approved by the CEO.");
         return;
     }
 
-    // Prevent double rejection
     if (ceoStatus === "REJECTED") {
         alert("This goods receipt note has already been rejected by the CEO.");
         return;
     }
 
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            document_id: selectedGRNId,
-            module_name: "GRN",
-            action: grnPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
+    try {
 
-        if (!data.success) {
-            alert(data.message || "Approval failed");
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedGRNId,
+                module_name: "GRN",
+                action: action,
+                role: "ceo"
+            })
+        });
+
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch (error) {
+            console.error("Invalid server response:", responseText);
+            console.error("HTTP status:", response.status);
+
+            alert(
+                "The server returned an invalid response. Check the Flask terminal and browser console."
+            );
             return;
         }
 
-        alert("Goods Receipt Note updated successfully by the CEO.");
+        if (!response.ok || data.success !== true) {
+            alert(data.message || "CEO GRN approval failed.");
+            return;
+        }
 
-        // Refresh GRN details
-        loadGRNData();
+        alert(
+            action === "APPROVED"
+                ? "Goods Receipt Note approved successfully by the CEO."
+                : "Goods Receipt Note rejected successfully by the CEO."
+        );
 
-        if (selectedGRNId) {
+        closeModal();
+
+        const previousGRNId = selectedGRNId;
+
+        grnPendingAction = null;
+
+        await loadGRNData();
+
+        // Reselect the GRN after refreshing the list.
+        if (previousGRNId) {
             const radio = document.querySelector(
-                `input[data-grn-id="${selectedGRNId}"]`
+                `input[data-grn-id="${previousGRNId}"]`
             );
 
-            if (radio) {
+            if (radio && typeof selectGRN === "function") {
                 selectGRN(radio);
             }
         }
-    })
-    .catch(error => {
-        console.error(error);
-        alert("Server error while processing approval.");
-    });
+
+    } catch (error) {
+        console.error("CEO GRN approval error:", error);
+        alert("Server error while processing CEO GRN approval.");
+    }
 }
-
-
 
 
 
@@ -1043,19 +1256,24 @@ function approveGRN() {
 
 function confirmInvoice(action) {
     if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
+        alert("Please select an invoice first.");
         return;
     }
 
-    invoicePendingAction = action;
+    invoicePendingAction = String(action).trim().toUpperCase();
 
-    const invoiceNumber = document.getElementById("i_invoice_number").innerText || "-";
-    document.getElementById("confirmMessage").innerHTML =
-        action === "APPROVED"
+    const invoiceNumber =
+        document.getElementById("i_invoice_number")?.textContent?.trim() || "-";
+
+    const messageElement = document.getElementById("confirmMessage");
+    const modal = document.getElementById("confirmModal");
+
+    messageElement.innerHTML =
+        invoicePendingAction === "APPROVED"
             ? `Are you sure you want to approve invoice <b>${invoiceNumber}</b>?`
             : `Are you sure you want to reject invoice <b>${invoiceNumber}</b>?`;
 
-    document.getElementById("confirmModal").style.display = "block";
+    modal.style.display = "block";
 }
 
 function approveInvoice() {
@@ -1066,8 +1284,91 @@ function rejectInvoice() {
     confirmInvoice("REJECTED");
 }
 
+async function sendInvoiceApproval() {
+    if (!selectedInvoiceId) {
+        alert("Please select an invoice first.");
+        return;
+    }
 
+    if (!invoicePendingAction) {
+        alert("Please choose approve or reject.");
+        return;
+    }
 
+    const action = invoicePendingAction;
+
+    // Read the CEO's decision status.
+    const ceoStatus = (
+        document.getElementById("i_ceo_status")?.textContent || "PENDING"
+    ).trim().toUpperCase();
+
+    if (ceoStatus === "APPROVED") {
+        alert("This invoice has already been approved by the CEO.");
+        return;
+    }
+
+    if (ceoStatus === "REJECTED") {
+        alert("This invoice has already been rejected by the CEO.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedInvoiceId,
+                module_name: "INVOICE",
+                action: action,
+                role: "ceo"
+            })
+        });
+
+        const responseText = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch {
+            console.error("Unexpected server response:", responseText);
+            alert("The server returned an invalid response.");
+            return;
+        }
+
+        if (!response.ok || !data.success) {
+            alert(data.message || "Invoice approval failed.");
+            return;
+        }
+
+        alert(data.message || "Invoice updated successfully.");
+
+        invoicePendingAction = null;
+
+        const modal = document.getElementById("confirmModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+
+        await loadInvoices();
+
+        if (selectedInvoiceId) {
+            const radio = document.querySelector(
+                `input[data-invoice-id="${selectedInvoiceId}"]`
+            );
+
+            if (radio) {
+                selectInvoice(radio);
+            }
+        }
+
+    } catch (error) {
+        console.error("Invoice approval error:", error);
+        alert("Server error while processing invoice approval.");
+    }
+}
 
 
 
@@ -1096,56 +1397,74 @@ function approvePayment() {
 function rejectPayment() {
     confirmPayment("REJECTED");
 }
-
-
 async function executeApproval() {
 
-    if (paymentPendingAction) {
+    try {
 
-        await sendPaymentApproval();
+        if (paymentPendingAction) {
+
+            await sendPaymentApproval();
+
+        } else if (invoicePendingAction) {
+
+            await sendInvoiceApproval();
+
+        } else if (quotationPendingAction) {
+
+            await sendQuotationApproval();
+
+        } else if (pOpendingAction) {
+
+            await approvePO();
+
+        } else if (grnPendingAction) {
+
+            await approveGRN();
+
+        } else if (requisitionPendingAction) {
+
+            await submitApproval();
+
+        } else {
+
+            alert("No approval action selected.");
+            console.error("No pending approval action was found.");
+            return;
+
+        }
+
+    } catch (error) {
+
+        console.error("Approval execution failed:", error);
+        alert("Approval failed. Check the browser console for details.");
+        return;
 
     }
-    else if (invoicePendingAction) {
 
-        await sendInvoiceApproval();
-
-    }
-    else if (quotationPendingAction) {
-
-        await sendQuotationApproval();
-
-    }
-    else if (pOpendingAction) {
-
-        await approvePO();
-
-    }
-    else if (grnPendingAction) {
-
-        await approveGRN();
-
-    }
-    else if (requisitionPendingAction) {
-
-        await submitApproval();
-
-    }
-
-    closeModal();
 }
 
-function sendPaymentApproval() {
+
+async function sendPaymentApproval() {
     if (!selectedPaymentId) {
-        alert("Please select a payment first");
+        alert("Please select a payment first.");
         return;
     }
 
     if (!paymentPendingAction) {
-        alert("Please choose approve or reject");
+        alert("Please choose approve or reject.");
         return;
     }
 
-    const status = document.getElementById("payStatus").innerText.trim().toUpperCase();
+    const action = String(paymentPendingAction).trim().toUpperCase();
+
+    if (!["APPROVED", "REJECTED"].includes(action)) {
+        alert("Invalid payment approval action.");
+        return;
+    }
+
+    const ceoStatus = (
+        document.getElementById("payCEOStatus")?.textContent || "PENDING"
+    ).trim().toUpperCase();
 
     if (ceoStatus === "APPROVED") {
         alert("This payment has already been approved by the CEO.");
@@ -1157,83 +1476,55 @@ function sendPaymentApproval() {
         return;
     }
 
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedPaymentId,
-            module_name: "PAYMENT",
-            action: paymentPendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Payment approval failed");
+    try {
+        const response = await fetch("/hod/approve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                document_id: selectedPaymentId,
+                module_name: "PAYMENT",
+                action: action,
+                role: "ceo"
+            })
+        });
+
+        const responseText = await response.text();
+        let data;
+
+        try {
+            data = JSON.parse(responseText);
+        } catch {
+            console.error("Unexpected server response:", responseText);
+            alert("The server returned an invalid response. Check the Flask terminal.");
             return;
         }
 
-        alert("Payment updated successfully by the CEO.");
-        loadPaymentData();
-    })
-    .catch(err => {
-        console.error(err);
+        if (!response.ok || !data.success) {
+            alert(data.message || "Payment approval failed.");
+            return;
+        }
+
+        alert(data.message || "Payment updated successfully by the CEO.");
+
+        paymentPendingAction = null;
+
+        const modal = document.getElementById("confirmModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+
+        await loadPaymentData();
+
+    } catch (error) {
+        console.error("Payment approval error:", error);
         alert("Server error while processing payment approval.");
-    });
+    }
 }
 
-function sendInvoiceApproval() {
-    if (!selectedInvoiceId) {
-        alert("Please select an invoice first");
-        return;
-    }
 
-    if (!invoicePendingAction) {
-        alert("Please choose approve or reject");
-        return;
-    }
-
-    const status = document.getElementById("i_status").innerText.trim().toUpperCase();
-
-    if (ceoStatus === "APPROVED") {
-        alert("This invoice has already been approved.");
-        return;
-    }
-
-    if (ceoStatus === "REJECTED") {
-        alert("This invoice has already been rejected.");
-        return;
-    }
-
-    fetch("/hod/approve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            document_id: selectedInvoiceId,
-            module_name: "INVOICE",
-            action: invoicePendingAction
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert(data.message || "Invoice approval failed");
-            return;
-        }
-
-        alert("Invoice updated successfully.");
-        invoicePendingAction = null;
-        loadInvoices();
-        if (selectedInvoiceId) {
-            const radio = document.querySelector(`input[data-invoice-id="${selectedInvoiceId}"]`);
-            if (radio) selectInvoice(radio);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Server error while processing invoice approval.");
-    });
-}
 
 function sendQuotationApproval() {
     if (!selectedQuotationId) {

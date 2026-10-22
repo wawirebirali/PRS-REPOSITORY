@@ -22,3 +22,9 @@ FOREIGN KEY (created_by)
 REFERENCES users(user_id)
 ON DELETE SET NULL
 ON UPDATE CASCADE;
+
+
+ALTER TABLE requisitions
+    ADD COLUMN department_budget_id INT NULL,
+    ADD COLUMN item_budget DECIMAL(15,2) NULL,
+    ADD COLUMN required_date DATE NULL;
